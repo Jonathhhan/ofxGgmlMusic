@@ -1,5 +1,7 @@
 #include "ofApp.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstdio>
 
 namespace {
@@ -84,6 +86,7 @@ void ofApp::runGeneration() {
 	player.stop();
 	player.load(result.outputPath);
 	player.setLoop(loop);
+	loadWaveform();
 	if (autoPlay) {
 		player.play();
 	}
@@ -96,8 +99,19 @@ std::string ofApp::getOutputPath() const {
 	return ofFilePath::join(outputDir, "ofxGgmlMusicGenerationExample.wav");
 }
 
+void ofApp::loadWaveform() {
+	std::string error;
+	if (!ofxGgmlMusicAudioUtils::loadWav16(request.outputPath, waveform, error)) {
+		waveform = {};
+		ofLogWarning("ofxGgmlMusicGenerationExample") << error;
+	}
+}
+
 void ofApp::draw() {
 	ofBackground(18);
+
+	drawWaveform(608.0f, 48.0f, std::max(280.0f, ofGetWidth() - 640.0f), 220.0f);
+
 	gui.begin();
 	ImGui::SetNextWindowPos(ImVec2(24, 24), ImGuiCond_Once);
 	ImGui::SetNextWindowSize(ImVec2(560, 440), ImGuiCond_Once);
@@ -140,4 +154,43 @@ void ofApp::draw() {
 
 	ImGui::End();
 	gui.end();
+}
+
+void ofApp::drawWaveform(float x, float y, float width, float height) {
+	ofSetColor(240);
+	ofDrawBitmapString("Waveform", x, y);
+	ofSetColor(70);
+	ofNoFill();
+	ofDrawRectangle(x, y + 18.0f, width, height);
+	ofFill();
+
+	if (!waveform) {
+		ofSetColor(170);
+		ofDrawBitmapString("Generate a sketch to preview audio", x + 16.0f, y + 48.0f);
+		return;
+	}
+
+	const float midY = y + 18.0f + height * 0.5f;
+	ofSetColor(105, 205, 185);
+	const int columns = std::max(1, static_cast<int>(width));
+	const auto samplesPerColumn = std::max<std::size_t>(1, waveform.samples.size() / static_cast<std::size_t>(columns));
+	for (int column = 0; column < columns; ++column) {
+		const auto begin = static_cast<std::size_t>(column) * samplesPerColumn;
+		const auto end = std::min(waveform.samples.size(), begin + samplesPerColumn);
+		float peak = 0.0f;
+		for (auto i = begin; i < end; ++i) {
+			peak = std::max(peak, std::abs(waveform.samples[i]));
+		}
+		const float px = x + static_cast<float>(column);
+		const float py = peak * height * 0.46f;
+		ofDrawLine(px, midY - py, px, midY + py);
+	}
+
+	ofSetColor(210);
+	ofDrawBitmapString(
+		ofToString(waveform.getDurationSeconds(), 2) + " s  " +
+		ofToString(waveform.sampleRate) + " Hz  peak " +
+		ofToString(waveform.getPeakAbs(), 2),
+		x,
+		y + height + 44.0f);
 }

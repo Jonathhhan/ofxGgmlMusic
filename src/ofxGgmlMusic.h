@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ofxGgmlMusic/ofxGgmlMusicAudioUtils.h"
 #include "ofxGgmlMusic/ofxGgmlMusicTypes.h"
 #include "ofxGgmlMusic/ofxGgmlMusicGenerationBackend.h"
 #include "ofxGgmlMusic/ofxGgmlMusicProceduralGenerationBackend.h"

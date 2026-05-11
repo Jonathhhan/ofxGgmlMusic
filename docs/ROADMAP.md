@@ -17,6 +17,8 @@
   backend.
 - Add a deterministic `procedural-sketch` backend and root-level generation
   example so prompt-to-music writes an actual WAV before model bridges land.
+- Add shared PCM16 WAV utilities and a waveform preview for the generation
+  example.
 
 ## Next Milestones
 

@@ -1,31 +1,16 @@
 #include "ofxGgmlMusicProceduralGenerationBackend.h"
 
+#include "ofxGgmlMusicAudioUtils.h"
 #include "ofxGgmlMusicUtils.h"
 
 #include <algorithm>
 #include <cmath>
-#include <cstdint>
-#include <filesystem>
-#include <fstream>
 #include <functional>
-#include <limits>
 #include <vector>
 
 namespace {
 	constexpr double pi = 3.14159265358979323846;
 	constexpr int sampleRate = 44100;
-
-	void writeLe16(std::ostream & output, std::uint16_t value) {
-		output.put(static_cast<char>(value & 0xff));
-		output.put(static_cast<char>((value >> 8) & 0xff));
-	}
-
-	void writeLe32(std::ostream & output, std::uint32_t value) {
-		output.put(static_cast<char>(value & 0xff));
-		output.put(static_cast<char>((value >> 8) & 0xff));
-		output.put(static_cast<char>((value >> 16) & 0xff));
-		output.put(static_cast<char>((value >> 24) & 0xff));
-	}
 
 	int tonicToMidi(const ofxGgmlMusicKey & key) {
 		const std::string tonic = key.tonic.empty() ? "C" : key.tonic;
@@ -78,52 +63,6 @@ namespace {
 		}
 		const auto text = request.prompt + "|" + request.style + "|" + request.negativePrompt;
 		return static_cast<int>(std::hash<std::string>{}(text) & 0x7fffffff);
-	}
-
-	bool writeWav(const std::string & path, const std::vector<float> & samples) {
-		if (path.empty() || samples.empty()) {
-			return false;
-		}
-		std::filesystem::path outputPath(path);
-		if (outputPath.has_parent_path()) {
-			std::error_code code;
-			std::filesystem::create_directories(outputPath.parent_path(), code);
-			if (code) {
-				return false;
-			}
-		}
-
-		std::ofstream output(path, std::ios::binary | std::ios::trunc);
-		if (!output) {
-			return false;
-		}
-
-		const std::uint16_t channels = 1;
-		const std::uint16_t bitsPerSample = 16;
-		const std::uint32_t dataBytes = static_cast<std::uint32_t>(samples.size() * sizeof(std::int16_t));
-		const std::uint32_t byteRate = sampleRate * channels * bitsPerSample / 8;
-		const std::uint16_t blockAlign = channels * bitsPerSample / 8;
-
-		output.write("RIFF", 4);
-		writeLe32(output, 36 + dataBytes);
-		output.write("WAVE", 4);
-		output.write("fmt ", 4);
-		writeLe32(output, 16);
-		writeLe16(output, 1);
-		writeLe16(output, channels);
-		writeLe32(output, sampleRate);
-		writeLe32(output, byteRate);
-		writeLe16(output, blockAlign);
-		writeLe16(output, bitsPerSample);
-		output.write("data", 4);
-		writeLe32(output, dataBytes);
-
-		for (const auto sample : samples) {
-			const auto clamped = std::max(-1.0f, std::min(1.0f, sample));
-			const auto value = static_cast<std::int16_t>(clamped * static_cast<float>(std::numeric_limits<std::int16_t>::max()));
-			writeLe16(output, static_cast<std::uint16_t>(value));
-		}
-		return true;
 	}
 
 	std::vector<float> renderSketch(const ofxGgmlMusicGenerationRequest & request, int seed) {
@@ -216,8 +155,9 @@ ofxGgmlMusicGenerationResult ofxGgmlMusicProceduralGenerationBackend::generate(
 	}
 
 	const auto samples = renderSketch(request, result.seed);
-	if (!writeWav(request.outputPath, samples)) {
-		result.error = "could not write wav output: " + request.outputPath;
+	std::string writeError;
+	if (!ofxGgmlMusicAudioUtils::writeMonoWav16(request.outputPath, samples, sampleRate, writeError)) {
+		result.error = "could not write wav output: " + writeError;
 		return result;
 	}
 

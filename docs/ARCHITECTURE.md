@@ -20,6 +20,8 @@ No dependency should point from `ofxGgmlCore` or `ofxGgmlAudio` back to
 ## Owned Here
 
 - music-specific request/result helpers
+- lightweight music media helpers such as PCM16 WAV write/read used by examples
+  and generation smoke tests
 - model-specific preprocessing and postprocessing
 - beat, downbeat, tempo, key, chord, chroma, stem, and arrangement workflows
 - prompt-to-music, loop, stem-targeted, and reference-audio generation workflows

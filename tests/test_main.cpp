@@ -154,6 +154,31 @@ int main() {
 	if (std::filesystem::exists(tempOutput)) {
 		std::filesystem::remove(tempOutput);
 	}
+	const auto utilityOutput = std::filesystem::temp_directory_path() / "ofxGgmlMusic-audio-utils-test.wav";
+	if (std::filesystem::exists(utilityOutput)) {
+		std::filesystem::remove(utilityOutput);
+	}
+	std::string wavError;
+	if (!ofxGgmlMusicAudioUtils::writeMonoWav16(
+			utilityOutput.string(),
+			{ 0.0f, 0.4f, -0.4f, 0.0f },
+			44100,
+			wavError)) {
+		std::cerr << "audio utility failed to write wav: " << wavError << "\n";
+		return 1;
+	}
+	ofxGgmlMusicAudioBuffer utilityBuffer;
+	if (!ofxGgmlMusicAudioUtils::loadWav16(utilityOutput.string(), utilityBuffer, wavError) ||
+		!utilityBuffer ||
+		utilityBuffer.sampleRate != 44100 ||
+		utilityBuffer.channels != 1 ||
+		utilityBuffer.samples.size() != 4 ||
+		utilityBuffer.getPeakAbs() < 0.39f) {
+		std::cerr << "audio utility failed to read wav: " << wavError << "\n";
+		return 1;
+	}
+	std::filesystem::remove(utilityOutput);
+
 	generation.outputPath = tempOutput.string();
 	generation.settings.backend = ofxGgmlMusicGenerationBackendFamily::External;
 	auto procedural = ofxGgmlMakeProceduralMusicGenerationBackend();
@@ -171,6 +196,7 @@ int main() {
 		return 1;
 	}
 	const auto proceduralResult = procedural->generate(generation);
+	ofxGgmlMusicAudioBuffer generatedBuffer;
 	if (!proceduralResult ||
 		!ofxGgmlMusicUtils::hasOutput(proceduralResult) ||
 		proceduralResult.outputPath != generation.outputPath ||
@@ -178,7 +204,11 @@ int main() {
 		proceduralResult.references.empty() ||
 		!std::filesystem::exists(tempOutput) ||
 		std::filesystem::file_size(tempOutput) <= 44 ||
-		!fileStartsWith(tempOutput, "RIFF")) {
+		!fileStartsWith(tempOutput, "RIFF") ||
+		!ofxGgmlMusicAudioUtils::loadWav16(tempOutput.string(), generatedBuffer, wavError) ||
+		!generatedBuffer ||
+		generatedBuffer.getDurationSeconds() <= 0.0 ||
+		generatedBuffer.getPeakAbs() <= 0.0f) {
 		std::cerr << "procedural generation failed to write a wav file\n";
 		return 1;
 	}

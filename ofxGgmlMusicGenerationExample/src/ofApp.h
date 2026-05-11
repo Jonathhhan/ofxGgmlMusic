@@ -18,11 +18,14 @@ public:
 private:
 	void rebuildRequest();
 	void runGeneration();
+	void loadWaveform();
+	void drawWaveform(float x, float y, float width, float height);
 	std::string getOutputPath() const;
 
 	ofxImGui::Gui gui;
 	std::unique_ptr<ofxGgmlMusicGenerationBackend> backend;
 	ofxGgmlMusicGenerationRequest request;
+	ofxGgmlMusicAudioBuffer waveform;
 	ofSoundPlayer player;
 	std::array<char, 512> promptBuffer{};
 	std::array<char, 64> styleBuffer{};

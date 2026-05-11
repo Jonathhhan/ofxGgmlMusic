@@ -45,15 +45,18 @@ ships an unavailable stub so examples can fail clearly before a diffusion,
 transformer, SampleRNN, or external bridge runtime is installed. It also ships a
 small `procedural-sketch` backend that writes deterministic prompt-conditioned
 WAV files. That backend is model-free and exists to make the generation workflow
-testable before a real model bridge is selected.
+testable before a real model bridge is selected. Shared WAV helpers live in
+`ofxGgmlMusicAudioUtils` so examples and future backends can write and inspect
+simple PCM16 files through one path.
 
 ## Example
 
 `ofxGgmlMusicAnalysisExample` is a root-level audio analysis request smoke test.
 `ofxGgmlMusicGenerationExample` is a root-level prompt-to-music sketch that
-writes a WAV file with the built-in `procedural-sketch` backend. Generate either
-example with the openFrameworks projectGenerator using addons `ofxGgmlMusic`,
-`ofxGgmlCore`, and `ofxImGui`.
+writes a WAV file with the built-in `procedural-sketch` backend and draws a
+waveform preview after generation. Generate either example with the
+openFrameworks projectGenerator using addons `ofxGgmlMusic`, `ofxGgmlCore`, and
+`ofxImGui`.
 
 ## Dependencies
 
