@@ -15,12 +15,13 @@ Family map: https://jonathhhan.github.io/ofxGgmlCore/
 
 ## Example
 
-`ofxGgmlMusicAnalysisExample` is a root-level audio analysis request smoke test. Generate it with the openFrameworks projectGenerator using addons `ofxGgmlMusic` and `ofxGgmlCore`.
+`ofxGgmlMusicAnalysisExample` is a root-level audio analysis request smoke test. Generate it with the openFrameworks projectGenerator using addons `ofxGgmlMusic`, `ofxGgmlCore`, and `ofxImGui`.
 
 ## Dependencies
 
 - openFrameworks
 - `ofxGgmlCore`
+- `ofxImGui` for examples
 
 ## Validate
 
