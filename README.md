@@ -13,10 +13,24 @@ Family map: https://jonathhhan.github.io/ofxGgmlCore/
 
 ## First Milestone
 
-- define small request/result types
+- define small music-specific request/result types
 - keep one root-level smoke example
 - keep generated models, media, builds, and IDE files out of git
 - validate the addon with local headless tests
+
+## Music Scope
+
+The public API starts with typed music workflow shapes:
+
+- `ofxGgmlMusicTask` for analysis, tempo, beat tracking, key detection, chord
+  recognition, embeddings, stem separation, and generation
+- `ofxGgmlMusicTempo`, `ofxGgmlMusicBeat`, `ofxGgmlMusicKey`, and
+  `ofxGgmlMusicChord` for common analysis output
+- `ofxGgmlMusicStem` for stem-aware workflows
+- `ofxGgmlMusicResult` fields for beats, chords, embeddings, and stems
+
+Concrete backends can fill these plain C++ types without pulling low-level audio
+plumbing into the Music addon.
 
 ## Example
 
