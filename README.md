@@ -42,11 +42,18 @@ This addon keeps its generation boundary focused on music backends that produce
 audio: diffusion, transformer, SampleRNN, or explicit external bridges.
 Generation backends should implement `ofxGgmlMusicGenerationBackend`; the addon
 ships an unavailable stub so examples can fail clearly before a diffusion,
-transformer, SampleRNN, or external bridge runtime is installed.
+transformer, SampleRNN, or external bridge runtime is installed. It also ships a
+small `procedural-sketch` backend that writes deterministic prompt-conditioned
+WAV files. That backend is model-free and exists to make the generation workflow
+testable before a real model bridge is selected.
 
 ## Example
 
-`ofxGgmlMusicAnalysisExample` is a root-level audio analysis request smoke test. Generate it with the openFrameworks projectGenerator using addons `ofxGgmlMusic`, `ofxGgmlCore`, and `ofxImGui`.
+`ofxGgmlMusicAnalysisExample` is a root-level audio analysis request smoke test.
+`ofxGgmlMusicGenerationExample` is a root-level prompt-to-music sketch that
+writes a WAV file with the built-in `procedural-sketch` backend. Generate either
+example with the openFrameworks projectGenerator using addons `ofxGgmlMusic`,
+`ofxGgmlCore`, and `ofxImGui`.
 
 ## Dependencies
 

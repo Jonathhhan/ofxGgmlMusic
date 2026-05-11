@@ -27,6 +27,8 @@ No dependency should point from `ofxGgmlCore` or `ofxGgmlAudio` back to
   and external bridge implementations
 - `ofxGgmlMusicGenerationBackend` implementations for concrete generation
   runtimes
+- the built-in `procedural-sketch` backend for deterministic model-free WAV
+  generation smoke tests
 - typed result fields for beats, chords, keys, embeddings, and stems
 - focused root-level examples
 - local media/model workflow documentation

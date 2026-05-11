@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(ofxGgmlMusic_tests
 	test_main.cpp
 	../src/ofxGgmlMusic/ofxGgmlMusicGenerationBackend.cpp
+	../src/ofxGgmlMusic/ofxGgmlMusicProceduralGenerationBackend.cpp
 	../src/ofxGgmlMusic/ofxGgmlMusicUtils.cpp)
 
 target_include_directories(ofxGgmlMusic_tests PRIVATE

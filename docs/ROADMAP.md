@@ -15,11 +15,14 @@
   SampleRNN, and external bridge lanes.
 - Add the `ofxGgmlMusicGenerationBackend` interface and unavailable fallback
   backend.
+- Add a deterministic `procedural-sketch` backend and root-level generation
+  example so prompt-to-music writes an actual WAV before model bridges land.
 
 ## Next Milestones
 
 - Connect the first real local backend or bridge adapter.
-- Add a prompt-to-music example once a local backend path is selected.
+- Add MusicGen-style transformer and diffusion bridge research notes with a
+  clear runtime/setup decision.
 - Keep image and video GAN work in `ofxGgmlDiffusion` and `ofxGgmlVideo`; this
   addon should focus on audio-producing music generators.
 - Add one useful openFrameworks example that runs with user-provided assets.

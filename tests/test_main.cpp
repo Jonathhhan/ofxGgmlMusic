@@ -1,6 +1,21 @@
 #include "ofxGgmlMusic.h"
 
+#include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <string>
+
+namespace {
+	bool fileStartsWith(const std::filesystem::path & path, const std::string & text) {
+		std::ifstream input(path, std::ios::binary);
+		if (!input) {
+			return false;
+		}
+		std::string bytes(text.size(), '\0');
+		input.read(bytes.data(), static_cast<std::streamsize>(bytes.size()));
+		return bytes == text;
+	}
+}
 
 int main() {
 	ofxGgmlMusicRequest request;
@@ -134,6 +149,45 @@ int main() {
 		std::cerr << "unavailable generation result was unexpected\n";
 		return 1;
 	}
+
+	const auto tempOutput = std::filesystem::temp_directory_path() / "ofxGgmlMusic-procedural-test.wav";
+	if (std::filesystem::exists(tempOutput)) {
+		std::filesystem::remove(tempOutput);
+	}
+	generation.outputPath = tempOutput.string();
+	generation.settings.backend = ofxGgmlMusicGenerationBackendFamily::External;
+	auto procedural = ofxGgmlMakeProceduralMusicGenerationBackend();
+	if (!procedural ||
+		procedural->getBackendName() != "procedural-sketch" ||
+		procedural->getBackendFamily() != ofxGgmlMusicGenerationBackendFamily::External ||
+		!procedural->isAvailable() ||
+		procedural->isLoaded()) {
+		std::cerr << "procedural generation backend reported unexpected state\n";
+		return 1;
+	}
+	const auto setupResult = procedural->setup(generation);
+	if (!setupResult || !procedural->isLoaded()) {
+		std::cerr << "procedural setup failed\n";
+		return 1;
+	}
+	const auto proceduralResult = procedural->generate(generation);
+	if (!proceduralResult ||
+		!ofxGgmlMusicUtils::hasOutput(proceduralResult) ||
+		proceduralResult.outputPath != generation.outputPath ||
+		proceduralResult.durationSeconds <= 0.0 ||
+		proceduralResult.references.empty() ||
+		!std::filesystem::exists(tempOutput) ||
+		std::filesystem::file_size(tempOutput) <= 44 ||
+		!fileStartsWith(tempOutput, "RIFF")) {
+		std::cerr << "procedural generation failed to write a wav file\n";
+		return 1;
+	}
+	procedural->close();
+	if (procedural->isLoaded()) {
+		std::cerr << "procedural backend did not unload\n";
+		return 1;
+	}
+	std::filesystem::remove(tempOutput);
 
 	return 0;
 }

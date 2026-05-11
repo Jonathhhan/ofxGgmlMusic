@@ -47,6 +47,8 @@ Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic.h") "public header"
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicTypes.h") "types header"
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicGenerationBackend.h") "generation backend header"
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicGenerationBackend.cpp") "generation backend source"
+Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicProceduralGenerationBackend.h") "procedural generation backend header"
+Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicProceduralGenerationBackend.cpp") "procedural generation backend source"
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicUtils.h") "utility header"
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicUtils.cpp") "utility source"
 
@@ -62,6 +64,15 @@ Assert-FileContains (Join-Path $exampleRoot "addons.make") "(?m)^ofxImGui\s*$" "
 Assert-Path (Join-Path $exampleRoot "src\main.cpp") "smoke example main.cpp"
 Assert-Path (Join-Path $exampleRoot "src\ofApp.h") "smoke example ofApp.h"
 Assert-Path (Join-Path $exampleRoot "src\ofApp.cpp") "smoke example ofApp.cpp"
+
+$generationExampleRoot = Join-Path $addonRoot "ofxGgmlMusicGenerationExample"
+Assert-Path $generationExampleRoot "root-level generation example" -Directory
+Assert-Path (Join-Path $generationExampleRoot "addons.make") "generation example addons.make"
+Assert-FileContains (Join-Path $generationExampleRoot "addons.make") "(?m)^ofxImGui\s*$" "generation example addons.make"
+Assert-Path (Join-Path $generationExampleRoot "README.md") "generation example README"
+Assert-Path (Join-Path $generationExampleRoot "src\main.cpp") "generation example main.cpp"
+Assert-Path (Join-Path $generationExampleRoot "src\ofApp.h") "generation example ofApp.h"
+Assert-Path (Join-Path $generationExampleRoot "src\ofApp.cpp") "generation example ofApp.cpp"
 Assert-Path (Join-Path $addonRoot "tests\CMakeLists.txt") "test CMakeLists"
 Assert-Path (Join-Path $addonRoot "tests\test_main.cpp") "test source"
 
@@ -77,6 +88,9 @@ $forbidden = @(
 	"ofxGgmlMusicAnalysisExample\bin",
 	"ofxGgmlMusicAnalysisExample\obj",
 	"ofxGgmlMusicAnalysisExample\.vs",
+	"ofxGgmlMusicGenerationExample\bin",
+	"ofxGgmlMusicGenerationExample\obj",
+	"ofxGgmlMusicGenerationExample\.vs",
 	"models"
 )
 
