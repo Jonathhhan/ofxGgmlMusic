@@ -53,5 +53,57 @@ int main() {
 		return 1;
 	}
 
+	ofxGgmlMusicGenerationRequest generation;
+	if (ofxGgmlMusicUtils::hasPrompt(generation)) {
+		std::cerr << "empty generation request reported as configured\n";
+		return 1;
+	}
+	generation.prompt = "loopable ambient piano with soft granular texture";
+	generation.negativePrompt = "vocals, drums";
+	generation.style = "ambient";
+	generation.outputPath = "renders/ambient.wav";
+	generation.settings.durationSeconds = 12.0;
+	generation.settings.guidance = 4.0f;
+	generation.settings.seed = 42;
+	generation.settings.loop = true;
+	generation.tempo.bpm = 92.0f;
+	generation.key.tonic = "D";
+	generation.key.mode = "major";
+	generation.targetStems = { "piano", "texture" };
+	if (!ofxGgmlMusicUtils::hasPrompt(generation) ||
+		!ofxGgmlMusicUtils::hasTempo(generation) ||
+		!ofxGgmlMusicUtils::hasKey(generation)) {
+		std::cerr << "generation request helpers failed\n";
+		return 1;
+	}
+	const auto generationDescription = ofxGgmlMusicUtils::describe(generation);
+	if (generationDescription.find("ambient piano") == std::string::npos ||
+		generationDescription.find("92 bpm") == std::string::npos ||
+		generationDescription.find("D major") == std::string::npos) {
+		std::cerr << "generation description missing prompt/tempo/key\n";
+		return 1;
+	}
+
+	ofxGgmlMusicGenerationResult generationResult;
+	if (ofxGgmlMusicUtils::hasOutput(generationResult)) {
+		std::cerr << "empty generation result reported as configured\n";
+		return 1;
+	}
+	generationResult.success = true;
+	generationResult.outputPath = generation.outputPath;
+	generationResult.durationSeconds = generation.settings.durationSeconds;
+	generationResult.seed = generation.settings.seed;
+	generationResult.tempo = generation.tempo;
+	generationResult.key = generation.key;
+	generationResult.stems.push_back({ "piano", "renders/piano.wav", 1.0f });
+	if (!generationResult ||
+		!ofxGgmlMusicUtils::hasOutput(generationResult) ||
+		!ofxGgmlMusicUtils::hasTempo(generationResult) ||
+		!ofxGgmlMusicUtils::hasKey(generationResult) ||
+		generationResult.stems.front().path != "renders/piano.wav") {
+		std::cerr << "generation result helpers failed\n";
+		return 1;
+	}
+
 	return 0;
 }

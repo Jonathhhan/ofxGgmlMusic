@@ -10,10 +10,12 @@
   dependency on Audio for low-level stream/chunk/feature primitives.
 - Add typed music request/result shapes for tempo, beat/downbeat, key/chord,
   embeddings, stems, and generation.
+- Add explicit prompt-to-music generation request/result shapes.
 
 ## Next Milestones
 
 - Connect the first real local backend or bridge adapter.
+- Add a prompt-to-music example once a local backend path is selected.
 - Add one useful openFrameworks example that runs with user-provided assets.
 - Add focused tests around request/result helpers.
 - Document the `clone -> setup -> run` path from a new user's point of view.

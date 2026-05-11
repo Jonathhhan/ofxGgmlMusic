@@ -22,6 +22,7 @@ No dependency should point from `ofxGgmlCore` or `ofxGgmlAudio` back to
 - music-specific request/result helpers
 - model-specific preprocessing and postprocessing
 - beat, downbeat, tempo, key, chord, chroma, stem, and arrangement workflows
+- prompt-to-music, loop, stem-targeted, and reference-audio generation workflows
 - typed result fields for beats, chords, keys, embeddings, and stems
 - focused root-level examples
 - local media/model workflow documentation

@@ -43,11 +43,30 @@ struct ofxGgmlMusicStem {
 	float gain = 1.0f;
 };
 
+struct ofxGgmlMusicGenerationSettings {
+	double durationSeconds = 8.0;
+	float guidance = 3.0f;
+	int seed = -1;
+	bool loop = false;
+};
+
 struct ofxGgmlMusicRequest {
 	std::string audioPath;
 	ofxGgmlMusicTask task = ofxGgmlMusicTask::Analysis;
 	std::string prompt;
 	std::vector<std::string> tags;
+};
+
+struct ofxGgmlMusicGenerationRequest {
+	std::string prompt;
+	std::string negativePrompt;
+	std::string style;
+	std::string referenceAudioPath;
+	std::string outputPath;
+	ofxGgmlMusicTempo tempo;
+	ofxGgmlMusicKey key;
+	ofxGgmlMusicGenerationSettings settings;
+	std::vector<std::string> targetStems;
 };
 
 struct ofxGgmlMusicResult {
@@ -59,6 +78,22 @@ struct ofxGgmlMusicResult {
 	std::vector<ofxGgmlMusicBeat> beats;
 	std::vector<ofxGgmlMusicChord> chords;
 	std::vector<float> embedding;
+	std::vector<ofxGgmlMusicStem> stems;
+	std::vector<std::string> references;
+
+	explicit operator bool() const {
+		return success;
+	}
+};
+
+struct ofxGgmlMusicGenerationResult {
+	bool success = false;
+	std::string outputPath;
+	std::string error;
+	double durationSeconds = 0.0;
+	int seed = -1;
+	ofxGgmlMusicTempo tempo;
+	ofxGgmlMusicKey key;
 	std::vector<ofxGgmlMusicStem> stems;
 	std::vector<std::string> references;
 

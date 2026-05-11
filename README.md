@@ -1,8 +1,8 @@
 # ofxGgmlMusic
 
-`ofxGgmlMusic` is the companion addon for music embeddings, beat/downbeat,
-onset/chroma helpers, tempo, key/chord workflows, stem-aware analysis, and
-generation-oriented music workflows on top of `ofxGgmlCore`.
+`ofxGgmlMusic` is the companion addon for music generation, music embeddings,
+beat/downbeat, onset/chroma helpers, tempo, key/chord workflows, stem-aware
+analysis, and arrangement tools on top of `ofxGgmlCore`.
 
 `ofxGgmlCore` stays the required dependency. `ofxGgmlAudio` may become an
 optional dependency for shared stream, chunking, PCM, and lightweight feature
@@ -28,6 +28,9 @@ The public API starts with typed music workflow shapes:
   `ofxGgmlMusicChord` for common analysis output
 - `ofxGgmlMusicStem` for stem-aware workflows
 - `ofxGgmlMusicResult` fields for beats, chords, embeddings, and stems
+- `ofxGgmlMusicGenerationRequest` and `ofxGgmlMusicGenerationResult` for
+  prompt-to-music, arrangement, loop, stem-targeted, and reference-audio
+  generation workflows
 
 Concrete backends can fill these plain C++ types without pulling low-level audio
 plumbing into the Music addon.
