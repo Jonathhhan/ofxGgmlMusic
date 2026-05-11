@@ -13,6 +13,8 @@
 - Add explicit prompt-to-music generation request/result shapes.
 - Add a generation backend-family hint, including GAN, diffusion, transformer,
   SampleRNN, and external bridge lanes.
+- Add the `ofxGgmlMusicGenerationBackend` interface and unavailable fallback
+  backend.
 
 ## Next Milestones
 

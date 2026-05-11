@@ -14,7 +14,7 @@ enum class ofxGgmlMusicTask {
 	Generation
 };
 
-enum class ofxGgmlMusicGenerationBackend {
+enum class ofxGgmlMusicGenerationBackendFamily {
 	Auto,
 	GAN,
 	Diffusion,
@@ -53,7 +53,7 @@ struct ofxGgmlMusicStem {
 };
 
 struct ofxGgmlMusicGenerationSettings {
-	ofxGgmlMusicGenerationBackend backend = ofxGgmlMusicGenerationBackend::Auto;
+	ofxGgmlMusicGenerationBackendFamily backend = ofxGgmlMusicGenerationBackendFamily::Auto;
 	double durationSeconds = 8.0;
 	float guidance = 3.0f;
 	int seed = -1;

@@ -62,7 +62,7 @@ int main() {
 	generation.negativePrompt = "vocals, drums";
 	generation.style = "ambient";
 	generation.outputPath = "renders/ambient.wav";
-	generation.settings.backend = ofxGgmlMusicGenerationBackend::GAN;
+	generation.settings.backend = ofxGgmlMusicGenerationBackendFamily::GAN;
 	generation.settings.durationSeconds = 12.0;
 	generation.settings.guidance = 4.0f;
 	generation.settings.seed = 42;
@@ -105,6 +105,33 @@ int main() {
 		!ofxGgmlMusicUtils::hasKey(generationResult) ||
 		generationResult.stems.front().path != "renders/piano.wav") {
 		std::cerr << "generation result helpers failed\n";
+		return 1;
+	}
+
+	auto backend = ofxGgmlMakeUnavailableMusicGenerationBackend(
+		ofxGgmlMusicGenerationBackendFamily::GAN,
+		"gan");
+	if (!backend ||
+		backend->getBackendName() != "gan" ||
+		backend->getBackendFamily() != ofxGgmlMusicGenerationBackendFamily::GAN ||
+		backend->isAvailable() ||
+		backend->isLoaded()) {
+		std::cerr << "unavailable generation backend reported unexpected state\n";
+		return 1;
+	}
+	const auto unavailableSetup = backend->setup(generation);
+	if (unavailableSetup ||
+		unavailableSetup.error.find("not available") == std::string::npos ||
+		unavailableSetup.seed != generation.settings.seed) {
+		std::cerr << "unavailable setup result was unexpected\n";
+		return 1;
+	}
+	const auto unavailableGeneration = backend->generate(generation);
+	if (unavailableGeneration ||
+		unavailableGeneration.error.find("not available") == std::string::npos ||
+		!ofxGgmlMusicUtils::hasTempo(unavailableGeneration) ||
+		!ofxGgmlMusicUtils::hasKey(unavailableGeneration)) {
+		std::cerr << "unavailable generation result was unexpected\n";
 		return 1;
 	}
 

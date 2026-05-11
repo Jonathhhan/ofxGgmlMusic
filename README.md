@@ -31,7 +31,7 @@ The public API starts with typed music workflow shapes:
 - `ofxGgmlMusicGenerationRequest` and `ofxGgmlMusicGenerationResult` for
   prompt-to-music, arrangement, loop, stem-targeted, and reference-audio
   generation workflows
-- `ofxGgmlMusicGenerationBackend` to describe likely backend families such as
+- `ofxGgmlMusicGenerationBackendFamily` to describe likely backend families such as
   GAN, diffusion, transformer, SampleRNN, or an external bridge
 
 Concrete backends can fill these plain C++ types without pulling low-level audio
@@ -42,6 +42,9 @@ generators or style/loop experiments. Training a GAN directly in ggml should be
 treated as experimental until the current ggml training/autograd path is proven
 locally; the first stable addon boundary should support inference or external
 training outputs before promising full in-addon adversarial training.
+Generation backends should implement `ofxGgmlMusicGenerationBackend`; the addon
+ships an unavailable stub so examples can fail clearly before a GAN, diffusion,
+transformer, SampleRNN, or external bridge runtime is installed.
 
 ## Example
 

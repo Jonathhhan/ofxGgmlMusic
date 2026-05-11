@@ -60,19 +60,19 @@ namespace ofxGgmlMusicUtils {
 		}
 	}
 
-	std::string getGenerationBackendName(ofxGgmlMusicGenerationBackend backend) {
+	std::string getGenerationBackendName(ofxGgmlMusicGenerationBackendFamily backend) {
 		switch (backend) {
-		case ofxGgmlMusicGenerationBackend::Auto:
+		case ofxGgmlMusicGenerationBackendFamily::Auto:
 			return "auto";
-		case ofxGgmlMusicGenerationBackend::GAN:
+		case ofxGgmlMusicGenerationBackendFamily::GAN:
 			return "gan";
-		case ofxGgmlMusicGenerationBackend::Diffusion:
+		case ofxGgmlMusicGenerationBackendFamily::Diffusion:
 			return "diffusion";
-		case ofxGgmlMusicGenerationBackend::Transformer:
+		case ofxGgmlMusicGenerationBackendFamily::Transformer:
 			return "transformer";
-		case ofxGgmlMusicGenerationBackend::SampleRNN:
+		case ofxGgmlMusicGenerationBackendFamily::SampleRNN:
 			return "sample-rnn";
-		case ofxGgmlMusicGenerationBackend::External:
+		case ofxGgmlMusicGenerationBackendFamily::External:
 			return "external";
 		default:
 			return "unknown";

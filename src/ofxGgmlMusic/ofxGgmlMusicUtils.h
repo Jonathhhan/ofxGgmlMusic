@@ -15,7 +15,7 @@ namespace ofxGgmlMusicUtils {
 	bool hasKey(const ofxGgmlMusicGenerationRequest & request);
 	bool hasKey(const ofxGgmlMusicGenerationResult & result);
 	std::string getTaskName(ofxGgmlMusicTask task);
-	std::string getGenerationBackendName(ofxGgmlMusicGenerationBackend backend);
+	std::string getGenerationBackendName(ofxGgmlMusicGenerationBackendFamily backend);
 	std::string formatKey(const ofxGgmlMusicKey & key);
 	std::string describe(const ofxGgmlMusicRequest & request);
 	std::string describe(const ofxGgmlMusicGenerationRequest & request);
