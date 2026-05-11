@@ -22,6 +22,8 @@ No dependency should point from `ofxGgmlCore` or `ofxGgmlAudio` back to
 - music-specific request/result helpers
 - lightweight music media helpers such as PCM16 WAV write/read used by examples
   and generation smoke tests
+- generation manifests that record prompt, backend, seed, tempo, key, audio
+  stats, and references next to rendered audio
 - model-specific preprocessing and postprocessing
 - beat, downbeat, tempo, key, chord, chroma, stem, and arrangement workflows
 - prompt-to-music, loop, stem-targeted, and reference-audio generation workflows

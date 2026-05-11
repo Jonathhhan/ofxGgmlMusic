@@ -98,9 +98,13 @@ struct ofxGgmlMusicResult {
 struct ofxGgmlMusicGenerationResult {
 	bool success = false;
 	std::string outputPath;
+	std::string manifestPath;
 	std::string error;
 	double durationSeconds = 0.0;
 	int seed = -1;
+	int sampleRate = 0;
+	int channels = 0;
+	float peakAbs = 0.0f;
 	ofxGgmlMusicTempo tempo;
 	ofxGgmlMusicKey key;
 	std::vector<ofxGgmlMusicStem> stems;

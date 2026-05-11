@@ -47,14 +47,17 @@ small `procedural-sketch` backend that writes deterministic prompt-conditioned
 WAV files. That backend is model-free and exists to make the generation workflow
 testable before a real model bridge is selected. Shared WAV helpers live in
 `ofxGgmlMusicAudioUtils` so examples and future backends can write and inspect
-simple PCM16 files through one path.
+simple PCM16 files through one path. Generation results also carry a manifest
+path; backends can write a `.wav.json` sidecar with prompt, backend, seed, tempo,
+key, duration, sample rate, peak level, and references.
 
 ## Example
 
 `ofxGgmlMusicAnalysisExample` is a root-level audio analysis request smoke test.
 `ofxGgmlMusicGenerationExample` is a root-level prompt-to-music sketch that
 writes a WAV file with the built-in `procedural-sketch` backend and draws a
-waveform preview after generation. Generate either example with the
+waveform preview after generation. It also writes a `.wav.json` manifest next to
+the audio file. Generate either example with the
 openFrameworks projectGenerator using addons `ofxGgmlMusic`, `ofxGgmlCore`, and
 `ofxImGui`.
 

@@ -1,5 +1,42 @@
 #include "ofxGgmlMusicUtils.h"
 
+#include <filesystem>
+#include <fstream>
+#include <sstream>
+
+namespace {
+	std::string escapeJson(const std::string & text) {
+		std::ostringstream escaped;
+		for (const auto c : text) {
+			switch (c) {
+			case '\\':
+				escaped << "\\\\";
+				break;
+			case '"':
+				escaped << "\\\"";
+				break;
+			case '\n':
+				escaped << "\\n";
+				break;
+			case '\r':
+				escaped << "\\r";
+				break;
+			case '\t':
+				escaped << "\\t";
+				break;
+			default:
+				escaped << c;
+				break;
+			}
+		}
+		return escaped.str();
+	}
+
+	std::string quoteJson(const std::string & text) {
+		return "\"" + escapeJson(text) + "\"";
+	}
+}
+
 namespace ofxGgmlMusicUtils {
 	bool hasInput(const ofxGgmlMusicRequest & request) {
 		return !request.audioPath.empty();
@@ -111,5 +148,91 @@ namespace ofxGgmlMusicUtils {
 			description += " in " + key;
 		}
 		return description;
+	}
+
+	std::string getGenerationManifestPath(const std::string & outputPath) {
+		if (outputPath.empty()) {
+			return "";
+		}
+		return outputPath + ".json";
+	}
+
+	std::string serializeGenerationManifest(
+		const ofxGgmlMusicGenerationRequest & request,
+		const ofxGgmlMusicGenerationResult & result,
+		const std::string & backendName) {
+		std::ostringstream json;
+		json << "{\n";
+		json << "  \"backend\": " << quoteJson(backendName) << ",\n";
+		json << "  \"backendFamily\": " << quoteJson(getGenerationBackendName(request.settings.backend)) << ",\n";
+		json << "  \"prompt\": " << quoteJson(request.prompt) << ",\n";
+		json << "  \"negativePrompt\": " << quoteJson(request.negativePrompt) << ",\n";
+		json << "  \"style\": " << quoteJson(request.style) << ",\n";
+		json << "  \"referenceAudioPath\": " << quoteJson(request.referenceAudioPath) << ",\n";
+		json << "  \"outputPath\": " << quoteJson(result.outputPath) << ",\n";
+		json << "  \"manifestPath\": " << quoteJson(result.manifestPath) << ",\n";
+		json << "  \"seed\": " << result.seed << ",\n";
+		json << "  \"durationSeconds\": " << result.durationSeconds << ",\n";
+		json << "  \"sampleRate\": " << result.sampleRate << ",\n";
+		json << "  \"channels\": " << result.channels << ",\n";
+		json << "  \"peakAbs\": " << result.peakAbs << ",\n";
+		json << "  \"tempo\": {\n";
+		json << "    \"bpm\": " << result.tempo.bpm << ",\n";
+		json << "    \"confidence\": " << result.tempo.confidence << "\n";
+		json << "  },\n";
+		json << "  \"key\": {\n";
+		json << "    \"tonic\": " << quoteJson(result.key.tonic) << ",\n";
+		json << "    \"mode\": " << quoteJson(result.key.mode) << ",\n";
+		json << "    \"confidence\": " << result.key.confidence << "\n";
+		json << "  },\n";
+		json << "  \"loop\": " << (request.settings.loop ? "true" : "false") << ",\n";
+		json << "  \"targetStems\": [";
+		for (std::size_t i = 0; i < request.targetStems.size(); ++i) {
+			if (i > 0) {
+				json << ", ";
+			}
+			json << quoteJson(request.targetStems[i]);
+		}
+		json << "],\n";
+		json << "  \"references\": [";
+		for (std::size_t i = 0; i < result.references.size(); ++i) {
+			if (i > 0) {
+				json << ", ";
+			}
+			json << quoteJson(result.references[i]);
+		}
+		json << "]\n";
+		json << "}\n";
+		return json.str();
+	}
+
+	bool writeGenerationManifest(
+		const ofxGgmlMusicGenerationRequest & request,
+		const ofxGgmlMusicGenerationResult & result,
+		const std::string & backendName,
+		std::string & error) {
+		error.clear();
+		if (result.manifestPath.empty()) {
+			error = "generation manifest path is empty";
+			return false;
+		}
+
+		std::filesystem::path manifestPath(result.manifestPath);
+		if (manifestPath.has_parent_path()) {
+			std::error_code code;
+			std::filesystem::create_directories(manifestPath.parent_path(), code);
+			if (code) {
+				error = "could not create generation manifest directory";
+				return false;
+			}
+		}
+
+		std::ofstream output(result.manifestPath, std::ios::out | std::ios::trunc);
+		if (!output) {
+			error = "could not open generation manifest path";
+			return false;
+		}
+		output << serializeGenerationManifest(request, result, backendName);
+		return true;
 	}
 }

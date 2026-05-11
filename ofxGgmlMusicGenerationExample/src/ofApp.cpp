@@ -67,6 +67,7 @@ void ofApp::runGeneration() {
 
 	const auto setupResult = backend->setup(request);
 	if (!setupResult) {
+		lastResult = setupResult;
 		status = "setup failed";
 		detail = setupResult.error;
 		ofLogWarning("ofxGgmlMusicGenerationExample") << detail;
@@ -75,12 +76,14 @@ void ofApp::runGeneration() {
 
 	const auto result = backend->generate(request);
 	if (!result) {
+		lastResult = result;
 		status = "generation failed";
 		detail = result.error;
 		ofLogWarning("ofxGgmlMusicGenerationExample") << detail;
 		return;
 	}
 
+	lastResult = result;
 	status = "complete";
 	detail = "Wrote " + result.outputPath;
 	player.stop();
@@ -151,6 +154,15 @@ void ofApp::draw() {
 	ImGui::TextWrapped("%s", detail.c_str());
 	ImGui::TextWrapped("%s", ofxGgmlMusicUtils::describe(request).c_str());
 	ImGui::TextWrapped("Output: %s", request.outputPath.c_str());
+	if (!lastResult.manifestPath.empty()) {
+		ImGui::TextWrapped("Manifest: %s", lastResult.manifestPath.c_str());
+	}
+	if (lastResult.sampleRate > 0) {
+		ImGui::Text("Audio: %.2f s, %d Hz, peak %.2f",
+			lastResult.durationSeconds,
+			lastResult.sampleRate,
+			lastResult.peakAbs);
+	}
 
 	ImGui::End();
 	gui.end();

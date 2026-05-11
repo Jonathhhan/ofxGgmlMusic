@@ -25,6 +25,7 @@ private:
 	ofxImGui::Gui gui;
 	std::unique_ptr<ofxGgmlMusicGenerationBackend> backend;
 	ofxGgmlMusicGenerationRequest request;
+	ofxGgmlMusicGenerationResult lastResult;
 	ofxGgmlMusicAudioBuffer waveform;
 	ofSoundPlayer player;
 	std::array<char, 512> promptBuffer{};

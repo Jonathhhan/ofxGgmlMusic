@@ -108,18 +108,33 @@ int main() {
 	}
 	generationResult.success = true;
 	generationResult.outputPath = generation.outputPath;
+	generationResult.manifestPath = ofxGgmlMusicUtils::getGenerationManifestPath(generation.outputPath);
 	generationResult.durationSeconds = generation.settings.durationSeconds;
 	generationResult.seed = generation.settings.seed;
+	generationResult.sampleRate = 44100;
+	generationResult.channels = 1;
+	generationResult.peakAbs = 0.8f;
 	generationResult.tempo = generation.tempo;
 	generationResult.key = generation.key;
 	generationResult.stems.push_back({ "piano", "renders/piano.wav", 1.0f });
 	if (ofxGgmlMusicUtils::getGenerationBackendName(generation.settings.backend) != "transformer" ||
 		!generationResult ||
 		!ofxGgmlMusicUtils::hasOutput(generationResult) ||
+		generationResult.manifestPath.find(".wav.json") == std::string::npos ||
 		!ofxGgmlMusicUtils::hasTempo(generationResult) ||
 		!ofxGgmlMusicUtils::hasKey(generationResult) ||
 		generationResult.stems.front().path != "renders/piano.wav") {
 		std::cerr << "generation result helpers failed\n";
+		return 1;
+	}
+	const auto manifestText = ofxGgmlMusicUtils::serializeGenerationManifest(
+		generation,
+		generationResult,
+		"transformer");
+	if (manifestText.find("\"prompt\"") == std::string::npos ||
+		manifestText.find("ambient piano") == std::string::npos ||
+		manifestText.find("\"sampleRate\": 44100") == std::string::npos) {
+		std::cerr << "generation manifest serialization failed\n";
 		return 1;
 	}
 
@@ -137,7 +152,8 @@ int main() {
 	const auto unavailableSetup = backend->setup(generation);
 	if (unavailableSetup ||
 		unavailableSetup.error.find("not available") == std::string::npos ||
-		unavailableSetup.seed != generation.settings.seed) {
+		unavailableSetup.seed != generation.settings.seed ||
+		unavailableSetup.manifestPath.empty()) {
 		std::cerr << "unavailable setup result was unexpected\n";
 		return 1;
 	}
@@ -200,9 +216,14 @@ int main() {
 	if (!proceduralResult ||
 		!ofxGgmlMusicUtils::hasOutput(proceduralResult) ||
 		proceduralResult.outputPath != generation.outputPath ||
+		proceduralResult.manifestPath != ofxGgmlMusicUtils::getGenerationManifestPath(generation.outputPath) ||
 		proceduralResult.durationSeconds <= 0.0 ||
+		proceduralResult.sampleRate != 44100 ||
+		proceduralResult.channels != 1 ||
+		proceduralResult.peakAbs <= 0.0f ||
 		proceduralResult.references.empty() ||
 		!std::filesystem::exists(tempOutput) ||
+		!std::filesystem::exists(proceduralResult.manifestPath) ||
 		std::filesystem::file_size(tempOutput) <= 44 ||
 		!fileStartsWith(tempOutput, "RIFF") ||
 		!ofxGgmlMusicAudioUtils::loadWav16(tempOutput.string(), generatedBuffer, wavError) ||
@@ -212,12 +233,17 @@ int main() {
 		std::cerr << "procedural generation failed to write a wav file\n";
 		return 1;
 	}
+	if (!fileStartsWith(proceduralResult.manifestPath, "{")) {
+		std::cerr << "procedural generation failed to write a manifest file\n";
+		return 1;
+	}
 	procedural->close();
 	if (procedural->isLoaded()) {
 		std::cerr << "procedural backend did not unload\n";
 		return 1;
 	}
 	std::filesystem::remove(tempOutput);
+	std::filesystem::remove(proceduralResult.manifestPath);
 
 	return 0;
 }

@@ -19,4 +19,14 @@ namespace ofxGgmlMusicUtils {
 	std::string formatKey(const ofxGgmlMusicKey & key);
 	std::string describe(const ofxGgmlMusicRequest & request);
 	std::string describe(const ofxGgmlMusicGenerationRequest & request);
+	std::string getGenerationManifestPath(const std::string & outputPath);
+	std::string serializeGenerationManifest(
+		const ofxGgmlMusicGenerationRequest & request,
+		const ofxGgmlMusicGenerationResult & result,
+		const std::string & backendName);
+	bool writeGenerationManifest(
+		const ofxGgmlMusicGenerationRequest & request,
+		const ofxGgmlMusicGenerationResult & result,
+		const std::string & backendName,
+		std::string & error);
 }

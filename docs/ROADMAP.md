@@ -19,6 +19,8 @@
   example so prompt-to-music writes an actual WAV before model bridges land.
 - Add shared PCM16 WAV utilities and a waveform preview for the generation
   example.
+- Add generation manifests so rendered WAVs keep prompt/backend/seed/audio
+  provenance beside the file.
 
 ## Next Milestones
 
