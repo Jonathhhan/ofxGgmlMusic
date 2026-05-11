@@ -23,8 +23,8 @@ No dependency should point from `ofxGgmlCore` or `ofxGgmlAudio` back to
 - model-specific preprocessing and postprocessing
 - beat, downbeat, tempo, key, chord, chroma, stem, and arrangement workflows
 - prompt-to-music, loop, stem-targeted, and reference-audio generation workflows
-- generation backend-family selection for GAN, diffusion, transformer,
-  SampleRNN, and external bridge implementations
+- generation backend-family selection for diffusion, transformer, SampleRNN,
+  and external bridge implementations
 - `ofxGgmlMusicGenerationBackend` implementations for concrete generation
   runtimes
 - typed result fields for beats, chords, keys, embeddings, and stems

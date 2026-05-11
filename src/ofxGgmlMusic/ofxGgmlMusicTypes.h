@@ -16,7 +16,6 @@ enum class ofxGgmlMusicTask {
 
 enum class ofxGgmlMusicGenerationBackendFamily {
 	Auto,
-	GAN,
 	Diffusion,
 	Transformer,
 	SampleRNN,

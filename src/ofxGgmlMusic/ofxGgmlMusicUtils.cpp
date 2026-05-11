@@ -64,8 +64,6 @@ namespace ofxGgmlMusicUtils {
 		switch (backend) {
 		case ofxGgmlMusicGenerationBackendFamily::Auto:
 			return "auto";
-		case ofxGgmlMusicGenerationBackendFamily::GAN:
-			return "gan";
 		case ofxGgmlMusicGenerationBackendFamily::Diffusion:
 			return "diffusion";
 		case ofxGgmlMusicGenerationBackendFamily::Transformer:
