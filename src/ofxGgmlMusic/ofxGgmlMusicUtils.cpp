@@ -60,6 +60,25 @@ namespace ofxGgmlMusicUtils {
 		}
 	}
 
+	std::string getGenerationBackendName(ofxGgmlMusicGenerationBackend backend) {
+		switch (backend) {
+		case ofxGgmlMusicGenerationBackend::Auto:
+			return "auto";
+		case ofxGgmlMusicGenerationBackend::GAN:
+			return "gan";
+		case ofxGgmlMusicGenerationBackend::Diffusion:
+			return "diffusion";
+		case ofxGgmlMusicGenerationBackend::Transformer:
+			return "transformer";
+		case ofxGgmlMusicGenerationBackend::SampleRNN:
+			return "sample-rnn";
+		case ofxGgmlMusicGenerationBackend::External:
+			return "external";
+		default:
+			return "unknown";
+		}
+	}
+
 	std::string formatKey(const ofxGgmlMusicKey & key) {
 		if (key.tonic.empty() && key.mode.empty()) {
 			return "";
@@ -84,7 +103,8 @@ namespace ofxGgmlMusicUtils {
 		if (!hasPrompt(request)) {
 			return "music generation: empty prompt";
 		}
-		auto description = "music generation: " + request.prompt;
+		auto description = "music generation: " + request.prompt +
+			" [" + getGenerationBackendName(request.settings.backend) + "]";
 		if (hasTempo(request)) {
 			description += " @ " + std::to_string(static_cast<int>(request.tempo.bpm)) + " bpm";
 		}

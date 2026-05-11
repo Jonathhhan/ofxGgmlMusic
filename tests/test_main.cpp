@@ -62,6 +62,7 @@ int main() {
 	generation.negativePrompt = "vocals, drums";
 	generation.style = "ambient";
 	generation.outputPath = "renders/ambient.wav";
+	generation.settings.backend = ofxGgmlMusicGenerationBackend::GAN;
 	generation.settings.durationSeconds = 12.0;
 	generation.settings.guidance = 4.0f;
 	generation.settings.seed = 42;
@@ -78,6 +79,7 @@ int main() {
 	}
 	const auto generationDescription = ofxGgmlMusicUtils::describe(generation);
 	if (generationDescription.find("ambient piano") == std::string::npos ||
+		generationDescription.find("gan") == std::string::npos ||
 		generationDescription.find("92 bpm") == std::string::npos ||
 		generationDescription.find("D major") == std::string::npos) {
 		std::cerr << "generation description missing prompt/tempo/key\n";
@@ -96,7 +98,8 @@ int main() {
 	generationResult.tempo = generation.tempo;
 	generationResult.key = generation.key;
 	generationResult.stems.push_back({ "piano", "renders/piano.wav", 1.0f });
-	if (!generationResult ||
+	if (ofxGgmlMusicUtils::getGenerationBackendName(generation.settings.backend) != "gan" ||
+		!generationResult ||
 		!ofxGgmlMusicUtils::hasOutput(generationResult) ||
 		!ofxGgmlMusicUtils::hasTempo(generationResult) ||
 		!ofxGgmlMusicUtils::hasKey(generationResult) ||

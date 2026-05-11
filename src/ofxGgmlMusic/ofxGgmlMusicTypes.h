@@ -14,6 +14,15 @@ enum class ofxGgmlMusicTask {
 	Generation
 };
 
+enum class ofxGgmlMusicGenerationBackend {
+	Auto,
+	GAN,
+	Diffusion,
+	Transformer,
+	SampleRNN,
+	External
+};
+
 struct ofxGgmlMusicBeat {
 	double timeSeconds = 0.0;
 	float confidence = 0.0f;
@@ -44,6 +53,7 @@ struct ofxGgmlMusicStem {
 };
 
 struct ofxGgmlMusicGenerationSettings {
+	ofxGgmlMusicGenerationBackend backend = ofxGgmlMusicGenerationBackend::Auto;
 	double durationSeconds = 8.0;
 	float guidance = 3.0f;
 	int seed = -1;
