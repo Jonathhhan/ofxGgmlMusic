@@ -145,6 +145,7 @@ void ofApp::runGeneration() {
 	lastResult = result;
 	status = "complete";
 	detail = "Wrote " + result.outputPath;
+	refreshGenerationHistory();
 	player.stop();
 	player.load(result.outputPath);
 	player.setLoop(loop);
@@ -165,12 +166,11 @@ std::string ofApp::getManifestPath() const {
 	return ofxGgmlMusicUtils::getGenerationManifestPath(getOutputPath());
 }
 
-void ofApp::loadExistingRender() {
-	const auto manifestPath = getManifestPath();
-	if (!ofFile::doesFileExist(manifestPath, false)) {
-		return;
-	}
+std::string ofApp::getHistoryPath() const {
+	return ofxGgmlMusicUtils::getGenerationHistoryPath(getOutputPath());
+}
 
+void ofApp::loadRenderManifest(const std::string & manifestPath) {
 	std::string error;
 	ofxGgmlMusicGenerationResult loaded;
 	if (!ofxGgmlMusicUtils::loadGenerationManifest(manifestPath, loaded, error)) {
@@ -191,6 +191,38 @@ void ofApp::loadExistingRender() {
 	} else {
 		status = "manifest loaded";
 		detail = "Audio file missing: " + lastResult.outputPath;
+	}
+}
+
+void ofApp::refreshGenerationHistory() {
+	historyManifestPaths.clear();
+	const auto historyPath = getHistoryPath();
+	if (!ofFile::doesFileExist(historyPath, false)) {
+		historyIndex = 0;
+		return;
+	}
+
+	std::string error;
+	if (!ofxGgmlMusicUtils::loadGenerationHistory(historyPath, historyManifestPaths, error)) {
+		historyIndex = 0;
+		ofLogWarning("ofxGgmlMusicGenerationExample") << error;
+		return;
+	}
+	if (historyIndex >= static_cast<int>(historyManifestPaths.size())) {
+		historyIndex = 0;
+	}
+}
+
+void ofApp::loadExistingRender() {
+	refreshGenerationHistory();
+	if (!historyManifestPaths.empty()) {
+		loadRenderManifest(historyManifestPaths[historyIndex]);
+		return;
+	}
+
+	const auto manifestPath = getManifestPath();
+	if (ofFile::doesFileExist(manifestPath, false)) {
+		loadRenderManifest(manifestPath);
 	}
 }
 
@@ -262,6 +294,23 @@ void ofApp::draw() {
 	ImGui::TextWrapped("Output: %s", request.outputPath.c_str());
 	if (!lastResult.manifestPath.empty()) {
 		ImGui::TextWrapped("Manifest: %s", lastResult.manifestPath.c_str());
+	}
+	if (!historyManifestPaths.empty()) {
+		const auto recentLabel = ofFilePath::getFileName(historyManifestPaths[historyIndex]);
+		if (ImGui::BeginCombo("Recent", recentLabel.c_str())) {
+			for (int i = 0; i < static_cast<int>(historyManifestPaths.size()); ++i) {
+				const bool selected = i == historyIndex;
+				const auto label = ofToString(i + 1) + ": " + ofFilePath::getFileName(historyManifestPaths[i]);
+				if (ImGui::Selectable(label.c_str(), selected)) {
+					historyIndex = i;
+					loadRenderManifest(historyManifestPaths[historyIndex]);
+				}
+				if (selected) {
+					ImGui::SetItemDefaultFocus();
+				}
+			}
+			ImGui::EndCombo();
+		}
 	}
 	if (lastResult.sampleRate > 0) {
 		ImGui::Text("Audio: %.2f s, %d Hz, peak %.2f",

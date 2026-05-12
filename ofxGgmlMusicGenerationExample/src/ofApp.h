@@ -7,6 +7,7 @@
 #include <array>
 #include <memory>
 #include <string>
+#include <vector>
 
 class ofApp : public ofBaseApp {
 public:
@@ -21,10 +22,13 @@ private:
 	void applyPreset(int index);
 	void syncControlsFromRequest();
 	void loadExistingRender();
+	void loadRenderManifest(const std::string & manifestPath);
+	void refreshGenerationHistory();
 	void loadWaveform();
 	void drawWaveform(float x, float y, float width, float height);
 	std::string getOutputPath() const;
 	std::string getManifestPath() const;
+	std::string getHistoryPath() const;
 
 	ofxImGui::Gui gui;
 	std::unique_ptr<ofxGgmlMusicGenerationBackend> backend;
@@ -34,12 +38,14 @@ private:
 	ofSoundPlayer player;
 	std::array<char, 512> promptBuffer{};
 	std::array<char, 64> styleBuffer{};
+	std::vector<std::string> historyManifestPaths;
 	std::string status;
 	std::string detail;
 	float tempo = 92.0f;
 	float duration = 8.0f;
 	int seed = 42;
 	int presetIndex = 0;
+	int historyIndex = 0;
 	int tonicIndex = 0;
 	int modeIndex = 0;
 	bool loop = true;

@@ -61,8 +61,9 @@ guessing output filenames.
 writes a WAV file with the built-in `procedural-sketch` backend and draws a
 waveform preview after generation. It also writes a `.wav.json` manifest next to
 the audio file, can export melody/bass/pulse stems, and overlays beat/chord timing
-on the waveform. The generation example reloads the previous standard render
-manifest on startup when available. Generate either example with the
+on the waveform. The generation example reloads recent renders from the history
+index on startup when available, falling back to the standard render manifest.
+Generate either example with the
 openFrameworks projectGenerator using addons `ofxGgmlMusic`, `ofxGgmlCore`, and
 `ofxImGui`.
 
