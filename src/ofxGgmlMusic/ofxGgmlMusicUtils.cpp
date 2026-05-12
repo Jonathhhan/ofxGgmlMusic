@@ -466,6 +466,7 @@ namespace ofxGgmlMusicUtils {
 		json << "  \"manifestPath\": " << quoteJson(result.manifestPath) << ",\n";
 		json << "  \"historyPath\": " << quoteJson(result.historyPath) << ",\n";
 		json << "  \"midiPath\": " << quoteJson(result.midiPath) << ",\n";
+		json << "  \"chordMidiPath\": " << quoteJson(result.chordMidiPath) << ",\n";
 		json << "  \"seed\": " << result.seed << ",\n";
 		json << "  \"durationSeconds\": " << result.durationSeconds << ",\n";
 		json << "  \"sampleRate\": " << result.sampleRate << ",\n";
@@ -581,6 +582,7 @@ namespace ofxGgmlMusicUtils {
 		}
 		result.historyPath = extractString(text, "historyPath");
 		result.midiPath = extractString(text, "midiPath");
+		result.chordMidiPath = extractString(text, "chordMidiPath");
 		result.seed = extractInt(text, "seed", -1);
 		result.durationSeconds = extractDouble(text, "durationSeconds");
 		result.sampleRate = extractInt(text, "sampleRate");

@@ -142,6 +142,7 @@ Assert-Path ($cliOutput + ".json") "procedural generation CLI manifest"
 $historyPath = Join-Path $scratchDir "ofxGgmlMusic-history.json"
 Assert-Path $historyPath "procedural generation CLI history"
 Assert-Path (Join-Path $scratchDir "procedural-melody.mid") "procedural generation CLI melody midi"
+Assert-Path (Join-Path $scratchDir "procedural-chords.mid") "procedural generation CLI chord midi"
 Assert-Path (Join-Path $scratchDir "procedural-melody.wav") "procedural generation CLI melody stem"
 Assert-Path (Join-Path $scratchDir "procedural-bass.wav") "procedural generation CLI bass stem"
 $cliExe = if (!($IsLinux -or $IsMacOS)) {

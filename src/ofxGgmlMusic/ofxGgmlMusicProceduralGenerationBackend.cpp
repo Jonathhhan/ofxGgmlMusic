@@ -22,6 +22,7 @@ namespace {
 		std::vector<float> bass;
 		std::vector<float> pulse;
 		std::vector<ofxGgmlMusicMidiNote> melodyNotes;
+		std::vector<ofxGgmlMusicMidiNote> chordNotes;
 	};
 
 	int tonicToMidi(const ofxGgmlMusicKey & key) {
@@ -146,16 +147,35 @@ namespace {
 		return fileName;
 	}
 
-	std::string makeMidiOutputPath(const std::string & outputPath) {
+	std::string makeMidiOutputPath(const std::string & outputPath, const std::string & suffix) {
 		if (outputPath.empty()) {
 			return "";
 		}
 		const std::filesystem::path output(outputPath);
-		const auto fileName = output.stem().string() + "-melody.mid";
+		const auto fileName = output.stem().string() + "-" + suffix + ".mid";
 		if (output.has_parent_path()) {
 			return (output.parent_path() / fileName).string();
 		}
 		return fileName;
+	}
+
+	void appendChordNotes(
+		std::vector<ofxGgmlMusicMidiNote> & notes,
+		double startSeconds,
+		double durationSeconds,
+		int root,
+		bool minor) {
+		const std::vector<int> intervals = minor
+			? std::vector<int>{ 0, 3, 7 }
+			: std::vector<int>{ 0, 4, 7 };
+		for (const auto interval : intervals) {
+			notes.push_back({
+				startSeconds,
+				durationSeconds,
+				root + interval,
+				70
+			});
+		}
 	}
 
 	const std::vector<float> * getStemSamples(const RenderedSketch & rendered, const std::string & stemName) {
@@ -199,6 +219,26 @@ namespace {
 				scale[melodyIndex],
 				86
 			});
+		}
+		const bool minor = request.key.mode == "minor" || request.key.mode == "aeolian";
+		const std::vector<int> chordIntervals = minor
+			? std::vector<int>{ 0, 8, 3, 10 }
+			: std::vector<int>{ 0, 9, 5, 7 };
+		const double barSeconds = beatSeconds * 4.0;
+		const int root = tonicToMidi(request.key) - 12;
+		for (int bar = 0; ; ++bar) {
+			const double start = static_cast<double>(bar) * barSeconds;
+			if (start >= duration) {
+				break;
+			}
+			const auto interval = chordIntervals[static_cast<std::size_t>(bar % static_cast<int>(chordIntervals.size()))];
+			const auto remaining = std::max(0.1, duration - start);
+			appendChordNotes(
+				rendered.chordNotes,
+				start,
+				std::min(barSeconds * 0.92, remaining),
+				root + interval,
+				minor);
 		}
 
 		for (std::size_t i = 0; i < sampleCount; ++i) {
@@ -272,7 +312,8 @@ ofxGgmlMusicGenerationResult ofxGgmlMusicProceduralGenerationBackend::setup(
 	result.key = request.key;
 	result.manifestPath = ofxGgmlMusicUtils::getGenerationManifestPath(request.outputPath);
 	result.historyPath = ofxGgmlMusicUtils::getGenerationHistoryPath(request.outputPath);
-	result.midiPath = makeMidiOutputPath(request.outputPath);
+	result.midiPath = makeMidiOutputPath(request.outputPath, "melody");
+	result.chordMidiPath = makeMidiOutputPath(request.outputPath, "chords");
 	result.success = true;
 	loaded = true;
 	return result;
@@ -288,7 +329,8 @@ ofxGgmlMusicGenerationResult ofxGgmlMusicProceduralGenerationBackend::generate(
 	result.outputPath = request.outputPath;
 	result.manifestPath = ofxGgmlMusicUtils::getGenerationManifestPath(request.outputPath);
 	result.historyPath = ofxGgmlMusicUtils::getGenerationHistoryPath(request.outputPath);
-	result.midiPath = makeMidiOutputPath(request.outputPath);
+	result.midiPath = makeMidiOutputPath(request.outputPath, "melody");
+	result.chordMidiPath = makeMidiOutputPath(request.outputPath, "chords");
 	result.references.push_back("procedural-sketch");
 
 	if (!ofxGgmlMusicUtils::hasPrompt(request)) {
@@ -319,6 +361,10 @@ ofxGgmlMusicGenerationResult ofxGgmlMusicProceduralGenerationBackend::generate(
 	}
 	if (!ofxGgmlMusicMidiUtils::writeMidiFile(result.midiPath, rendered.melodyNotes, request.tempo.bpm, writeError)) {
 		result.error = "could not write midi output: " + writeError;
+		return result;
+	}
+	if (!ofxGgmlMusicMidiUtils::writeMidiFile(result.chordMidiPath, rendered.chordNotes, request.tempo.bpm, writeError)) {
+		result.error = "could not write chord midi output: " + writeError;
 		return result;
 	}
 

@@ -101,6 +101,7 @@ struct ofxGgmlMusicGenerationResult {
 	std::string manifestPath;
 	std::string historyPath;
 	std::string midiPath;
+	std::string chordMidiPath;
 	std::string error;
 	double durationSeconds = 0.0;
 	int seed = -1;
