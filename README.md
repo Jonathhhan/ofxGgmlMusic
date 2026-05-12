@@ -92,6 +92,9 @@ growing indefinitely, prune older history entries and their generated artifacts:
 tools\ofxGgmlMusicGenerate\build\ofxGgmlMusicGenerate.exe --prune-history C:\temp\ofxGgmlMusic-history.json --keep 8
 ```
 
+Add `--json` to render, inspect, history, or prune commands when another tool
+needs machine-readable output.
+
 ## Dependencies
 
 - openFrameworks

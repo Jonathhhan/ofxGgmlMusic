@@ -155,9 +155,17 @@ $cliExe = if (!($IsLinux -or $IsMacOS)) {
 if ($LASTEXITCODE -ne 0) {
 	throw "Procedural generation manifest inspection failed with exit code $LASTEXITCODE"
 }
+$inspectJson = & $cliExe --inspect ($cliOutput + ".json") --json
+if ($LASTEXITCODE -ne 0 -or ($inspectJson -join "`n") -notmatch '"outputPath"') {
+	throw "Procedural generation JSON inspection failed"
+}
 & $cliExe --history $historyPath
 if ($LASTEXITCODE -ne 0) {
 	throw "Procedural generation history inspection failed with exit code $LASTEXITCODE"
+}
+$historyJson = & $cliExe --history $historyPath --json
+if ($LASTEXITCODE -ne 0 -or ($historyJson -join "`n") -notmatch '"manifests"') {
+	throw "Procedural generation JSON history inspection failed"
 }
 $secondOutput = Join-Path $scratchDir "procedural-two.wav"
 & $cliExe `
@@ -184,6 +192,10 @@ Assert-Path $secondOutput "newest procedural generation CLI wav after prune"
 & $cliExe --history $historyPath
 if ($LASTEXITCODE -ne 0) {
 	throw "Procedural generation history inspection after prune failed with exit code $LASTEXITCODE"
+}
+$pruneJson = & $cliExe --prune-history $historyPath --keep 1 --json
+if ($LASTEXITCODE -ne 0 -or ($pruneJson -join "`n") -notmatch '"kept"') {
+	throw "Procedural generation JSON prune failed"
 }
 Remove-Item -LiteralPath $scratchDir -Recurse -Force
 

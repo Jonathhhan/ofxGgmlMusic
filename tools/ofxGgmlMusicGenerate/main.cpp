@@ -24,7 +24,8 @@ namespace {
 			<< "  --key TONIC        Key tonic, for example C, D, Bb\n"
 			<< "  --mode MODE        major or minor\n"
 			<< "  --loop             Render loop-friendly audio\n"
-			<< "  --stem NAME        Export a stem: melody, bass, pulse, mix\n";
+			<< "  --stem NAME        Export a stem: melody, bass, pulse, mix\n"
+			<< "  --json             Print machine-readable JSON output\n";
 	}
 
 	bool readValue(int & index, int argc, char ** argv, std::string & value) {
@@ -33,6 +34,113 @@ namespace {
 		}
 		value = argv[++index];
 		return true;
+	}
+
+	bool hasFlag(int argc, char ** argv, const std::string & flag) {
+		for (int i = 1; i < argc; ++i) {
+			if (argv[i] == flag) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	std::string escapeJson(const std::string & text) {
+		std::string escaped;
+		for (const auto c : text) {
+			switch (c) {
+			case '\\':
+				escaped += "\\\\";
+				break;
+			case '"':
+				escaped += "\\\"";
+				break;
+			case '\n':
+				escaped += "\\n";
+				break;
+			case '\r':
+				escaped += "\\r";
+				break;
+			case '\t':
+				escaped += "\\t";
+				break;
+			default:
+				escaped.push_back(c);
+				break;
+			}
+		}
+		return escaped;
+	}
+
+	std::string quoteJson(const std::string & text) {
+		return "\"" + escapeJson(text) + "\"";
+	}
+
+	void printResultJson(
+		const ofxGgmlMusicGenerationResult & result,
+		const std::string & presetName = "") {
+		std::cout << "{\n";
+		std::cout << "  \"outputPath\": " << quoteJson(result.outputPath) << ",\n";
+		if (!presetName.empty()) {
+			std::cout << "  \"preset\": " << quoteJson(presetName) << ",\n";
+		}
+		std::cout << "  \"manifestPath\": " << quoteJson(result.manifestPath) << ",\n";
+		std::cout << "  \"historyPath\": " << quoteJson(result.historyPath) << ",\n";
+		std::cout << "  \"midiPath\": " << quoteJson(result.midiPath) << ",\n";
+		std::cout << "  \"chordMidiPath\": " << quoteJson(result.chordMidiPath) << ",\n";
+		std::cout << "  \"arrangementMidiPath\": " << quoteJson(result.arrangementMidiPath) << ",\n";
+		std::cout << "  \"durationSeconds\": " << result.durationSeconds << ",\n";
+		std::cout << "  \"sampleRate\": " << result.sampleRate << ",\n";
+		std::cout << "  \"peakAbs\": " << result.peakAbs << ",\n";
+		std::cout << "  \"beats\": " << result.beats.size() << ",\n";
+		std::cout << "  \"chords\": " << result.chords.size() << ",\n";
+		std::cout << "  \"sections\": " << result.sections.size() << ",\n";
+		std::cout << "  \"stems\": " << result.stems.size() << "\n";
+		std::cout << "}\n";
+	}
+
+	void printResultText(
+		const ofxGgmlMusicGenerationResult & result,
+		const std::string & presetName = "") {
+		std::cout << "output: " << result.outputPath << "\n";
+		if (!presetName.empty()) {
+			std::cout << "preset: " << presetName << "\n";
+		}
+		std::cout << "manifest: " << result.manifestPath << "\n";
+		std::cout << "history: " << result.historyPath << "\n";
+		std::cout << "midi: " << result.midiPath << "\n";
+		std::cout << "chord midi: " << result.chordMidiPath << "\n";
+		std::cout << "arrangement midi: " << result.arrangementMidiPath << "\n";
+		std::cout << "duration: " << result.durationSeconds << "\n";
+		std::cout << "sample rate: " << result.sampleRate << "\n";
+		std::cout << "peak: " << result.peakAbs << "\n";
+		std::cout << "beats: " << result.beats.size() << "\n";
+		std::cout << "chords: " << result.chords.size() << "\n";
+		std::cout << "sections: " << result.sections.size() << "\n";
+		std::cout << "stems: " << result.stems.size() << "\n";
+	}
+
+	void printHistory(
+		const std::string & historyPath,
+		const std::vector<std::string> & manifests,
+		bool json) {
+		if (json) {
+			std::cout << "{\n";
+			std::cout << "  \"historyPath\": " << quoteJson(historyPath) << ",\n";
+			std::cout << "  \"manifests\": [\n";
+			for (std::size_t i = 0; i < manifests.size(); ++i) {
+				std::cout << "    " << quoteJson(manifests[i]);
+				std::cout << (i + 1 < manifests.size() ? "," : "") << "\n";
+			}
+			std::cout << "  ]\n";
+			std::cout << "}\n";
+			return;
+		}
+		std::cout << "history: " << historyPath << "\n";
+		std::cout << "manifests: " << manifests.size() << "\n";
+		for (const auto & manifest : manifests) {
+			std::cout << "manifest: " << manifest << "\n";
+		}
 	}
 
 	bool removeFileIfPresent(const std::string & path) {
@@ -49,7 +157,7 @@ namespace {
 		return std::filesystem::remove(path, code) && !code;
 	}
 
-	int pruneHistory(const std::string & historyPath, int keepCount) {
+	int pruneHistory(const std::string & historyPath, int keepCount, bool json) {
 		if (keepCount < 0) {
 			std::cerr << "Keep count must be zero or greater.\n";
 			return 2;
@@ -64,9 +172,17 @@ namespace {
 
 		const auto keep = static_cast<std::size_t>(keepCount);
 		if (manifests.size() <= keep) {
-			std::cout << "history: " << historyPath << "\n";
-			std::cout << "kept: " << manifests.size() << "\n";
-			std::cout << "pruned: 0\n";
+			if (json) {
+				std::cout << "{\n";
+				std::cout << "  \"historyPath\": " << quoteJson(historyPath) << ",\n";
+				std::cout << "  \"kept\": " << manifests.size() << ",\n";
+				std::cout << "  \"pruned\": 0\n";
+				std::cout << "}\n";
+			} else {
+				std::cout << "history: " << historyPath << "\n";
+				std::cout << "kept: " << manifests.size() << "\n";
+				std::cout << "pruned: 0\n";
+			}
 			return 0;
 		}
 
@@ -91,14 +207,23 @@ namespace {
 			std::cerr << error << "\n";
 			return 1;
 		}
-		std::cout << "history: " << historyPath << "\n";
-		std::cout << "kept: " << manifests.size() << "\n";
-		std::cout << "pruned: " << removedFiles << "\n";
+		if (json) {
+			std::cout << "{\n";
+			std::cout << "  \"historyPath\": " << quoteJson(historyPath) << ",\n";
+			std::cout << "  \"kept\": " << manifests.size() << ",\n";
+			std::cout << "  \"pruned\": " << removedFiles << "\n";
+			std::cout << "}\n";
+		} else {
+			std::cout << "history: " << historyPath << "\n";
+			std::cout << "kept: " << manifests.size() << "\n";
+			std::cout << "pruned: " << removedFiles << "\n";
+		}
 		return 0;
 	}
 }
 
 int main(int argc, char ** argv) {
+	const bool jsonOutput = hasFlag(argc, argv, "--json");
 	for (int i = 1; i < argc; ++i) {
 		const std::string arg = argv[i];
 		std::string value;
@@ -109,19 +234,11 @@ int main(int argc, char ** argv) {
 				std::cerr << error << "\n";
 				return 1;
 			}
-			std::cout << "output: " << manifest.outputPath << "\n";
-			std::cout << "manifest: " << manifest.manifestPath << "\n";
-			std::cout << "history: " << manifest.historyPath << "\n";
-			std::cout << "midi: " << manifest.midiPath << "\n";
-			std::cout << "chord midi: " << manifest.chordMidiPath << "\n";
-			std::cout << "arrangement midi: " << manifest.arrangementMidiPath << "\n";
-			std::cout << "duration: " << manifest.durationSeconds << "\n";
-			std::cout << "sample rate: " << manifest.sampleRate << "\n";
-			std::cout << "peak: " << manifest.peakAbs << "\n";
-			std::cout << "beats: " << manifest.beats.size() << "\n";
-			std::cout << "chords: " << manifest.chords.size() << "\n";
-			std::cout << "sections: " << manifest.sections.size() << "\n";
-			std::cout << "stems: " << manifest.stems.size() << "\n";
+			if (jsonOutput) {
+				printResultJson(manifest);
+			} else {
+				printResultText(manifest);
+			}
 			return 0;
 		} else if (arg == "--history" && readValue(i, argc, argv, value)) {
 			std::vector<std::string> manifests;
@@ -130,11 +247,7 @@ int main(int argc, char ** argv) {
 				std::cerr << error << "\n";
 				return 1;
 			}
-			std::cout << "history: " << value << "\n";
-			std::cout << "manifests: " << manifests.size() << "\n";
-			for (const auto & manifest : manifests) {
-				std::cout << "manifest: " << manifest << "\n";
-			}
+			printHistory(value, manifests, jsonOutput);
 			return 0;
 		} else if (arg == "--prune-history" && readValue(i, argc, argv, value)) {
 			std::string keepValue;
@@ -150,7 +263,7 @@ int main(int argc, char ** argv) {
 				std::cerr << "--prune-history requires --keep N.\n";
 				return 2;
 			}
-			return pruneHistory(value, std::atoi(keepValue.c_str()));
+			return pruneHistory(value, std::atoi(keepValue.c_str()), jsonOutput);
 		}
 	}
 
@@ -187,6 +300,8 @@ int main(int argc, char ** argv) {
 		} else if (arg == "--prune-history" && readValue(i, argc, argv, value)) {
 			continue;
 		} else if (arg == "--keep" && readValue(i, argc, argv, value)) {
+			continue;
+		} else if (arg == "--json") {
 			continue;
 		} else if (arg == "--preset" && readValue(i, argc, argv, value)) {
 			continue;
@@ -241,22 +356,13 @@ int main(int argc, char ** argv) {
 		return 1;
 	}
 
-	std::cout << "output: " << result.outputPath << "\n";
-	std::cout << "preset: " << presetName << "\n";
-	std::cout << "manifest: " << result.manifestPath << "\n";
-	std::cout << "history: " << result.historyPath << "\n";
-	std::cout << "midi: " << result.midiPath << "\n";
-	std::cout << "chord midi: " << result.chordMidiPath << "\n";
-	std::cout << "arrangement midi: " << result.arrangementMidiPath << "\n";
-	std::cout << "duration: " << result.durationSeconds << "\n";
-	std::cout << "sample rate: " << result.sampleRate << "\n";
-	std::cout << "peak: " << result.peakAbs << "\n";
-	std::cout << "beats: " << result.beats.size() << "\n";
-	std::cout << "chords: " << result.chords.size() << "\n";
-	std::cout << "sections: " << result.sections.size() << "\n";
-	std::cout << "stems: " << result.stems.size() << "\n";
-	for (const auto & stem : result.stems) {
-		std::cout << "stem: " << stem.name << " " << stem.path << "\n";
+	if (jsonOutput) {
+		printResultJson(result, presetName);
+	} else {
+		printResultText(result, presetName);
+		for (const auto & stem : result.stems) {
+			std::cout << "stem: " << stem.name << " " << stem.path << "\n";
+		}
 	}
 	return 0;
 }
