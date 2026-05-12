@@ -44,6 +44,8 @@ private:
 	std::vector<std::string> presetNames;
 	std::vector<std::string> stemNames;
 	std::vector<bool> stemEnabled;
+	std::vector<std::string> keyTonics;
+	std::vector<std::string> keyModes;
 	std::vector<std::string> historyManifestPaths;
 	std::string currentOutputPath;
 	std::string status;

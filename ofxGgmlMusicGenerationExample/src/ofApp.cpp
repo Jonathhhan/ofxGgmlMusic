@@ -5,21 +5,13 @@
 #include <cstdio>
 #include <iterator>
 
-namespace {
-	const char* tonics[] = {
-		"C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"
-	};
-
-	const char* modes[] = {
-		"major", "minor"
-	};
-}
-
 void ofApp::setup() {
 	ofSetWindowTitle("ofxGgmlMusic generation example");
 	gui.setup();
 	presetNames = ofxGgmlMusicUtils::getGenerationPresetNames();
 	stemNames = ofxGgmlMusicUtils::getGenerationStemNames();
+	keyTonics = ofxGgmlMusicUtils::getGenerationKeyTonics();
+	keyModes = ofxGgmlMusicUtils::getGenerationKeyModes();
 	backend = ofxGgmlMakeProceduralMusicGenerationBackend();
 	ofxGgmlMusicUtils::applyGenerationPreset("ambient", request);
 	syncControlsFromRequest();
@@ -68,14 +60,14 @@ void ofApp::syncControlsFromRequest() {
 	tempo = request.tempo.bpm > 0.0f ? request.tempo.bpm : tempo;
 	duration = static_cast<float>(request.settings.durationSeconds);
 	loop = request.settings.loop;
-	for (int i = 0; i < 12; ++i) {
-		if (request.key.tonic == tonics[i]) {
+	for (int i = 0; i < static_cast<int>(keyTonics.size()); ++i) {
+		if (request.key.tonic == keyTonics[i]) {
 			tonicIndex = i;
 			break;
 		}
 	}
-	for (int i = 0; i < 2; ++i) {
-		if (request.key.mode == modes[i]) {
+	for (int i = 0; i < static_cast<int>(keyModes.size()); ++i) {
+		if (request.key.mode == keyModes[i]) {
 			modeIndex = i;
 			break;
 		}
@@ -99,8 +91,14 @@ void ofApp::rebuildRequest() {
 	request.settings.loop = loop;
 	request.tempo.bpm = tempo;
 	request.tempo.confidence = 1.0f;
-	request.key.tonic = tonics[tonicIndex];
-	request.key.mode = modes[modeIndex];
+	if (!keyTonics.empty() && tonicIndex >= static_cast<int>(keyTonics.size())) {
+		tonicIndex = 0;
+	}
+	if (!keyModes.empty() && modeIndex >= static_cast<int>(keyModes.size())) {
+		modeIndex = 0;
+	}
+	request.key.tonic = keyTonics.empty() ? "C" : keyTonics[tonicIndex];
+	request.key.mode = keyModes.empty() ? "major" : keyModes[modeIndex];
 	request.key.confidence = 1.0f;
 	request.targetStems.clear();
 	if (stemEnabled.size() != stemNames.size()) {
@@ -295,8 +293,40 @@ void ofApp::draw() {
 	changed |= ImGui::SliderFloat("Tempo", &tempo, 48.0f, 180.0f, "%.0f bpm");
 	changed |= ImGui::SliderFloat("Duration", &duration, 1.0f, 30.0f, "%.1f s");
 	changed |= ImGui::InputInt("Seed", &seed);
-	changed |= ImGui::Combo("Tonic", &tonicIndex, tonics, 12);
-	changed |= ImGui::Combo("Mode", &modeIndex, modes, 2);
+	if (!keyTonics.empty() && tonicIndex >= static_cast<int>(keyTonics.size())) {
+		tonicIndex = 0;
+	}
+	const auto tonicLabel = keyTonics.empty() ? "(none)" : keyTonics[tonicIndex].c_str();
+	if (ImGui::BeginCombo("Tonic", tonicLabel)) {
+		for (int i = 0; i < static_cast<int>(keyTonics.size()); ++i) {
+			const bool selected = i == tonicIndex;
+			if (ImGui::Selectable(keyTonics[i].c_str(), selected)) {
+				tonicIndex = i;
+				changed = true;
+			}
+			if (selected) {
+				ImGui::SetItemDefaultFocus();
+			}
+		}
+		ImGui::EndCombo();
+	}
+	if (!keyModes.empty() && modeIndex >= static_cast<int>(keyModes.size())) {
+		modeIndex = 0;
+	}
+	const auto modeLabel = keyModes.empty() ? "(none)" : keyModes[modeIndex].c_str();
+	if (ImGui::BeginCombo("Mode", modeLabel)) {
+		for (int i = 0; i < static_cast<int>(keyModes.size()); ++i) {
+			const bool selected = i == modeIndex;
+			if (ImGui::Selectable(keyModes[i].c_str(), selected)) {
+				modeIndex = i;
+				changed = true;
+			}
+			if (selected) {
+				ImGui::SetItemDefaultFocus();
+			}
+		}
+		ImGui::EndCombo();
+	}
 	changed |= ImGui::Checkbox("Loop", &loop);
 	ImGui::SameLine();
 	changed |= ImGui::Checkbox("Auto-play", &autoPlay);
