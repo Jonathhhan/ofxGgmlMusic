@@ -82,6 +82,7 @@ macOS/Linux:
 - no generated WAV, MIDI, manifest, model, IDE, or build files are staged
 - `CHANGELOG.md` has an entry for the release
 - `docs/releases/vX.Y.Z.md` matches the release scope
-- `README.md` is clear that procedural generation is built in and model-backed
-  music generation bridges are future work
+- `README.md` is clear that procedural generation is built in, the external
+  bridge is available, and Hugging Face MusicGen remains an optional Python
+  runner profile
 - `docs/ROADMAP.md` keeps image/video GAN work outside the Music addon

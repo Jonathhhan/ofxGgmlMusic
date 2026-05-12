@@ -54,6 +54,8 @@ int main(int argc, char ** argv) {
 	request.key.mode = "major";
 	request.targetStems = { "melody", "bass" };
 	request.external.executablePath = generatorPath.string();
+	request.external.modelPath = "mock-musicgen-model-id";
+	request.external.requireModelPathExists = false;
 	request.external.modelFlag.clear();
 	request.external.extraArguments = {
 		"--preset",
@@ -119,15 +121,18 @@ int main(int argc, char ** argv) {
 	}
 
 	bool hasExecutableReference = false;
+	bool hasModelReference = false;
 	for (const auto & reference : result.references) {
 		if (reference.find(generatorPath.filename().string()) != std::string::npos ||
 			reference.find(generatorPath.string()) != std::string::npos) {
 			hasExecutableReference = true;
-			break;
+		}
+		if (reference.find("mock-musicgen-model-id") != std::string::npos) {
+			hasModelReference = true;
 		}
 	}
-	if (!hasExecutableReference) {
-		std::cerr << "external generation result did not reference the executable\n";
+	if (!hasExecutableReference || !hasModelReference) {
+		std::cerr << "external generation result did not reference the executable and model id\n";
 		return 1;
 	}
 

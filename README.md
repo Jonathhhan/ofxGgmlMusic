@@ -69,6 +69,10 @@ chosen deliberately. If a generator does not take a model argument, set
 against the local procedural CLI so future model-backed generators have a clear
 minimum interface to match.
 
+For model ids such as `facebook/musicgen-small`, set
+`request.external.requireModelPathExists = false`. Local model files keep the
+default file-existence check.
+
 ## Example
 
 `ofxGgmlMusicAnalysisExample` is a root-level audio analysis request smoke test.
@@ -142,6 +146,28 @@ scripts\test-external-generation-contract.bat -Clean
 That script builds `tools\ofxGgmlMusicGenerate`, builds the external backend
 contract test, launches the generator through `ofxGgmlMusicExternalGenerationBackend`,
 and checks the generated WAV, manifest, history, MIDI, and stem artifacts.
+
+To drive any local generator through the same backend from the command line:
+
+```powershell
+scripts\generate-external-music.bat -Executable C:\tools\music-generator.bat -Model C:\models\music-model.bin -Prompt "warm lofi loop" -Output C:\temp\music.wav
+scripts\generate-external-music.bat -DryRun
+```
+
+The first concrete opt-in runner profile targets Hugging Face Transformers
+MusicGen. It uses a small Python wrapper around `MusicgenForConditionalGeneration`
+and writes the standard `.wav.json` manifest so the C++ backend can read the
+result. Install a local Python environment with `torch`, `transformers`, and
+`numpy`, then run:
+
+```powershell
+scripts\generate-musicgen-hf.bat -Prompt "warm lofi loop with soft keys" -Duration 8 -Output C:\temp\musicgen.wav
+scripts\generate-musicgen-hf.bat -DryRun
+```
+
+Set `OFXGGML_MUSIC_PYTHON` when the desired Python executable is not first on
+`PATH`. This profile is intentionally optional and does not make PyTorch a
+dependency of the addon.
 
 ## Dependencies
 

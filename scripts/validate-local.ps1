@@ -63,9 +63,20 @@ Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicUtils.h") "utili
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicUtils.cpp") "utility source"
 Assert-Path (Join-Path $addonRoot "tools\ofxGgmlMusicGenerate\CMakeLists.txt") "generation CLI CMakeLists"
 Assert-Path (Join-Path $addonRoot "tools\ofxGgmlMusicGenerate\main.cpp") "generation CLI source"
+Assert-Path (Join-Path $addonRoot "tools\ofxGgmlMusicExternalGenerate\CMakeLists.txt") "external generation CLI CMakeLists"
+Assert-Path (Join-Path $addonRoot "tools\ofxGgmlMusicExternalGenerate\main.cpp") "external generation CLI source"
+Assert-Path (Join-Path $addonRoot "tools\musicgen_hf_runner.py") "Hugging Face MusicGen runner"
 Assert-Path (Join-Path $scriptRoot "generate-procedural-music.ps1") "procedural generation script"
 Assert-Path (Join-Path $scriptRoot "generate-procedural-music.bat") "procedural generation batch script"
 Assert-Path (Join-Path $scriptRoot "generate-procedural-music.sh") "procedural generation shell script"
+Assert-Path (Join-Path $scriptRoot "generate-external-music.ps1") "external generation script"
+Assert-Path (Join-Path $scriptRoot "generate-external-music.bat") "external generation batch script"
+Assert-Path (Join-Path $scriptRoot "generate-external-music.sh") "external generation shell script"
+Assert-Path (Join-Path $scriptRoot "generate-musicgen-hf.ps1") "Hugging Face MusicGen generation script"
+Assert-Path (Join-Path $scriptRoot "generate-musicgen-hf.bat") "Hugging Face MusicGen batch script"
+Assert-Path (Join-Path $scriptRoot "generate-musicgen-hf.sh") "Hugging Face MusicGen shell script"
+Assert-Path (Join-Path $scriptRoot "run-musicgen-hf.bat") "Hugging Face MusicGen Windows runner"
+Assert-Path (Join-Path $scriptRoot "run-musicgen-hf.sh") "Hugging Face MusicGen shell runner"
 Assert-Path (Join-Path $scriptRoot "test-external-generation-contract.ps1") "external generation contract script"
 Assert-Path (Join-Path $scriptRoot "test-external-generation-contract.bat") "external generation contract batch script"
 Assert-Path (Join-Path $scriptRoot "test-external-generation-contract.sh") "external generation contract shell script"
@@ -134,6 +145,24 @@ Write-Step "Checking external generation contract dry run"
 & (Join-Path $scriptRoot "test-external-generation-contract.ps1") -DryRun
 if ($LASTEXITCODE -ne 0) {
 	throw "External generation contract dry run failed with exit code $LASTEXITCODE"
+}
+
+Write-Step "Checking external generation script dry runs"
+$externalDryRun = & (Join-Path $scriptRoot "generate-external-music.ps1") `
+	-Executable "mock-generator.exe" `
+	-Model "mock-model-id" `
+	-AllowModelId `
+	-DryRun 2>&1 6>&1 | Out-String
+if (!$externalDryRun.Contains("External music generation plan") -or
+	!$externalDryRun.Contains("allow model id: ON") -or
+	!$externalDryRun.Contains("Dry run complete; no files were changed")) {
+	throw "External generation dry-run output was unexpected:`n$externalDryRun"
+}
+$musicGenDryRun = & (Join-Path $scriptRoot "generate-musicgen-hf.ps1") -DryRun 2>&1 6>&1 | Out-String
+if (!$musicGenDryRun.Contains("External music generation plan") -or
+	!$musicGenDryRun.Contains("facebook/musicgen-small") -or
+	!$musicGenDryRun.Contains("Dry run complete; no files were changed")) {
+	throw "MusicGen HF dry-run output was unexpected:`n$musicGenDryRun"
 }
 
 Write-Step "Checking procedural generation CLI"
@@ -285,6 +314,23 @@ $pruneJson = & $cliExe --prune-history $historyPath --keep 1 --json
 if ($LASTEXITCODE -ne 0 -or ($pruneJson -join "`n") -notmatch '"kept"') {
 	throw "Procedural generation JSON prune failed"
 }
+
+Write-Step "Checking external generation CLI with procedural generator"
+$externalCliOutput = Join-Path $scratchDir "external-cli.wav"
+& (Join-Path $scriptRoot "generate-external-music.ps1") `
+	-Executable $cliExe `
+	-Prompt "external bridge validation motif" `
+	-Output $externalCliOutput `
+	-Duration 1.0 `
+	-Seed 321 `
+	-ExtraArgument @("--preset", "ambient", "--tempo", "100", "--key", "C", "--mode", "major") `
+	-BuildDir (Join-Path $scratchDir "external-build") `
+	-Clean
+if ($LASTEXITCODE -ne 0) {
+	throw "External generation CLI failed with exit code $LASTEXITCODE"
+}
+Assert-Path $externalCliOutput "external generation CLI wav"
+Assert-Path ($externalCliOutput + ".json") "external generation CLI manifest"
 Remove-Item -LiteralPath $scratchDir -Recurse -Force
 
 Write-Step "Running external generation contract"

@@ -71,6 +71,7 @@ struct ofxGgmlMusicExternalGenerationSettings {
 	std::string modelPath;
 	std::string workingDirectory;
 	std::vector<std::string> extraArguments;
+	bool requireModelPathExists = true;
 	std::string promptFlag = "--prompt";
 	std::string outputFlag = "--output";
 	std::string modelFlag = "--model";

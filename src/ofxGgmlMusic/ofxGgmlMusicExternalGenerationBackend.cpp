@@ -112,7 +112,7 @@ ofxGgmlMusicGenerationResult ofxGgmlMusicExternalGenerationBackend::setup(
 	if (!fileExists(settings.executablePath)) {
 		return makeError(request, "external music generator executable was not found: " + settings.executablePath);
 	}
-	if (!settings.modelPath.empty() && !fileExists(settings.modelPath)) {
+	if (!settings.modelPath.empty() && settings.requireModelPathExists && !fileExists(settings.modelPath)) {
 		return makeError(request, "external music generator model was not found: " + settings.modelPath);
 	}
 	loaded = true;

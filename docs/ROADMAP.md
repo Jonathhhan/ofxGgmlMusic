@@ -34,13 +34,14 @@
 - Add independent addon version metadata and release-candidate docs.
 - Add an external generation contract test that drives the local procedural CLI
   through `ofxGgmlMusicExternalGenerationBackend`.
+- Add a user-facing external generation CLI and an opt-in Hugging Face
+  Transformers MusicGen runner profile.
 
 ## Next Milestones
 
-- Use the external generation backend with one concrete local model runner and
-  document the required setup path.
-- Add MusicGen-style transformer and diffusion bridge research notes with a
-  clear runtime/setup decision.
+- Add a smoke test mode for installed MusicGen Python environments without
+  making PyTorch a required addon dependency.
+- Add audio diffusion bridge research notes with a clear runtime/setup decision.
 - Keep image and video GAN work in `ofxGgmlDiffusion` and `ofxGgmlVideo`; this
   addon should focus on audio-producing music generators.
 - Add one useful openFrameworks example that runs with user-provided assets.

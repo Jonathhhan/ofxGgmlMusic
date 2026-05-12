@@ -6,6 +6,10 @@
   boundary for local model-backed music generator executables.
 - Added an external generation contract test that proves the bridge can launch
   a local generator and round-trip WAV, manifest, history, MIDI, and stem outputs.
+- Added a user-facing external generation CLI plus an opt-in Hugging Face
+  Transformers MusicGen runner profile.
+- Allowed external model values to be model ids instead of only existing files
+  when `requireModelPathExists` is disabled.
 
 ## 1.0.1 - 2026-05-12
 
