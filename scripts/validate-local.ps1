@@ -151,6 +151,14 @@ $cliExe = if (!($IsLinux -or $IsMacOS)) {
 } else {
 	Join-Path $scratchDir "build\ofxGgmlMusicGenerate"
 }
+& $cliExe --list-presets
+if ($LASTEXITCODE -ne 0) {
+	throw "Procedural generation preset listing failed with exit code $LASTEXITCODE"
+}
+$presetJson = & $cliExe --list-presets --json
+if ($LASTEXITCODE -ne 0 -or ($presetJson -join "`n") -notmatch '"presets"' -or ($presetJson -join "`n") -notmatch '"ambient"') {
+	throw "Procedural generation JSON preset listing failed"
+}
 & $cliExe --inspect ($cliOutput + ".json")
 if ($LASTEXITCODE -ne 0) {
 	throw "Procedural generation manifest inspection failed with exit code $LASTEXITCODE"

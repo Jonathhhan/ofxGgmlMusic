@@ -16,6 +16,7 @@ namespace {
 			<< "  --history PATH     Load and list a generation history index\n"
 			<< "  --prune-history PATH --keep N\n"
 			<< "                     Keep the newest N history entries and delete older artifacts\n"
+			<< "  --list-presets     List built-in generation presets\n"
 			<< "  --preset NAME      Preset: ambient, lofi, pulse\n"
 			<< "  --style TEXT       Style tag, for example ambient\n"
 			<< "  --tempo BPM        Tempo in beats per minute\n"
@@ -143,6 +144,26 @@ namespace {
 		}
 	}
 
+	void printPresets(bool json) {
+		const auto presets = ofxGgmlMusicUtils::getGenerationPresetNames();
+		if (json) {
+			std::cout << "{\n";
+			std::cout << "  \"presets\": [\n";
+			for (std::size_t i = 0; i < presets.size(); ++i) {
+				std::cout << "    " << quoteJson(presets[i]);
+				std::cout << (i + 1 < presets.size() ? "," : "") << "\n";
+			}
+			std::cout << "  ]\n";
+			std::cout << "}\n";
+			return;
+		}
+
+		std::cout << "presets: " << presets.size() << "\n";
+		for (const auto & preset : presets) {
+			std::cout << "preset: " << preset << "\n";
+		}
+	}
+
 	bool removeFileIfPresent(const std::string & path) {
 		if (path.empty()) {
 			return false;
@@ -249,6 +270,9 @@ int main(int argc, char ** argv) {
 			}
 			printHistory(value, manifests, jsonOutput);
 			return 0;
+		} else if (arg == "--list-presets") {
+			printPresets(jsonOutput);
+			return 0;
 		} else if (arg == "--prune-history" && readValue(i, argc, argv, value)) {
 			std::string keepValue;
 			bool foundKeep = false;
@@ -302,6 +326,8 @@ int main(int argc, char ** argv) {
 		} else if (arg == "--keep" && readValue(i, argc, argv, value)) {
 			continue;
 		} else if (arg == "--json") {
+			continue;
+		} else if (arg == "--list-presets") {
 			continue;
 		} else if (arg == "--preset" && readValue(i, argc, argv, value)) {
 			continue;

@@ -80,8 +80,14 @@ scripts\generate-procedural-music.bat -Preset lofi -Output C:\temp\music.wav -Lo
 The helper builds `tools/ofxGgmlMusicGenerate`, writes the WAV, writes the
 `.wav.json` manifest, writes editable melody/chord/arrangement `.mid` files, and
 writes requested stem WAVs next to the mix. Built-in presets are `ambient`,
-`lofi`, and `pulse`; explicit prompt, tempo, key, duration, seed, and stem flags
-override the preset defaults. Use
+`lofi`, and `pulse`; list them from the CLI with:
+
+```powershell
+tools\ofxGgmlMusicGenerate\build\ofxGgmlMusicGenerate.exe --list-presets
+```
+
+Explicit prompt, tempo, key, duration, seed, and stem flags override the preset
+defaults. Use
 `ofxGgmlMusicUtils::loadGenerationManifest()` to load the sidecar back into an
 `ofxGgmlMusicGenerationResult`; the CLI also supports
 `--inspect C:\temp\music.wav.json` and
@@ -92,8 +98,8 @@ growing indefinitely, prune older history entries and their generated artifacts:
 tools\ofxGgmlMusicGenerate\build\ofxGgmlMusicGenerate.exe --prune-history C:\temp\ofxGgmlMusic-history.json --keep 8
 ```
 
-Add `--json` to render, inspect, history, or prune commands when another tool
-needs machine-readable output.
+Add `--json` to render, list-presets, inspect, history, or prune commands when
+another tool needs machine-readable output.
 
 ## Dependencies
 
