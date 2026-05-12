@@ -177,6 +177,22 @@ $stemJson = & $cliExe --list-stems --json
 if ($LASTEXITCODE -ne 0 -or ($stemJson -join "`n") -notmatch '"stems"' -or ($stemJson -join "`n") -notmatch '"mix"') {
 	throw "Procedural generation JSON stem listing failed"
 }
+& $cliExe --preset ambient --prompt "invalid duration" --output (Join-Path $scratchDir "invalid-duration.wav") --duration not-a-number
+if ($LASTEXITCODE -eq 0) {
+	throw "Procedural generation CLI accepted an invalid duration"
+}
+& $cliExe --preset ambient --prompt "invalid tempo" --output (Join-Path $scratchDir "invalid-tempo.wav") --tempo not-a-number
+if ($LASTEXITCODE -eq 0) {
+	throw "Procedural generation CLI accepted an invalid tempo"
+}
+& $cliExe --preset ambient --prompt "invalid seed" --output (Join-Path $scratchDir "invalid-seed.wav") --seed not-an-int
+if ($LASTEXITCODE -eq 0) {
+	throw "Procedural generation CLI accepted an invalid seed"
+}
+& $cliExe --prune-history $historyPath --keep not-an-int
+if ($LASTEXITCODE -eq 0) {
+	throw "Procedural generation CLI accepted an invalid keep count"
+}
 & $cliExe --inspect ($cliOutput + ".json")
 if ($LASTEXITCODE -ne 0) {
 	throw "Procedural generation manifest inspection failed with exit code $LASTEXITCODE"

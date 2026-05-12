@@ -1,5 +1,7 @@
 #include "ofxGgmlMusic.h"
 
+#include <cerrno>
+#include <climits>
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
@@ -47,6 +49,46 @@ namespace {
 			}
 		}
 		return false;
+	}
+
+	bool parseDouble(const std::string & text, double & value) {
+		if (text.empty()) {
+			return false;
+		}
+		errno = 0;
+		char * end = nullptr;
+		const auto parsed = std::strtod(text.c_str(), &end);
+		if (end != text.c_str() + text.size() || errno == ERANGE) {
+			return false;
+		}
+		value = parsed;
+		return true;
+	}
+
+	bool parseFloat(const std::string & text, float & value) {
+		double parsed = 0.0;
+		if (!parseDouble(text, parsed)) {
+			return false;
+		}
+		value = static_cast<float>(parsed);
+		return true;
+	}
+
+	bool parseInt(const std::string & text, int & value) {
+		if (text.empty()) {
+			return false;
+		}
+		errno = 0;
+		char * end = nullptr;
+		const auto parsed = std::strtol(text.c_str(), &end, 10);
+		if (end != text.c_str() + text.size() ||
+			errno == ERANGE ||
+			parsed < INT_MIN ||
+			parsed > INT_MAX) {
+			return false;
+		}
+		value = static_cast<int>(parsed);
+		return true;
 	}
 
 	std::string escapeJson(const std::string & text) {
@@ -358,7 +400,12 @@ int main(int argc, char ** argv) {
 				std::cerr << "--prune-history requires --keep N.\n";
 				return 2;
 			}
-			return pruneHistory(value, std::atoi(keepValue.c_str()), jsonOutput);
+			int keepCount = 0;
+			if (!parseInt(keepValue, keepCount)) {
+				std::cerr << "--keep requires an integer value.\n";
+				return 2;
+			}
+			return pruneHistory(value, keepCount, jsonOutput);
 		}
 	}
 
@@ -413,11 +460,20 @@ int main(int argc, char ** argv) {
 		} else if (arg == "--style" && readValue(i, argc, argv, value)) {
 			request.style = value;
 		} else if (arg == "--tempo" && readValue(i, argc, argv, value)) {
-			request.tempo.bpm = std::strtof(value.c_str(), nullptr);
+			if (!parseFloat(value, request.tempo.bpm)) {
+				std::cerr << "--tempo requires a numeric BPM value.\n";
+				return 2;
+			}
 		} else if (arg == "--duration" && readValue(i, argc, argv, value)) {
-			request.settings.durationSeconds = std::strtod(value.c_str(), nullptr);
+			if (!parseDouble(value, request.settings.durationSeconds)) {
+				std::cerr << "--duration requires a numeric seconds value.\n";
+				return 2;
+			}
 		} else if (arg == "--seed" && readValue(i, argc, argv, value)) {
-			request.settings.seed = std::atoi(value.c_str());
+			if (!parseInt(value, request.settings.seed)) {
+				std::cerr << "--seed requires an integer value.\n";
+				return 2;
+			}
 		} else if (arg == "--key" && readValue(i, argc, argv, value)) {
 			request.key.tonic = value;
 		} else if (arg == "--mode" && readValue(i, argc, argv, value)) {
