@@ -50,9 +50,9 @@ testable before a real model bridge is selected. Shared WAV helpers live in
 simple PCM16 files through one path. Generation results also carry a manifest
 path; backends can write a `.wav.json` sidecar with prompt, backend, seed, tempo,
 key, duration, sample rate, peak level, beat/downbeat markers, chords, generated
-stems, and references. Backends also update an `ofxGgmlMusic-history.json` index
-next to generated audio so tools and examples can find recent manifests without
-guessing output filenames.
+stems, MIDI sidecars, and references. Backends also update an
+`ofxGgmlMusic-history.json` index next to generated audio so tools and examples
+can find recent manifests without guessing output filenames.
 
 ## Example
 
@@ -60,8 +60,9 @@ guessing output filenames.
 `ofxGgmlMusicGenerationExample` is a root-level prompt-to-music sketch that
 writes a WAV file with the built-in `procedural-sketch` backend and draws a
 waveform preview after generation. It also writes a `.wav.json` manifest next to
-the audio file, can export melody/bass/pulse stems, and overlays beat/chord timing
-on the waveform. Each Generate press writes a timestamped WAV so the history
+the audio file, writes an editable melody `.mid`, can export melody/bass/pulse
+stems, and overlays beat/chord timing on the waveform. Each Generate press writes
+a timestamped WAV so the history
 index can track multiple renders. The generation example reloads recent renders
 from that index on startup when available, falling back to the standard render
 manifest. Generate either example with the
@@ -75,9 +76,10 @@ scripts\generate-procedural-music.bat -Preset lofi -Output C:\temp\music.wav -Lo
 ```
 
 The helper builds `tools/ofxGgmlMusicGenerate`, writes the WAV, writes the
-`.wav.json` manifest, and writes requested stem WAVs next to the mix. Built-in
-presets are `ambient`, `lofi`, and `pulse`; explicit prompt, tempo, key,
-duration, seed, and stem flags override the preset defaults. Use
+`.wav.json` manifest, writes an editable melody `.mid`, and writes requested
+stem WAVs next to the mix. Built-in presets are `ambient`, `lofi`, and `pulse`;
+explicit prompt, tempo, key, duration, seed, and stem flags override the preset
+defaults. Use
 `ofxGgmlMusicUtils::loadGenerationManifest()` to load the sidecar back into an
 `ofxGgmlMusicGenerationResult`; the CLI also supports
 `--inspect C:\temp\music.wav.json` and

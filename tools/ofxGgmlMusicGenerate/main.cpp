@@ -47,6 +47,7 @@ int main(int argc, char ** argv) {
 			std::cout << "output: " << manifest.outputPath << "\n";
 			std::cout << "manifest: " << manifest.manifestPath << "\n";
 			std::cout << "history: " << manifest.historyPath << "\n";
+			std::cout << "midi: " << manifest.midiPath << "\n";
 			std::cout << "duration: " << manifest.durationSeconds << "\n";
 			std::cout << "sample rate: " << manifest.sampleRate << "\n";
 			std::cout << "peak: " << manifest.peakAbs << "\n";
@@ -157,6 +158,7 @@ int main(int argc, char ** argv) {
 	std::cout << "preset: " << presetName << "\n";
 	std::cout << "manifest: " << result.manifestPath << "\n";
 	std::cout << "history: " << result.historyPath << "\n";
+	std::cout << "midi: " << result.midiPath << "\n";
 	std::cout << "duration: " << result.durationSeconds << "\n";
 	std::cout << "sample rate: " << result.sampleRate << "\n";
 	std::cout << "peak: " << result.peakAbs << "\n";

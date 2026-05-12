@@ -129,6 +129,7 @@ int main() {
 	generationResult.outputPath = generation.outputPath;
 	generationResult.manifestPath = ofxGgmlMusicUtils::getGenerationManifestPath(generation.outputPath);
 	generationResult.historyPath = ofxGgmlMusicUtils::getGenerationHistoryPath(generation.outputPath);
+	generationResult.midiPath = "renders/ambient-melody.mid";
 	generationResult.durationSeconds = generation.settings.durationSeconds;
 	generationResult.seed = generation.settings.seed;
 	generationResult.sampleRate = 44100;
@@ -145,6 +146,7 @@ int main() {
 		!ofxGgmlMusicUtils::hasOutput(generationResult) ||
 		generationResult.manifestPath.find(".wav.json") == std::string::npos ||
 		generationResult.historyPath.find("ofxGgmlMusic-history.json") == std::string::npos ||
+		generationResult.midiPath.find(".mid") == std::string::npos ||
 		!ofxGgmlMusicUtils::hasTempo(generationResult) ||
 		!ofxGgmlMusicUtils::hasKey(generationResult) ||
 		generationResult.beats.empty() ||
@@ -162,6 +164,7 @@ int main() {
 		manifestText.find("ambient piano") == std::string::npos ||
 		manifestText.find("\"sampleRate\": 44100") == std::string::npos ||
 		manifestText.find("\"historyPath\"") == std::string::npos ||
+		manifestText.find("\"midiPath\"") == std::string::npos ||
 		manifestText.find("\"beats\"") == std::string::npos ||
 		manifestText.find("\"chords\"") == std::string::npos ||
 		manifestText.find("\"stems\"") == std::string::npos) {
@@ -226,6 +229,23 @@ int main() {
 	}
 	std::filesystem::remove(utilityOutput);
 
+	const auto midiUtilityOutput = std::filesystem::temp_directory_path() / "ofxGgmlMusic-midi-utils-test.mid";
+	if (std::filesystem::exists(midiUtilityOutput)) {
+		std::filesystem::remove(midiUtilityOutput);
+	}
+	std::string midiError;
+	if (!ofxGgmlMusicMidiUtils::writeMidiFile(
+			midiUtilityOutput.string(),
+			{ { 0.0, 0.25, 60, 90 }, { 0.25, 0.25, 64, 90 } },
+			120.0f,
+			midiError) ||
+		!std::filesystem::exists(midiUtilityOutput) ||
+		!fileStartsWith(midiUtilityOutput, "MThd")) {
+		std::cerr << "midi utility failed to write midi: " << midiError << "\n";
+		return 1;
+	}
+	std::filesystem::remove(midiUtilityOutput);
+
 	generation.outputPath = tempOutput.string();
 	generation.settings.backend = ofxGgmlMusicGenerationBackendFamily::External;
 	generation.targetStems = { "melody", "bass", "pulse" };
@@ -250,6 +270,7 @@ int main() {
 		proceduralResult.outputPath != generation.outputPath ||
 		proceduralResult.manifestPath != ofxGgmlMusicUtils::getGenerationManifestPath(generation.outputPath) ||
 		proceduralResult.historyPath != ofxGgmlMusicUtils::getGenerationHistoryPath(generation.outputPath) ||
+		proceduralResult.midiPath.empty() ||
 		proceduralResult.durationSeconds <= 0.0 ||
 		proceduralResult.sampleRate != 44100 ||
 		proceduralResult.channels != 1 ||
@@ -262,12 +283,14 @@ int main() {
 		!std::filesystem::exists(tempOutput) ||
 		!std::filesystem::exists(proceduralResult.manifestPath) ||
 		!std::filesystem::exists(proceduralResult.historyPath) ||
+		!std::filesystem::exists(proceduralResult.midiPath) ||
 		std::filesystem::file_size(tempOutput) <= 44 ||
 		!fileStartsWith(tempOutput, "RIFF") ||
 		!ofxGgmlMusicAudioUtils::loadWav16(tempOutput.string(), generatedBuffer, wavError) ||
 		!generatedBuffer ||
 		generatedBuffer.getDurationSeconds() <= 0.0 ||
-		generatedBuffer.getPeakAbs() <= 0.0f) {
+		generatedBuffer.getPeakAbs() <= 0.0f ||
+		!fileStartsWith(proceduralResult.midiPath, "MThd")) {
 		std::cerr << "procedural generation failed to write a wav file\n";
 		return 1;
 	}
@@ -293,6 +316,7 @@ int main() {
 		!loadedManifest ||
 		loadedManifest.outputPath != proceduralResult.outputPath ||
 		loadedManifest.historyPath != proceduralResult.historyPath ||
+		loadedManifest.midiPath != proceduralResult.midiPath ||
 		loadedManifest.sampleRate != proceduralResult.sampleRate ||
 		loadedManifest.beats.size() != proceduralResult.beats.size() ||
 		loadedManifest.chords.size() != proceduralResult.chords.size() ||
@@ -316,6 +340,7 @@ int main() {
 	std::filesystem::remove(tempOutput);
 	std::filesystem::remove(proceduralResult.manifestPath);
 	std::filesystem::remove(proceduralResult.historyPath);
+	std::filesystem::remove(proceduralResult.midiPath);
 	for (const auto & stem : proceduralResult.stems) {
 		std::filesystem::remove(stem.path);
 	}

@@ -1,6 +1,7 @@
 #include "ofxGgmlMusicProceduralGenerationBackend.h"
 
 #include "ofxGgmlMusicAudioUtils.h"
+#include "ofxGgmlMusicMidiUtils.h"
 #include "ofxGgmlMusicUtils.h"
 
 #include <algorithm>
@@ -20,6 +21,7 @@ namespace {
 		std::vector<float> melody;
 		std::vector<float> bass;
 		std::vector<float> pulse;
+		std::vector<ofxGgmlMusicMidiNote> melodyNotes;
 	};
 
 	int tonicToMidi(const ofxGgmlMusicKey & key) {
@@ -144,6 +146,18 @@ namespace {
 		return fileName;
 	}
 
+	std::string makeMidiOutputPath(const std::string & outputPath) {
+		if (outputPath.empty()) {
+			return "";
+		}
+		const std::filesystem::path output(outputPath);
+		const auto fileName = output.stem().string() + "-melody.mid";
+		if (output.has_parent_path()) {
+			return (output.parent_path() / fileName).string();
+		}
+		return fileName;
+	}
+
 	const std::vector<float> * getStemSamples(const RenderedSketch & rendered, const std::string & stemName) {
 		const auto normalized = normalizeStemName(stemName);
 		if (normalized == "melody" || normalized == "lead" || normalized == "piano") {
@@ -176,6 +190,16 @@ namespace {
 		const int stride = 1 + (seed % 5);
 		const int offset = (seed / 7) % static_cast<int>(scale.size());
 		const double warmth = request.style.find("ambient") != std::string::npos ? 0.35 : 0.22;
+		const int noteCount = static_cast<int>(std::ceil(duration / noteSeconds));
+		for (int step = 0; step < noteCount; ++step) {
+			const int melodyIndex = (offset + step * stride + (step / 4)) % static_cast<int>(scale.size());
+			rendered.melodyNotes.push_back({
+				static_cast<double>(step) * noteSeconds,
+				noteSeconds * 0.86,
+				scale[melodyIndex],
+				86
+			});
+		}
 
 		for (std::size_t i = 0; i < sampleCount; ++i) {
 			const double time = static_cast<double>(i) / sampleRate;
@@ -248,6 +272,7 @@ ofxGgmlMusicGenerationResult ofxGgmlMusicProceduralGenerationBackend::setup(
 	result.key = request.key;
 	result.manifestPath = ofxGgmlMusicUtils::getGenerationManifestPath(request.outputPath);
 	result.historyPath = ofxGgmlMusicUtils::getGenerationHistoryPath(request.outputPath);
+	result.midiPath = makeMidiOutputPath(request.outputPath);
 	result.success = true;
 	loaded = true;
 	return result;
@@ -263,6 +288,7 @@ ofxGgmlMusicGenerationResult ofxGgmlMusicProceduralGenerationBackend::generate(
 	result.outputPath = request.outputPath;
 	result.manifestPath = ofxGgmlMusicUtils::getGenerationManifestPath(request.outputPath);
 	result.historyPath = ofxGgmlMusicUtils::getGenerationHistoryPath(request.outputPath);
+	result.midiPath = makeMidiOutputPath(request.outputPath);
 	result.references.push_back("procedural-sketch");
 
 	if (!ofxGgmlMusicUtils::hasPrompt(request)) {
@@ -289,6 +315,10 @@ ofxGgmlMusicGenerationResult ofxGgmlMusicProceduralGenerationBackend::generate(
 	}
 	if (!writeRequestedStems(request, rendered, result, writeError)) {
 		result.error = "could not write stem output: " + writeError;
+		return result;
+	}
+	if (!ofxGgmlMusicMidiUtils::writeMidiFile(result.midiPath, rendered.melodyNotes, request.tempo.bpm, writeError)) {
+		result.error = "could not write midi output: " + writeError;
 		return result;
 	}
 

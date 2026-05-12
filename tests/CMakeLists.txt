@@ -8,6 +8,7 @@ add_executable(ofxGgmlMusic_tests
 	test_main.cpp
 	../src/ofxGgmlMusic/ofxGgmlMusicAudioUtils.cpp
 	../src/ofxGgmlMusic/ofxGgmlMusicGenerationBackend.cpp
+	../src/ofxGgmlMusic/ofxGgmlMusicMidiUtils.cpp
 	../src/ofxGgmlMusic/ofxGgmlMusicProceduralGenerationBackend.cpp
 	../src/ofxGgmlMusic/ofxGgmlMusicUtils.cpp)
 

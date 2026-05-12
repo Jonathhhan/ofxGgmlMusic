@@ -324,6 +324,9 @@ void ofApp::draw() {
 	if (!lastResult.manifestPath.empty()) {
 		ImGui::TextWrapped("Manifest: %s", lastResult.manifestPath.c_str());
 	}
+	if (!lastResult.midiPath.empty()) {
+		ImGui::TextWrapped("MIDI: %s", lastResult.midiPath.c_str());
+	}
 	if (!historyManifestPaths.empty()) {
 		const auto recentLabel = ofFilePath::getFileName(historyManifestPaths[historyIndex]);
 		if (ImGui::BeginCombo("Recent", recentLabel.c_str())) {
