@@ -25,6 +25,7 @@ namespace ofxGgmlMusicUtils {
 	std::string describe(const ofxGgmlMusicRequest & request);
 	std::string describe(const ofxGgmlMusicGenerationRequest & request);
 	std::string getGenerationManifestPath(const std::string & outputPath);
+	std::string getGenerationHistoryPath(const std::string & outputPath);
 	std::string serializeGenerationManifest(
 		const ofxGgmlMusicGenerationRequest & request,
 		const ofxGgmlMusicGenerationResult & result,
@@ -37,5 +38,17 @@ namespace ofxGgmlMusicUtils {
 	bool loadGenerationManifest(
 		const std::string & path,
 		ofxGgmlMusicGenerationResult & result,
+		std::string & error);
+	bool writeGenerationHistory(
+		const std::string & historyPath,
+		const std::vector<std::string> & manifestPaths,
+		std::string & error);
+	bool loadGenerationHistory(
+		const std::string & historyPath,
+		std::vector<std::string> & manifestPaths,
+		std::string & error);
+	bool appendGenerationHistory(
+		const std::string & historyPath,
+		const std::string & manifestPath,
 		std::string & error);
 }

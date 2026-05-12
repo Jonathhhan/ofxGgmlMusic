@@ -128,6 +128,7 @@ int main() {
 	generationResult.success = true;
 	generationResult.outputPath = generation.outputPath;
 	generationResult.manifestPath = ofxGgmlMusicUtils::getGenerationManifestPath(generation.outputPath);
+	generationResult.historyPath = ofxGgmlMusicUtils::getGenerationHistoryPath(generation.outputPath);
 	generationResult.durationSeconds = generation.settings.durationSeconds;
 	generationResult.seed = generation.settings.seed;
 	generationResult.sampleRate = 44100;
@@ -143,6 +144,7 @@ int main() {
 		!generationResult ||
 		!ofxGgmlMusicUtils::hasOutput(generationResult) ||
 		generationResult.manifestPath.find(".wav.json") == std::string::npos ||
+		generationResult.historyPath.find("ofxGgmlMusic-history.json") == std::string::npos ||
 		!ofxGgmlMusicUtils::hasTempo(generationResult) ||
 		!ofxGgmlMusicUtils::hasKey(generationResult) ||
 		generationResult.beats.empty() ||
@@ -159,6 +161,7 @@ int main() {
 	if (manifestText.find("\"prompt\"") == std::string::npos ||
 		manifestText.find("ambient piano") == std::string::npos ||
 		manifestText.find("\"sampleRate\": 44100") == std::string::npos ||
+		manifestText.find("\"historyPath\"") == std::string::npos ||
 		manifestText.find("\"beats\"") == std::string::npos ||
 		manifestText.find("\"chords\"") == std::string::npos ||
 		manifestText.find("\"stems\"") == std::string::npos) {
@@ -246,6 +249,7 @@ int main() {
 		!ofxGgmlMusicUtils::hasOutput(proceduralResult) ||
 		proceduralResult.outputPath != generation.outputPath ||
 		proceduralResult.manifestPath != ofxGgmlMusicUtils::getGenerationManifestPath(generation.outputPath) ||
+		proceduralResult.historyPath != ofxGgmlMusicUtils::getGenerationHistoryPath(generation.outputPath) ||
 		proceduralResult.durationSeconds <= 0.0 ||
 		proceduralResult.sampleRate != 44100 ||
 		proceduralResult.channels != 1 ||
@@ -257,6 +261,7 @@ int main() {
 		proceduralResult.references.empty() ||
 		!std::filesystem::exists(tempOutput) ||
 		!std::filesystem::exists(proceduralResult.manifestPath) ||
+		!std::filesystem::exists(proceduralResult.historyPath) ||
 		std::filesystem::file_size(tempOutput) <= 44 ||
 		!fileStartsWith(tempOutput, "RIFF") ||
 		!ofxGgmlMusicAudioUtils::loadWav16(tempOutput.string(), generatedBuffer, wavError) ||
@@ -287,12 +292,20 @@ int main() {
 	if (!ofxGgmlMusicUtils::loadGenerationManifest(proceduralResult.manifestPath, loadedManifest, manifestError) ||
 		!loadedManifest ||
 		loadedManifest.outputPath != proceduralResult.outputPath ||
+		loadedManifest.historyPath != proceduralResult.historyPath ||
 		loadedManifest.sampleRate != proceduralResult.sampleRate ||
 		loadedManifest.beats.size() != proceduralResult.beats.size() ||
 		loadedManifest.chords.size() != proceduralResult.chords.size() ||
 		loadedManifest.stems.size() != proceduralResult.stems.size() ||
 		loadedManifest.references.empty()) {
 		std::cerr << "generation manifest failed to load: " << manifestError << "\n";
+		return 1;
+	}
+	std::vector<std::string> generationHistory;
+	if (!ofxGgmlMusicUtils::loadGenerationHistory(proceduralResult.historyPath, generationHistory, manifestError) ||
+		generationHistory.empty() ||
+		generationHistory.front() != proceduralResult.manifestPath) {
+		std::cerr << "generation history failed to load: " << manifestError << "\n";
 		return 1;
 	}
 	procedural->close();
@@ -302,6 +315,7 @@ int main() {
 	}
 	std::filesystem::remove(tempOutput);
 	std::filesystem::remove(proceduralResult.manifestPath);
+	std::filesystem::remove(proceduralResult.historyPath);
 	for (const auto & stem : proceduralResult.stems) {
 		std::filesystem::remove(stem.path);
 	}

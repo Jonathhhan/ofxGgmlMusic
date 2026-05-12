@@ -50,7 +50,9 @@ testable before a real model bridge is selected. Shared WAV helpers live in
 simple PCM16 files through one path. Generation results also carry a manifest
 path; backends can write a `.wav.json` sidecar with prompt, backend, seed, tempo,
 key, duration, sample rate, peak level, beat/downbeat markers, chords, generated
-stems, and references.
+stems, and references. Backends also update an `ofxGgmlMusic-history.json` index
+next to generated audio so tools and examples can find recent manifests without
+guessing output filenames.
 
 ## Example
 
@@ -76,7 +78,8 @@ presets are `ambient`, `lofi`, and `pulse`; explicit prompt, tempo, key,
 duration, seed, and stem flags override the preset defaults. Use
 `ofxGgmlMusicUtils::loadGenerationManifest()` to load the sidecar back into an
 `ofxGgmlMusicGenerationResult`; the CLI also supports
-`--inspect C:\temp\music.wav.json`.
+`--inspect C:\temp\music.wav.json` and
+`--history C:\temp\ofxGgmlMusic-history.json`.
 
 ## Dependencies
 

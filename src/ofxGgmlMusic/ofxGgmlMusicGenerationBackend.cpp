@@ -12,6 +12,7 @@ namespace {
 		result.success = false;
 		result.error = name + " music generation backend is not available";
 		result.manifestPath = ofxGgmlMusicUtils::getGenerationManifestPath(request.outputPath);
+		result.historyPath = ofxGgmlMusicUtils::getGenerationHistoryPath(request.outputPath);
 		result.seed = request.settings.seed;
 		result.durationSeconds = request.settings.durationSeconds;
 		result.tempo = request.tempo;

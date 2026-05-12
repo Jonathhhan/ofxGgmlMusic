@@ -12,6 +12,7 @@ namespace {
 			<< "\n"
 			<< "Options:\n"
 			<< "  --inspect PATH     Load and summarize a generated manifest\n"
+			<< "  --history PATH     Load and list a generation history index\n"
 			<< "  --preset NAME      Preset: ambient, lofi, pulse\n"
 			<< "  --style TEXT       Style tag, for example ambient\n"
 			<< "  --tempo BPM        Tempo in beats per minute\n"
@@ -45,12 +46,26 @@ int main(int argc, char ** argv) {
 			}
 			std::cout << "output: " << manifest.outputPath << "\n";
 			std::cout << "manifest: " << manifest.manifestPath << "\n";
+			std::cout << "history: " << manifest.historyPath << "\n";
 			std::cout << "duration: " << manifest.durationSeconds << "\n";
 			std::cout << "sample rate: " << manifest.sampleRate << "\n";
 			std::cout << "peak: " << manifest.peakAbs << "\n";
 			std::cout << "beats: " << manifest.beats.size() << "\n";
 			std::cout << "chords: " << manifest.chords.size() << "\n";
 			std::cout << "stems: " << manifest.stems.size() << "\n";
+			return 0;
+		} else if (arg == "--history" && readValue(i, argc, argv, value)) {
+			std::vector<std::string> manifests;
+			std::string error;
+			if (!ofxGgmlMusicUtils::loadGenerationHistory(value, manifests, error)) {
+				std::cerr << error << "\n";
+				return 1;
+			}
+			std::cout << "history: " << value << "\n";
+			std::cout << "manifests: " << manifests.size() << "\n";
+			for (const auto & manifest : manifests) {
+				std::cout << "manifest: " << manifest << "\n";
+			}
 			return 0;
 		}
 	}
@@ -82,6 +97,8 @@ int main(int argc, char ** argv) {
 			printUsage();
 			return 0;
 		} else if (arg == "--inspect" && readValue(i, argc, argv, value)) {
+			continue;
+		} else if (arg == "--history" && readValue(i, argc, argv, value)) {
 			continue;
 		} else if (arg == "--preset" && readValue(i, argc, argv, value)) {
 			continue;
@@ -139,6 +156,7 @@ int main(int argc, char ** argv) {
 	std::cout << "output: " << result.outputPath << "\n";
 	std::cout << "preset: " << presetName << "\n";
 	std::cout << "manifest: " << result.manifestPath << "\n";
+	std::cout << "history: " << result.historyPath << "\n";
 	std::cout << "duration: " << result.durationSeconds << "\n";
 	std::cout << "sample rate: " << result.sampleRate << "\n";
 	std::cout << "peak: " << result.peakAbs << "\n";

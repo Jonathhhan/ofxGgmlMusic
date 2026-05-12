@@ -247,6 +247,7 @@ ofxGgmlMusicGenerationResult ofxGgmlMusicProceduralGenerationBackend::setup(
 	result.tempo = request.tempo;
 	result.key = request.key;
 	result.manifestPath = ofxGgmlMusicUtils::getGenerationManifestPath(request.outputPath);
+	result.historyPath = ofxGgmlMusicUtils::getGenerationHistoryPath(request.outputPath);
 	result.success = true;
 	loaded = true;
 	return result;
@@ -261,6 +262,7 @@ ofxGgmlMusicGenerationResult ofxGgmlMusicProceduralGenerationBackend::generate(
 	result.key = request.key;
 	result.outputPath = request.outputPath;
 	result.manifestPath = ofxGgmlMusicUtils::getGenerationManifestPath(request.outputPath);
+	result.historyPath = ofxGgmlMusicUtils::getGenerationHistoryPath(request.outputPath);
 	result.references.push_back("procedural-sketch");
 
 	if (!ofxGgmlMusicUtils::hasPrompt(request)) {
@@ -303,6 +305,10 @@ ofxGgmlMusicGenerationResult ofxGgmlMusicProceduralGenerationBackend::generate(
 	std::string manifestError;
 	if (!ofxGgmlMusicUtils::writeGenerationManifest(request, result, getBackendName(), manifestError)) {
 		result.error = "could not write generation manifest: " + manifestError;
+		return result;
+	}
+	if (!ofxGgmlMusicUtils::appendGenerationHistory(result.historyPath, result.manifestPath, manifestError)) {
+		result.error = "could not write generation history: " + manifestError;
 		return result;
 	}
 	result.success = true;

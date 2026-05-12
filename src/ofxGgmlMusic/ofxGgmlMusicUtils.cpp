@@ -8,6 +8,8 @@
 #include <stdexcept>
 
 namespace {
+	constexpr std::size_t maxGenerationHistoryEntries = 64;
+
 	std::string escapeJson(const std::string & text) {
 		std::ostringstream escaped;
 		for (const auto c : text) {
@@ -436,6 +438,18 @@ namespace ofxGgmlMusicUtils {
 		return outputPath + ".json";
 	}
 
+	std::string getGenerationHistoryPath(const std::string & outputPath) {
+		if (outputPath.empty()) {
+			return "";
+		}
+		const std::filesystem::path output(outputPath);
+		const auto historyName = "ofxGgmlMusic-history.json";
+		if (output.has_parent_path()) {
+			return (output.parent_path() / historyName).string();
+		}
+		return historyName;
+	}
+
 	std::string serializeGenerationManifest(
 		const ofxGgmlMusicGenerationRequest & request,
 		const ofxGgmlMusicGenerationResult & result,
@@ -450,6 +464,7 @@ namespace ofxGgmlMusicUtils {
 		json << "  \"referenceAudioPath\": " << quoteJson(request.referenceAudioPath) << ",\n";
 		json << "  \"outputPath\": " << quoteJson(result.outputPath) << ",\n";
 		json << "  \"manifestPath\": " << quoteJson(result.manifestPath) << ",\n";
+		json << "  \"historyPath\": " << quoteJson(result.historyPath) << ",\n";
 		json << "  \"seed\": " << result.seed << ",\n";
 		json << "  \"durationSeconds\": " << result.durationSeconds << ",\n";
 		json << "  \"sampleRate\": " << result.sampleRate << ",\n";
@@ -563,6 +578,7 @@ namespace ofxGgmlMusicUtils {
 		if (!manifestPath.empty()) {
 			result.manifestPath = manifestPath;
 		}
+		result.historyPath = extractString(text, "historyPath");
 		result.seed = extractInt(text, "seed", -1);
 		result.durationSeconds = extractDouble(text, "durationSeconds");
 		result.sampleRate = extractInt(text, "sampleRate");
@@ -609,5 +625,93 @@ namespace ofxGgmlMusicUtils {
 			return false;
 		}
 		return true;
+	}
+
+	bool writeGenerationHistory(
+		const std::string & historyPath,
+		const std::vector<std::string> & manifestPaths,
+		std::string & error) {
+		error.clear();
+		if (historyPath.empty()) {
+			error = "generation history path is empty";
+			return false;
+		}
+
+		std::filesystem::path path(historyPath);
+		if (path.has_parent_path()) {
+			std::error_code code;
+			std::filesystem::create_directories(path.parent_path(), code);
+			if (code) {
+				error = "could not create generation history directory";
+				return false;
+			}
+		}
+
+		std::ofstream output(historyPath, std::ios::out | std::ios::trunc);
+		if (!output) {
+			error = "could not open generation history path";
+			return false;
+		}
+
+		output << "{\n";
+		output << "  \"manifests\": [\n";
+		for (std::size_t i = 0; i < manifestPaths.size(); ++i) {
+			output << "    " << quoteJson(manifestPaths[i]);
+			output << (i + 1 < manifestPaths.size() ? "," : "") << "\n";
+		}
+		output << "  ]\n";
+		output << "}\n";
+		return true;
+	}
+
+	bool loadGenerationHistory(
+		const std::string & historyPath,
+		std::vector<std::string> & manifestPaths,
+		std::string & error) {
+		manifestPaths.clear();
+		error.clear();
+
+		std::ifstream input(historyPath, std::ios::in);
+		if (!input) {
+			error = "could not open generation history";
+			return false;
+		}
+
+		std::ostringstream text;
+		text << input.rdbuf();
+		const auto body = text.str();
+		if (findKeyValueStart(body, "manifests") == std::string::npos) {
+			error = "generation history did not contain manifests";
+			return false;
+		}
+		const auto arrayText = extractArray(body, "manifests");
+		manifestPaths = parseStringArray(arrayText);
+		return true;
+	}
+
+	bool appendGenerationHistory(
+		const std::string & historyPath,
+		const std::string & manifestPath,
+		std::string & error) {
+		error.clear();
+		if (manifestPath.empty()) {
+			error = "generation manifest path is empty";
+			return false;
+		}
+
+		std::vector<std::string> manifestPaths;
+		if (std::filesystem::exists(historyPath) &&
+			!loadGenerationHistory(historyPath, manifestPaths, error)) {
+			return false;
+		}
+
+		manifestPaths.erase(
+			std::remove(manifestPaths.begin(), manifestPaths.end(), manifestPath),
+			manifestPaths.end());
+		manifestPaths.insert(manifestPaths.begin(), manifestPath);
+		if (manifestPaths.size() > maxGenerationHistoryEntries) {
+			manifestPaths.resize(maxGenerationHistoryEntries);
+		}
+		return writeGenerationHistory(historyPath, manifestPaths, error);
 	}
 }
