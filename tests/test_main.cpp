@@ -99,6 +99,17 @@ int main() {
 		std::cerr << "generation stem names were unexpected\n";
 		return 1;
 	}
+	auto keyTonics = ofxGgmlMusicUtils::getGenerationKeyTonics();
+	auto keyModes = ofxGgmlMusicUtils::getGenerationKeyModes();
+	if (keyTonics.size() != 12 ||
+		keyTonics.front() != "C" ||
+		keyTonics.back() != "B" ||
+		keyModes.size() != 2 ||
+		keyModes.front() != "major" ||
+		keyModes.back() != "minor") {
+		std::cerr << "generation key lists were unexpected\n";
+		return 1;
+	}
 	ofxGgmlMusicGenerationRequest presetRequest;
 	presetRequest.settings.seed = 7;
 	if (!ofxGgmlMusicUtils::applyGenerationPreset("lofi", presetRequest) ||

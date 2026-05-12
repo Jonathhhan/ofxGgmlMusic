@@ -369,6 +369,14 @@ namespace ofxGgmlMusicUtils {
 		return { "melody", "bass", "pulse", "mix" };
 	}
 
+	std::vector<std::string> getGenerationKeyTonics() {
+		return { "C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B" };
+	}
+
+	std::vector<std::string> getGenerationKeyModes() {
+		return { "major", "minor" };
+	}
+
 	bool applyGenerationPreset(
 		const std::string & presetName,
 		ofxGgmlMusicGenerationRequest & request) {

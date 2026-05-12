@@ -177,6 +177,14 @@ $stemJson = & $cliExe --list-stems --json
 if ($LASTEXITCODE -ne 0 -or ($stemJson -join "`n") -notmatch '"stems"' -or ($stemJson -join "`n") -notmatch '"mix"') {
 	throw "Procedural generation JSON stem listing failed"
 }
+& $cliExe --list-keys
+if ($LASTEXITCODE -ne 0) {
+	throw "Procedural generation key listing failed with exit code $LASTEXITCODE"
+}
+$keyJson = & $cliExe --list-keys --json
+if ($LASTEXITCODE -ne 0 -or ($keyJson -join "`n") -notmatch '"tonics"' -or ($keyJson -join "`n") -notmatch '"modes"' -or ($keyJson -join "`n") -notmatch '"minor"') {
+	throw "Procedural generation JSON key listing failed"
+}
 & $cliExe --preset ambient --prompt "invalid duration" --output (Join-Path $scratchDir "invalid-duration.wav") --duration not-a-number
 if ($LASTEXITCODE -eq 0) {
 	throw "Procedural generation CLI accepted an invalid duration"
@@ -200,6 +208,14 @@ if ($LASTEXITCODE -eq 0) {
 & $cliExe --preset ambient --prompt "invalid stem" --output (Join-Path $scratchDir "invalid-stem.wav") --stem not-a-stem
 if ($LASTEXITCODE -eq 0) {
 	throw "Procedural generation CLI accepted an invalid stem"
+}
+& $cliExe --preset ambient --prompt "invalid key" --output (Join-Path $scratchDir "invalid-key.wav") --key H
+if ($LASTEXITCODE -eq 0) {
+	throw "Procedural generation CLI accepted an invalid key"
+}
+& $cliExe --preset ambient --prompt "invalid mode" --output (Join-Path $scratchDir "invalid-mode.wav") --mode dorian
+if ($LASTEXITCODE -eq 0) {
+	throw "Procedural generation CLI accepted an invalid mode"
 }
 & $cliExe --prune-history $historyPath --keep not-an-int
 if ($LASTEXITCODE -eq 0) {

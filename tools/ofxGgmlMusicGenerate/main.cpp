@@ -22,6 +22,7 @@ namespace {
 			<< "  --describe-preset NAME\n"
 			<< "                     Print preset defaults without rendering audio\n"
 			<< "  --list-stems       List canonical stem export names\n"
+			<< "  --list-keys        List supported key tonics and modes\n"
 			<< "  --preset NAME      Preset: ambient, lofi, pulse\n"
 			<< "  --style TEXT       Style tag, for example ambient\n"
 			<< "  --tempo BPM        Tempo in beats per minute\n"
@@ -91,13 +92,25 @@ namespace {
 		return true;
 	}
 
-	bool isGenerationStemName(const std::string & name) {
-		for (const auto & stemName : ofxGgmlMusicUtils::getGenerationStemNames()) {
-			if (name == stemName) {
+	bool containsName(const std::vector<std::string> & names, const std::string & name) {
+		for (const auto & candidate : names) {
+			if (name == candidate) {
 				return true;
 			}
 		}
 		return false;
+	}
+
+	bool isGenerationStemName(const std::string & name) {
+		return containsName(ofxGgmlMusicUtils::getGenerationStemNames(), name);
+	}
+
+	bool isGenerationKeyTonic(const std::string & tonic) {
+		return containsName(ofxGgmlMusicUtils::getGenerationKeyTonics(), tonic);
+	}
+
+	bool isGenerationKeyMode(const std::string & mode) {
+		return containsName(ofxGgmlMusicUtils::getGenerationKeyModes(), mode);
 	}
 
 	std::string escapeJson(const std::string & text) {
@@ -235,6 +248,37 @@ namespace {
 		std::cout << "stems: " << stems.size() << "\n";
 		for (const auto & stem : stems) {
 			std::cout << "stem: " << stem << "\n";
+		}
+	}
+
+	void printKeys(bool json) {
+		const auto tonics = ofxGgmlMusicUtils::getGenerationKeyTonics();
+		const auto modes = ofxGgmlMusicUtils::getGenerationKeyModes();
+		if (json) {
+			std::cout << "{\n";
+			std::cout << "  \"tonics\": [\n";
+			for (std::size_t i = 0; i < tonics.size(); ++i) {
+				std::cout << "    " << quoteJson(tonics[i]);
+				std::cout << (i + 1 < tonics.size() ? "," : "") << "\n";
+			}
+			std::cout << "  ],\n";
+			std::cout << "  \"modes\": [\n";
+			for (std::size_t i = 0; i < modes.size(); ++i) {
+				std::cout << "    " << quoteJson(modes[i]);
+				std::cout << (i + 1 < modes.size() ? "," : "") << "\n";
+			}
+			std::cout << "  ]\n";
+			std::cout << "}\n";
+			return;
+		}
+
+		std::cout << "tonics: " << tonics.size() << "\n";
+		for (const auto & tonic : tonics) {
+			std::cout << "tonic: " << tonic << "\n";
+		}
+		std::cout << "modes: " << modes.size() << "\n";
+		for (const auto & mode : modes) {
+			std::cout << "mode: " << mode << "\n";
 		}
 	}
 
@@ -387,6 +431,9 @@ int main(int argc, char ** argv) {
 		} else if (arg == "--list-stems") {
 			printStems(jsonOutput);
 			return 0;
+		} else if (arg == "--list-keys") {
+			printKeys(jsonOutput);
+			return 0;
 		} else if (arg == "--describe-preset" && readValue(i, argc, argv, value)) {
 			ofxGgmlMusicGenerationRequest request;
 			if (!ofxGgmlMusicUtils::applyGenerationPreset(value, request)) {
@@ -458,6 +505,8 @@ int main(int argc, char ** argv) {
 			continue;
 		} else if (arg == "--list-stems") {
 			continue;
+		} else if (arg == "--list-keys") {
+			continue;
 		} else if (arg == "--describe-preset" && readValue(i, argc, argv, value)) {
 			continue;
 		} else if (arg == "--preset" && readValue(i, argc, argv, value)) {
@@ -492,8 +541,18 @@ int main(int argc, char ** argv) {
 				return 2;
 			}
 		} else if (arg == "--key" && readValue(i, argc, argv, value)) {
+			if (!isGenerationKeyTonic(value)) {
+				std::cerr << "Unknown key tonic: " << value << "\n";
+				std::cerr << "Run --list-keys to see supported key names.\n";
+				return 2;
+			}
 			request.key.tonic = value;
 		} else if (arg == "--mode" && readValue(i, argc, argv, value)) {
+			if (!isGenerationKeyMode(value)) {
+				std::cerr << "Unknown key mode: " << value << "\n";
+				std::cerr << "Run --list-keys to see supported key modes.\n";
+				return 2;
+			}
 			request.key.mode = value;
 		} else if (arg == "--stem" && readValue(i, argc, argv, value)) {
 			if (!isGenerationStemName(value)) {

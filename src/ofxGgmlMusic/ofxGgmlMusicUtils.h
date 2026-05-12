@@ -20,6 +20,8 @@ namespace ofxGgmlMusicUtils {
 	std::string formatKey(const ofxGgmlMusicKey & key);
 	std::vector<std::string> getGenerationPresetNames();
 	std::vector<std::string> getGenerationStemNames();
+	std::vector<std::string> getGenerationKeyTonics();
+	std::vector<std::string> getGenerationKeyModes();
 	bool applyGenerationPreset(
 		const std::string & presetName,
 		ofxGgmlMusicGenerationRequest & request);
