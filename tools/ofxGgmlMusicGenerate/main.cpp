@@ -17,6 +17,8 @@ namespace {
 			<< "  --prune-history PATH --keep N\n"
 			<< "                     Keep the newest N history entries and delete older artifacts\n"
 			<< "  --list-presets     List built-in generation presets\n"
+			<< "  --describe-preset NAME\n"
+			<< "                     Print preset defaults without rendering audio\n"
 			<< "  --preset NAME      Preset: ambient, lofi, pulse\n"
 			<< "  --style TEXT       Style tag, for example ambient\n"
 			<< "  --tempo BPM        Tempo in beats per minute\n"
@@ -164,6 +166,43 @@ namespace {
 		}
 	}
 
+	void printPresetDescription(
+		const std::string & presetName,
+		const ofxGgmlMusicGenerationRequest & request,
+		bool json) {
+		if (json) {
+			std::cout << "{\n";
+			std::cout << "  \"preset\": " << quoteJson(presetName) << ",\n";
+			std::cout << "  \"prompt\": " << quoteJson(request.prompt) << ",\n";
+			std::cout << "  \"style\": " << quoteJson(request.style) << ",\n";
+			std::cout << "  \"durationSeconds\": " << request.settings.durationSeconds << ",\n";
+			std::cout << "  \"tempoBpm\": " << request.tempo.bpm << ",\n";
+			std::cout << "  \"key\": " << quoteJson(request.key.tonic) << ",\n";
+			std::cout << "  \"mode\": " << quoteJson(request.key.mode) << ",\n";
+			std::cout << "  \"loop\": " << (request.settings.loop ? "true" : "false") << ",\n";
+			std::cout << "  \"stems\": [\n";
+			for (std::size_t i = 0; i < request.targetStems.size(); ++i) {
+				std::cout << "    " << quoteJson(request.targetStems[i]);
+				std::cout << (i + 1 < request.targetStems.size() ? "," : "") << "\n";
+			}
+			std::cout << "  ]\n";
+			std::cout << "}\n";
+			return;
+		}
+
+		std::cout << "preset: " << presetName << "\n";
+		std::cout << "prompt: " << request.prompt << "\n";
+		std::cout << "style: " << request.style << "\n";
+		std::cout << "duration: " << request.settings.durationSeconds << "\n";
+		std::cout << "tempo: " << request.tempo.bpm << "\n";
+		std::cout << "key: " << request.key.tonic << "\n";
+		std::cout << "mode: " << request.key.mode << "\n";
+		std::cout << "loop: " << (request.settings.loop ? "true" : "false") << "\n";
+		for (const auto & stem : request.targetStems) {
+			std::cout << "stem: " << stem << "\n";
+		}
+	}
+
 	bool removeFileIfPresent(const std::string & path) {
 		if (path.empty()) {
 			return false;
@@ -273,6 +312,14 @@ int main(int argc, char ** argv) {
 		} else if (arg == "--list-presets") {
 			printPresets(jsonOutput);
 			return 0;
+		} else if (arg == "--describe-preset" && readValue(i, argc, argv, value)) {
+			ofxGgmlMusicGenerationRequest request;
+			if (!ofxGgmlMusicUtils::applyGenerationPreset(value, request)) {
+				std::cerr << "Unknown preset: " << value << "\n";
+				return 2;
+			}
+			printPresetDescription(value, request, jsonOutput);
+			return 0;
 		} else if (arg == "--prune-history" && readValue(i, argc, argv, value)) {
 			std::string keepValue;
 			bool foundKeep = false;
@@ -328,6 +375,8 @@ int main(int argc, char ** argv) {
 		} else if (arg == "--json") {
 			continue;
 		} else if (arg == "--list-presets") {
+			continue;
+		} else if (arg == "--describe-preset" && readValue(i, argc, argv, value)) {
 			continue;
 		} else if (arg == "--preset" && readValue(i, argc, argv, value)) {
 			continue;
