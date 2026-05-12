@@ -21,6 +21,8 @@
   example.
 - Add generation manifests so rendered WAVs keep prompt/backend/seed/audio
   provenance beside the file.
+- Add generated beat/downbeat and chord metadata to music generation results,
+  manifests, tests, and the waveform preview.
 
 ## Next Milestones
 

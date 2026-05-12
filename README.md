@@ -49,7 +49,8 @@ testable before a real model bridge is selected. Shared WAV helpers live in
 `ofxGgmlMusicAudioUtils` so examples and future backends can write and inspect
 simple PCM16 files through one path. Generation results also carry a manifest
 path; backends can write a `.wav.json` sidecar with prompt, backend, seed, tempo,
-key, duration, sample rate, peak level, and references.
+key, duration, sample rate, peak level, beat/downbeat markers, chords, and
+references.
 
 ## Example
 
@@ -57,7 +58,7 @@ key, duration, sample rate, peak level, and references.
 `ofxGgmlMusicGenerationExample` is a root-level prompt-to-music sketch that
 writes a WAV file with the built-in `procedural-sketch` backend and draws a
 waveform preview after generation. It also writes a `.wav.json` manifest next to
-the audio file. Generate either example with the
+the audio file and overlays beat/chord timing on the waveform. Generate either example with the
 openFrameworks projectGenerator using addons `ofxGgmlMusic`, `ofxGgmlCore`, and
 `ofxImGui`.
 

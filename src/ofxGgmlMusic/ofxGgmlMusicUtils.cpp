@@ -185,6 +185,24 @@ namespace ofxGgmlMusicUtils {
 		json << "    \"mode\": " << quoteJson(result.key.mode) << ",\n";
 		json << "    \"confidence\": " << result.key.confidence << "\n";
 		json << "  },\n";
+		json << "  \"beats\": [\n";
+		for (std::size_t i = 0; i < result.beats.size(); ++i) {
+			const auto & beat = result.beats[i];
+			json << "    { \"timeSeconds\": " << beat.timeSeconds <<
+				", \"confidence\": " << beat.confidence <<
+				", \"downbeat\": " << (beat.downbeat ? "true" : "false") << " }";
+			json << (i + 1 < result.beats.size() ? "," : "") << "\n";
+		}
+		json << "  ],\n";
+		json << "  \"chords\": [\n";
+		for (std::size_t i = 0; i < result.chords.size(); ++i) {
+			const auto & chord = result.chords[i];
+			json << "    { \"timeSeconds\": " << chord.timeSeconds <<
+				", \"label\": " << quoteJson(chord.label) <<
+				", \"confidence\": " << chord.confidence << " }";
+			json << (i + 1 < result.chords.size() ? "," : "") << "\n";
+		}
+		json << "  ],\n";
 		json << "  \"loop\": " << (request.settings.loop ? "true" : "false") << ",\n";
 		json << "  \"targetStems\": [";
 		for (std::size_t i = 0; i < request.targetStems.size(); ++i) {

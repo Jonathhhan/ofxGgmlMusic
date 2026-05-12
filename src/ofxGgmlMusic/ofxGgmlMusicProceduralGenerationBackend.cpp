@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <string>
 #include <vector>
 
 namespace {
@@ -45,6 +46,13 @@ namespace {
 		return 440.0 * std::pow(2.0, (static_cast<double>(midi) - 69.0) / 12.0);
 	}
 
+	std::string midiToName(int midi) {
+		static const std::vector<std::string> names = {
+			"C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"
+		};
+		return names[static_cast<std::size_t>((midi % 12 + 12) % 12)];
+	}
+
 	float envelope(double phase) {
 		const double attack = 0.08;
 		const double release = 0.22;
@@ -63,6 +71,47 @@ namespace {
 		}
 		const auto text = request.prompt + "|" + request.style + "|" + request.negativePrompt;
 		return static_cast<int>(std::hash<std::string>{}(text) & 0x7fffffff);
+	}
+
+	std::vector<ofxGgmlMusicBeat> makeBeatGrid(const ofxGgmlMusicGenerationRequest & request, double duration) {
+		const float bpm = request.tempo.bpm > 0.0f ? request.tempo.bpm : 96.0f;
+		const double beatSeconds = 60.0 / static_cast<double>(bpm);
+		std::vector<ofxGgmlMusicBeat> beats;
+		for (int i = 0; ; ++i) {
+			const double time = static_cast<double>(i) * beatSeconds;
+			if (time >= duration) {
+				break;
+			}
+			beats.push_back({ time, i % 4 == 0 ? 1.0f : 0.78f, i % 4 == 0 });
+		}
+		return beats;
+	}
+
+	std::vector<ofxGgmlMusicChord> makeChordProgression(const ofxGgmlMusicGenerationRequest & request, double duration) {
+		const bool minor = request.key.mode == "minor" || request.key.mode == "aeolian";
+		const std::vector<int> intervals = minor
+			? std::vector<int>{ 0, 8, 3, 10 }
+			: std::vector<int>{ 0, 9, 5, 7 };
+		const std::vector<std::string> qualities = minor
+			? std::vector<std::string>{ "m", "", "", "" }
+			: std::vector<std::string>{ "", "m", "", "" };
+		const float bpm = request.tempo.bpm > 0.0f ? request.tempo.bpm : 96.0f;
+		const double barSeconds = 4.0 * 60.0 / static_cast<double>(bpm);
+		const int root = tonicToMidi(request.key);
+		std::vector<ofxGgmlMusicChord> chords;
+		for (int bar = 0; ; ++bar) {
+			const double time = static_cast<double>(bar) * barSeconds;
+			if (time >= duration) {
+				break;
+			}
+			const auto index = static_cast<std::size_t>(bar % static_cast<int>(intervals.size()));
+			chords.push_back({
+				time,
+				midiToName(root + intervals[index]) + qualities[index],
+				0.84f
+			});
+		}
+		return chords;
 	}
 
 	std::vector<float> renderSketch(const ofxGgmlMusicGenerationRequest & request, int seed) {
@@ -171,6 +220,8 @@ ofxGgmlMusicGenerationResult ofxGgmlMusicProceduralGenerationBackend::generate(
 	buffer.channels = 1;
 	buffer.samples = samples;
 	result.peakAbs = buffer.getPeakAbs();
+	result.beats = makeBeatGrid(request, result.durationSeconds);
+	result.chords = makeChordProgression(request, result.durationSeconds);
 	std::string manifestError;
 	if (!ofxGgmlMusicUtils::writeGenerationManifest(request, result, getBackendName(), manifestError)) {
 		result.error = "could not write generation manifest: " + manifestError;

@@ -163,6 +163,11 @@ void ofApp::draw() {
 			lastResult.sampleRate,
 			lastResult.peakAbs);
 	}
+	if (!lastResult.beats.empty() || !lastResult.chords.empty()) {
+		ImGui::Text("Timing: %d beats, %d chords",
+			static_cast<int>(lastResult.beats.size()),
+			static_cast<int>(lastResult.chords.size()));
+	}
 
 	ImGui::End();
 	gui.end();
@@ -183,6 +188,7 @@ void ofApp::drawWaveform(float x, float y, float width, float height) {
 	}
 
 	const float midY = y + 18.0f + height * 0.5f;
+	const float plotY = y + 18.0f;
 	ofSetColor(105, 205, 185);
 	const int columns = std::max(1, static_cast<int>(width));
 	const auto samplesPerColumn = std::max<std::size_t>(1, waveform.samples.size() / static_cast<std::size_t>(columns));
@@ -196,6 +202,19 @@ void ofApp::drawWaveform(float x, float y, float width, float height) {
 		const float px = x + static_cast<float>(column);
 		const float py = peak * height * 0.46f;
 		ofDrawLine(px, midY - py, px, midY + py);
+	}
+
+	if (lastResult.durationSeconds > 0.0) {
+		for (const auto & beat : lastResult.beats) {
+			const float px = x + static_cast<float>(beat.timeSeconds / lastResult.durationSeconds) * width;
+			ofSetColor(beat.downbeat ? ofColor(245, 176, 65) : ofColor(130));
+			ofDrawLine(px, plotY, px, plotY + height);
+		}
+		for (const auto & chord : lastResult.chords) {
+			const float px = x + static_cast<float>(chord.timeSeconds / lastResult.durationSeconds) * width;
+			ofSetColor(245, 176, 65);
+			ofDrawBitmapString(chord.label, px + 4.0f, plotY + 16.0f);
+		}
 	}
 
 	ofSetColor(210);

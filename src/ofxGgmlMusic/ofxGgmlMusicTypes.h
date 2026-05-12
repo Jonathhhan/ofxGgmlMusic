@@ -107,6 +107,8 @@ struct ofxGgmlMusicGenerationResult {
 	float peakAbs = 0.0f;
 	ofxGgmlMusicTempo tempo;
 	ofxGgmlMusicKey key;
+	std::vector<ofxGgmlMusicBeat> beats;
+	std::vector<ofxGgmlMusicChord> chords;
 	std::vector<ofxGgmlMusicStem> stems;
 	std::vector<std::string> references;
 

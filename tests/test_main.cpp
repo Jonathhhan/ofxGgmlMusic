@@ -116,6 +116,9 @@ int main() {
 	generationResult.peakAbs = 0.8f;
 	generationResult.tempo = generation.tempo;
 	generationResult.key = generation.key;
+	generationResult.beats.push_back({ 0.0, 1.0f, true });
+	generationResult.beats.push_back({ 60.0 / generation.tempo.bpm, 0.78f, false });
+	generationResult.chords.push_back({ 0.0, "D", 0.84f });
 	generationResult.stems.push_back({ "piano", "renders/piano.wav", 1.0f });
 	if (ofxGgmlMusicUtils::getGenerationBackendName(generation.settings.backend) != "transformer" ||
 		!generationResult ||
@@ -123,6 +126,9 @@ int main() {
 		generationResult.manifestPath.find(".wav.json") == std::string::npos ||
 		!ofxGgmlMusicUtils::hasTempo(generationResult) ||
 		!ofxGgmlMusicUtils::hasKey(generationResult) ||
+		generationResult.beats.empty() ||
+		!generationResult.beats.front().downbeat ||
+		generationResult.chords.front().label != "D" ||
 		generationResult.stems.front().path != "renders/piano.wav") {
 		std::cerr << "generation result helpers failed\n";
 		return 1;
@@ -133,7 +139,9 @@ int main() {
 		"transformer");
 	if (manifestText.find("\"prompt\"") == std::string::npos ||
 		manifestText.find("ambient piano") == std::string::npos ||
-		manifestText.find("\"sampleRate\": 44100") == std::string::npos) {
+		manifestText.find("\"sampleRate\": 44100") == std::string::npos ||
+		manifestText.find("\"beats\"") == std::string::npos ||
+		manifestText.find("\"chords\"") == std::string::npos) {
 		std::cerr << "generation manifest serialization failed\n";
 		return 1;
 	}
@@ -221,6 +229,9 @@ int main() {
 		proceduralResult.sampleRate != 44100 ||
 		proceduralResult.channels != 1 ||
 		proceduralResult.peakAbs <= 0.0f ||
+		proceduralResult.beats.empty() ||
+		!proceduralResult.beats.front().downbeat ||
+		proceduralResult.chords.empty() ||
 		proceduralResult.references.empty() ||
 		!std::filesystem::exists(tempOutput) ||
 		!std::filesystem::exists(proceduralResult.manifestPath) ||
