@@ -185,6 +185,14 @@ if ($LASTEXITCODE -eq 0) {
 if ($LASTEXITCODE -eq 0) {
 	throw "Procedural generation CLI accepted an invalid tempo"
 }
+& $cliExe --preset ambient --prompt "zero tempo" --output (Join-Path $scratchDir "zero-tempo.wav") --tempo 0
+if ($LASTEXITCODE -eq 0) {
+	throw "Procedural generation CLI accepted a zero tempo"
+}
+& $cliExe --preset ambient --prompt "zero duration" --output (Join-Path $scratchDir "zero-duration.wav") --duration 0
+if ($LASTEXITCODE -eq 0) {
+	throw "Procedural generation CLI accepted a zero duration"
+}
 & $cliExe --preset ambient --prompt "invalid seed" --output (Join-Path $scratchDir "invalid-seed.wav") --seed not-an-int
 if ($LASTEXITCODE -eq 0) {
 	throw "Procedural generation CLI accepted an invalid seed"

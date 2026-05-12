@@ -464,9 +464,17 @@ int main(int argc, char ** argv) {
 				std::cerr << "--tempo requires a numeric BPM value.\n";
 				return 2;
 			}
+			if (request.tempo.bpm <= 0.0f) {
+				std::cerr << "--tempo must be greater than zero.\n";
+				return 2;
+			}
 		} else if (arg == "--duration" && readValue(i, argc, argv, value)) {
 			if (!parseDouble(value, request.settings.durationSeconds)) {
 				std::cerr << "--duration requires a numeric seconds value.\n";
+				return 2;
+			}
+			if (request.settings.durationSeconds <= 0.0) {
+				std::cerr << "--duration must be greater than zero.\n";
 				return 2;
 			}
 		} else if (arg == "--seed" && readValue(i, argc, argv, value)) {
