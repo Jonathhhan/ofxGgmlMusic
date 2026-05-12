@@ -63,11 +63,11 @@ can find recent manifests without guessing output filenames.
 writes a WAV file with the built-in `procedural-sketch` backend and draws a
 waveform preview after generation. It also writes a `.wav.json` manifest next to
 the audio file, writes editable melody, chord, and combined arrangement `.mid`
-files, can export melody/bass/pulse stems, and overlays sections plus beat/chord
-timing on the waveform. Each Generate press writes a timestamped WAV so the history
-index can track multiple renders. The generation example reloads recent renders
-from that index on startup when available, falling back to the standard render
-manifest. Generate either example with the
+files, can export shared melody, bass, pulse, and mix stems, and overlays
+sections plus beat/chord timing on the waveform. Each Generate press writes a
+timestamped WAV so the history index can track multiple renders. The generation
+example reloads recent renders from that index on startup when available,
+falling back to the standard render manifest. Generate either example with the
 openFrameworks projectGenerator using addons `ofxGgmlMusic`, `ofxGgmlCore`, and
 `ofxImGui`.
 

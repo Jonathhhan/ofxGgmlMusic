@@ -42,6 +42,7 @@ $addonsRoot = Split-Path -Parent $addonRoot
 Write-Step "Checking addon skeleton"
 Assert-Path (Join-Path $addonRoot "addon_config.mk") "addon config"
 Assert-Path (Join-Path $addonRoot "README.md") "README"
+Assert-FileContains (Join-Path $addonRoot "README.md") "melody, bass, pulse, and mix stems" "README shared stem list"
 Assert-Path (Join-Path $addonRoot "LICENSE") "license"
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic.h") "public header"
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicAudioUtils.h") "audio utils header"

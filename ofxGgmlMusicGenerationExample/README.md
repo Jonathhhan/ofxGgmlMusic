@@ -10,8 +10,8 @@ The example loads the rendered WAV back into a waveform preview and writes a
 `.wav.json` manifest next to the audio file. The preview overlays generated
 arrangement sections, beat/downbeat markers, and chord changes. Optional shared
 stem exports, including melody, bass, pulse, and mix, are written next to the mix.
-Editable melody, chord,
-and combined arrangement `.mid` files are written beside the WAV. Each Generate
+Editable melody, chord, and combined arrangement `.mid` files are written beside
+the WAV. Each Generate
 press writes a timestamped WAV instead of overwriting the previous render. On
 startup, the example reloads the previous history entry or standard output
 manifest if it exists; use `Reload` to refresh it manually. The `Recent` menu
