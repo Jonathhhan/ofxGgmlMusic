@@ -19,6 +19,7 @@ namespace ofxGgmlMusicUtils {
 	std::string getGenerationBackendName(ofxGgmlMusicGenerationBackendFamily backend);
 	std::string formatKey(const ofxGgmlMusicKey & key);
 	std::vector<std::string> getGenerationPresetNames();
+	std::vector<std::string> getGenerationStemNames();
 	bool applyGenerationPreset(
 		const std::string & presetName,
 		ofxGgmlMusicGenerationRequest & request);

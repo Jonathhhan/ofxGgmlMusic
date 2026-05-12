@@ -19,6 +19,7 @@ namespace {
 			<< "  --list-presets     List built-in generation presets\n"
 			<< "  --describe-preset NAME\n"
 			<< "                     Print preset defaults without rendering audio\n"
+			<< "  --list-stems       List canonical stem export names\n"
 			<< "  --preset NAME      Preset: ambient, lofi, pulse\n"
 			<< "  --style TEXT       Style tag, for example ambient\n"
 			<< "  --tempo BPM        Tempo in beats per minute\n"
@@ -163,6 +164,26 @@ namespace {
 		std::cout << "presets: " << presets.size() << "\n";
 		for (const auto & preset : presets) {
 			std::cout << "preset: " << preset << "\n";
+		}
+	}
+
+	void printStems(bool json) {
+		const auto stems = ofxGgmlMusicUtils::getGenerationStemNames();
+		if (json) {
+			std::cout << "{\n";
+			std::cout << "  \"stems\": [\n";
+			for (std::size_t i = 0; i < stems.size(); ++i) {
+				std::cout << "    " << quoteJson(stems[i]);
+				std::cout << (i + 1 < stems.size() ? "," : "") << "\n";
+			}
+			std::cout << "  ]\n";
+			std::cout << "}\n";
+			return;
+		}
+
+		std::cout << "stems: " << stems.size() << "\n";
+		for (const auto & stem : stems) {
+			std::cout << "stem: " << stem << "\n";
 		}
 	}
 
@@ -312,6 +333,9 @@ int main(int argc, char ** argv) {
 		} else if (arg == "--list-presets") {
 			printPresets(jsonOutput);
 			return 0;
+		} else if (arg == "--list-stems") {
+			printStems(jsonOutput);
+			return 0;
 		} else if (arg == "--describe-preset" && readValue(i, argc, argv, value)) {
 			ofxGgmlMusicGenerationRequest request;
 			if (!ofxGgmlMusicUtils::applyGenerationPreset(value, request)) {
@@ -375,6 +399,8 @@ int main(int argc, char ** argv) {
 		} else if (arg == "--json") {
 			continue;
 		} else if (arg == "--list-presets") {
+			continue;
+		} else if (arg == "--list-stems") {
 			continue;
 		} else if (arg == "--describe-preset" && readValue(i, argc, argv, value)) {
 			continue;

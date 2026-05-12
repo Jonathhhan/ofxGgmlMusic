@@ -92,6 +92,13 @@ int main() {
 		std::cerr << "generation preset names were unexpected\n";
 		return 1;
 	}
+	auto stemNames = ofxGgmlMusicUtils::getGenerationStemNames();
+	if (stemNames.size() != 4 ||
+		stemNames.front() != "melody" ||
+		stemNames.back() != "mix") {
+		std::cerr << "generation stem names were unexpected\n";
+		return 1;
+	}
 	ofxGgmlMusicGenerationRequest presetRequest;
 	presetRequest.settings.seed = 7;
 	if (!ofxGgmlMusicUtils::applyGenerationPreset("lofi", presetRequest) ||

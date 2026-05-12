@@ -92,6 +92,12 @@ Inspect a preset before rendering with:
 tools\ofxGgmlMusicGenerate\build\ofxGgmlMusicGenerate.exe --describe-preset lofi
 ```
 
+List canonical stem export names with:
+
+```powershell
+tools\ofxGgmlMusicGenerate\build\ofxGgmlMusicGenerate.exe --list-stems
+```
+
 Explicit prompt, tempo, key, duration, seed, and stem flags override the preset
 defaults. Use
 `ofxGgmlMusicUtils::loadGenerationManifest()` to load the sidecar back into an
@@ -104,8 +110,8 @@ growing indefinitely, prune older history entries and their generated artifacts:
 tools\ofxGgmlMusicGenerate\build\ofxGgmlMusicGenerate.exe --prune-history C:\temp\ofxGgmlMusic-history.json --keep 8
 ```
 
-Add `--json` to render, list-presets, describe-preset, inspect, history, or prune
-commands when another tool needs machine-readable output.
+Add `--json` to render, list-presets, describe-preset, list-stems, inspect,
+history, or prune commands when another tool needs machine-readable output.
 
 ## Dependencies
 

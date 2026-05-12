@@ -365,6 +365,10 @@ namespace ofxGgmlMusicUtils {
 		return { "ambient", "lofi", "pulse" };
 	}
 
+	std::vector<std::string> getGenerationStemNames() {
+		return { "melody", "bass", "pulse", "mix" };
+	}
+
 	bool applyGenerationPreset(
 		const std::string & presetName,
 		ofxGgmlMusicGenerationRequest & request) {

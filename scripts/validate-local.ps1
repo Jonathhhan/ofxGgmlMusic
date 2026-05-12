@@ -168,6 +168,14 @@ $presetDescriptionJson = & $cliExe --describe-preset lofi --json
 if ($LASTEXITCODE -ne 0 -or ($presetDescriptionJson -join "`n") -notmatch '"preset": "lofi"' -or ($presetDescriptionJson -join "`n") -notmatch '"tempoBpm": 76') {
 	throw "Procedural generation JSON preset description failed"
 }
+& $cliExe --list-stems
+if ($LASTEXITCODE -ne 0) {
+	throw "Procedural generation stem listing failed with exit code $LASTEXITCODE"
+}
+$stemJson = & $cliExe --list-stems --json
+if ($LASTEXITCODE -ne 0 -or ($stemJson -join "`n") -notmatch '"stems"' -or ($stemJson -join "`n") -notmatch '"mix"') {
+	throw "Procedural generation JSON stem listing failed"
+}
 & $cliExe --inspect ($cliOutput + ".json")
 if ($LASTEXITCODE -ne 0) {
 	throw "Procedural generation manifest inspection failed with exit code $LASTEXITCODE"
