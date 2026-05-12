@@ -4,7 +4,9 @@
 #include "ofxGgmlMusicUtils.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
+#include <filesystem>
 #include <functional>
 #include <string>
 #include <vector>
@@ -12,6 +14,13 @@
 namespace {
 	constexpr double pi = 3.14159265358979323846;
 	constexpr int sampleRate = 44100;
+
+	struct RenderedSketch {
+		std::vector<float> mix;
+		std::vector<float> melody;
+		std::vector<float> bass;
+		std::vector<float> pulse;
+	};
 
 	int tonicToMidi(const ofxGgmlMusicKey & key) {
 		const std::string tonic = key.tonic.empty() ? "C" : key.tonic;
@@ -114,14 +123,56 @@ namespace {
 		return chords;
 	}
 
-	std::vector<float> renderSketch(const ofxGgmlMusicGenerationRequest & request, int seed) {
+	std::string normalizeStemName(const std::string & name) {
+		std::string normalized;
+		for (const auto c : name) {
+			if (std::isalnum(static_cast<unsigned char>(c))) {
+				normalized.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+			} else if (c == '-' || c == '_') {
+				normalized.push_back(c);
+			}
+		}
+		return normalized.empty() ? "stem" : normalized;
+	}
+
+	std::string makeStemOutputPath(const std::string & outputPath, const std::string & stemName) {
+		const std::filesystem::path output(outputPath);
+		const auto fileName = output.stem().string() + "-" + normalizeStemName(stemName) + ".wav";
+		if (output.has_parent_path()) {
+			return (output.parent_path() / fileName).string();
+		}
+		return fileName;
+	}
+
+	const std::vector<float> * getStemSamples(const RenderedSketch & rendered, const std::string & stemName) {
+		const auto normalized = normalizeStemName(stemName);
+		if (normalized == "melody" || normalized == "lead" || normalized == "piano") {
+			return &rendered.melody;
+		}
+		if (normalized == "bass") {
+			return &rendered.bass;
+		}
+		if (normalized == "pulse" || normalized == "drums" || normalized == "percussion" || normalized == "texture") {
+			return &rendered.pulse;
+		}
+		if (normalized == "mix") {
+			return &rendered.mix;
+		}
+		return nullptr;
+	}
+
+	RenderedSketch renderSketch(const ofxGgmlMusicGenerationRequest & request, int seed) {
 		const double duration = std::max(0.5, std::min(120.0, request.settings.durationSeconds));
 		const float bpm = request.tempo.bpm > 0.0f ? request.tempo.bpm : 96.0f;
 		const double beatSeconds = 60.0 / static_cast<double>(bpm);
 		const double noteSeconds = beatSeconds * 0.5;
 		const auto scale = makeScale(request.key);
 		const auto sampleCount = static_cast<std::size_t>(duration * sampleRate);
-		std::vector<float> samples(sampleCount, 0.0f);
+		RenderedSketch rendered;
+		rendered.mix.resize(sampleCount, 0.0f);
+		rendered.melody.resize(sampleCount, 0.0f);
+		rendered.bass.resize(sampleCount, 0.0f);
+		rendered.pulse.resize(sampleCount, 0.0f);
 		const int stride = 1 + (seed % 5);
 		const int offset = (seed / 7) % static_cast<int>(scale.size());
 		const double warmth = request.style.find("ambient") != std::string::npos ? 0.35 : 0.22;
@@ -143,9 +194,32 @@ namespace {
 			if (!request.settings.loop) {
 				fade = static_cast<float>(std::min(1.0, std::min(time / 0.05, (duration - time) / 0.18)));
 			}
-			samples[i] = (melody + overtone + bass * warmth + pulse) * fade;
+			rendered.melody[i] = (melody + overtone) * fade;
+			rendered.bass[i] = bass * static_cast<float>(warmth) * fade;
+			rendered.pulse[i] = pulse * fade;
+			rendered.mix[i] = rendered.melody[i] + rendered.bass[i] + rendered.pulse[i];
 		}
-		return samples;
+		return rendered;
+	}
+
+	bool writeRequestedStems(
+		const ofxGgmlMusicGenerationRequest & request,
+		const RenderedSketch & rendered,
+		ofxGgmlMusicGenerationResult & result,
+		std::string & error) {
+		error.clear();
+		for (const auto & stemName : request.targetStems) {
+			const auto samples = getStemSamples(rendered, stemName);
+			if (samples == nullptr) {
+				continue;
+			}
+			const auto stemPath = makeStemOutputPath(request.outputPath, stemName);
+			if (!ofxGgmlMusicAudioUtils::writeMonoWav16(stemPath, *samples, sampleRate, error)) {
+				return false;
+			}
+			result.stems.push_back({ normalizeStemName(stemName), stemPath, 1.0f });
+		}
+		return true;
 	}
 }
 
@@ -205,20 +279,24 @@ ofxGgmlMusicGenerationResult ofxGgmlMusicProceduralGenerationBackend::generate(
 		}
 	}
 
-	const auto samples = renderSketch(request, result.seed);
+	const auto rendered = renderSketch(request, result.seed);
 	std::string writeError;
-	if (!ofxGgmlMusicAudioUtils::writeMonoWav16(request.outputPath, samples, sampleRate, writeError)) {
+	if (!ofxGgmlMusicAudioUtils::writeMonoWav16(request.outputPath, rendered.mix, sampleRate, writeError)) {
 		result.error = "could not write wav output: " + writeError;
 		return result;
 	}
+	if (!writeRequestedStems(request, rendered, result, writeError)) {
+		result.error = "could not write stem output: " + writeError;
+		return result;
+	}
 
-	result.durationSeconds = static_cast<double>(samples.size()) / sampleRate;
+	result.durationSeconds = static_cast<double>(rendered.mix.size()) / sampleRate;
 	result.sampleRate = sampleRate;
 	result.channels = 1;
 	ofxGgmlMusicAudioBuffer buffer;
 	buffer.sampleRate = sampleRate;
 	buffer.channels = 1;
-	buffer.samples = samples;
+	buffer.samples = rendered.mix;
 	result.peakAbs = buffer.getPeakAbs();
 	result.beats = makeBeatGrid(request, result.durationSeconds);
 	result.chords = makeChordProgression(request, result.durationSeconds);

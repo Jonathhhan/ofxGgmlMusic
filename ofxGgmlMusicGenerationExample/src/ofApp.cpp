@@ -55,6 +55,16 @@ void ofApp::rebuildRequest() {
 	request.key.tonic = tonics[tonicIndex];
 	request.key.mode = modes[modeIndex];
 	request.key.confidence = 1.0f;
+	request.targetStems.clear();
+	if (exportMelodyStem) {
+		request.targetStems.push_back("melody");
+	}
+	if (exportBassStem) {
+		request.targetStems.push_back("bass");
+	}
+	if (exportPulseStem) {
+		request.targetStems.push_back("pulse");
+	}
 }
 
 void ofApp::runGeneration() {
@@ -131,6 +141,11 @@ void ofApp::draw() {
 	changed |= ImGui::Checkbox("Loop", &loop);
 	ImGui::SameLine();
 	changed |= ImGui::Checkbox("Auto-play", &autoPlay);
+	changed |= ImGui::Checkbox("Melody stem", &exportMelodyStem);
+	ImGui::SameLine();
+	changed |= ImGui::Checkbox("Bass stem", &exportBassStem);
+	ImGui::SameLine();
+	changed |= ImGui::Checkbox("Pulse stem", &exportPulseStem);
 	if (changed) {
 		rebuildRequest();
 		player.setLoop(loop);
@@ -167,6 +182,12 @@ void ofApp::draw() {
 		ImGui::Text("Timing: %d beats, %d chords",
 			static_cast<int>(lastResult.beats.size()),
 			static_cast<int>(lastResult.chords.size()));
+	}
+	if (!lastResult.stems.empty()) {
+		ImGui::Text("Stems: %d", static_cast<int>(lastResult.stems.size()));
+		for (const auto & stem : lastResult.stems) {
+			ImGui::TextWrapped("%s: %s", stem.name.c_str(), stem.path.c_str());
+		}
 	}
 
 	ImGui::End();

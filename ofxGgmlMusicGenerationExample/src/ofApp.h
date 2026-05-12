@@ -39,4 +39,7 @@ private:
 	int modeIndex = 0;
 	bool loop = true;
 	bool autoPlay = true;
+	bool exportMelodyStem = true;
+	bool exportBassStem = true;
+	bool exportPulseStem = false;
 };

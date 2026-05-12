@@ -25,6 +25,8 @@ No dependency should point from `ofxGgmlCore` or `ofxGgmlAudio` back to
 - generation manifests that record prompt, backend, seed, tempo, key, audio
   stats, beat/downbeat markers, chord changes, and references next to rendered
   audio
+- procedural stem export for named music components such as melody, bass, and
+  pulse
 - model-specific preprocessing and postprocessing
 - beat, downbeat, tempo, key, chord, chroma, stem, and arrangement workflows
 - prompt-to-music, loop, stem-targeted, and reference-audio generation workflows

@@ -212,6 +212,15 @@ namespace ofxGgmlMusicUtils {
 			json << quoteJson(request.targetStems[i]);
 		}
 		json << "],\n";
+		json << "  \"stems\": [\n";
+		for (std::size_t i = 0; i < result.stems.size(); ++i) {
+			const auto & stem = result.stems[i];
+			json << "    { \"name\": " << quoteJson(stem.name) <<
+				", \"path\": " << quoteJson(stem.path) <<
+				", \"gain\": " << stem.gain << " }";
+			json << (i + 1 < result.stems.size() ? "," : "") << "\n";
+		}
+		json << "  ],\n";
 		json << "  \"references\": [";
 		for (std::size_t i = 0; i < result.references.size(); ++i) {
 			if (i > 0) {

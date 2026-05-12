@@ -141,7 +141,8 @@ int main() {
 		manifestText.find("ambient piano") == std::string::npos ||
 		manifestText.find("\"sampleRate\": 44100") == std::string::npos ||
 		manifestText.find("\"beats\"") == std::string::npos ||
-		manifestText.find("\"chords\"") == std::string::npos) {
+		manifestText.find("\"chords\"") == std::string::npos ||
+		manifestText.find("\"stems\"") == std::string::npos) {
 		std::cerr << "generation manifest serialization failed\n";
 		return 1;
 	}
@@ -205,6 +206,7 @@ int main() {
 
 	generation.outputPath = tempOutput.string();
 	generation.settings.backend = ofxGgmlMusicGenerationBackendFamily::External;
+	generation.targetStems = { "melody", "bass", "pulse" };
 	auto procedural = ofxGgmlMakeProceduralMusicGenerationBackend();
 	if (!procedural ||
 		procedural->getBackendName() != "procedural-sketch" ||
@@ -232,6 +234,7 @@ int main() {
 		proceduralResult.beats.empty() ||
 		!proceduralResult.beats.front().downbeat ||
 		proceduralResult.chords.empty() ||
+		proceduralResult.stems.size() != 3 ||
 		proceduralResult.references.empty() ||
 		!std::filesystem::exists(tempOutput) ||
 		!std::filesystem::exists(proceduralResult.manifestPath) ||
@@ -244,6 +247,18 @@ int main() {
 		std::cerr << "procedural generation failed to write a wav file\n";
 		return 1;
 	}
+	for (const auto & stem : proceduralResult.stems) {
+		ofxGgmlMusicAudioBuffer stemBuffer;
+		if (stem.path.empty() ||
+			!std::filesystem::exists(stem.path) ||
+			!fileStartsWith(stem.path, "RIFF") ||
+			!ofxGgmlMusicAudioUtils::loadWav16(stem.path, stemBuffer, wavError) ||
+			!stemBuffer ||
+			stemBuffer.getPeakAbs() <= 0.0f) {
+			std::cerr << "procedural generation failed to write readable stems\n";
+			return 1;
+		}
+	}
 	if (!fileStartsWith(proceduralResult.manifestPath, "{")) {
 		std::cerr << "procedural generation failed to write a manifest file\n";
 		return 1;
@@ -255,6 +270,9 @@ int main() {
 	}
 	std::filesystem::remove(tempOutput);
 	std::filesystem::remove(proceduralResult.manifestPath);
+	for (const auto & stem : proceduralResult.stems) {
+		std::filesystem::remove(stem.path);
+	}
 
 	return 0;
 }

@@ -23,6 +23,7 @@
   provenance beside the file.
 - Add generated beat/downbeat and chord metadata to music generation results,
   manifests, tests, and the waveform preview.
+- Add optional procedural stem exports for melody, bass, and pulse components.
 
 ## Next Milestones
 
