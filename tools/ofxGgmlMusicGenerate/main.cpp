@@ -11,6 +11,7 @@ namespace {
 			<< "ofxGgmlMusicGenerate --prompt TEXT --output PATH [options]\n"
 			<< "\n"
 			<< "Options:\n"
+			<< "  --preset NAME      Preset: ambient, lofi, pulse\n"
 			<< "  --style TEXT       Style tag, for example ambient\n"
 			<< "  --tempo BPM        Tempo in beats per minute\n"
 			<< "  --duration SEC     Duration in seconds\n"
@@ -32,25 +33,33 @@ namespace {
 
 int main(int argc, char ** argv) {
 	ofxGgmlMusicGenerationRequest request;
-	request.prompt = "loopable ambient piano motif";
-	request.style = "ambient";
 	request.outputPath = "ofxGgmlMusicGenerate.wav";
 	request.settings.backend = ofxGgmlMusicGenerationBackendFamily::External;
-	request.settings.durationSeconds = 8.0;
 	request.settings.seed = 42;
-	request.settings.loop = false;
-	request.tempo.bpm = 92.0f;
-	request.tempo.confidence = 1.0f;
-	request.key.tonic = "C";
-	request.key.mode = "major";
-	request.key.confidence = 1.0f;
 
+	std::string presetName = "ambient";
+	for (int i = 1; i < argc; ++i) {
+		const std::string arg = argv[i];
+		std::string value;
+		if (arg == "--preset" && readValue(i, argc, argv, value)) {
+			presetName = value;
+		}
+	}
+	if (!ofxGgmlMusicUtils::applyGenerationPreset(presetName, request)) {
+		std::cerr << "Unknown preset: " << presetName << "\n";
+		printUsage();
+		return 2;
+	}
+
+	std::vector<std::string> explicitStems;
 	for (int i = 1; i < argc; ++i) {
 		const std::string arg = argv[i];
 		std::string value;
 		if (arg == "--help" || arg == "-h") {
 			printUsage();
 			return 0;
+		} else if (arg == "--preset" && readValue(i, argc, argv, value)) {
+			continue;
 		} else if (arg == "--prompt" && readValue(i, argc, argv, value)) {
 			request.prompt = value;
 		} else if (arg == "--output" && readValue(i, argc, argv, value)) {
@@ -68,7 +77,7 @@ int main(int argc, char ** argv) {
 		} else if (arg == "--mode" && readValue(i, argc, argv, value)) {
 			request.key.mode = value;
 		} else if (arg == "--stem" && readValue(i, argc, argv, value)) {
-			request.targetStems.push_back(value);
+			explicitStems.push_back(value);
 		} else if (arg == "--loop") {
 			request.settings.loop = true;
 		} else {
@@ -76,6 +85,9 @@ int main(int argc, char ** argv) {
 			printUsage();
 			return 2;
 		}
+	}
+	if (!explicitStems.empty()) {
+		request.targetStems = explicitStems;
 	}
 
 	if (!ofxGgmlMusicUtils::hasPrompt(request)) {
@@ -100,6 +112,7 @@ int main(int argc, char ** argv) {
 	}
 
 	std::cout << "output: " << result.outputPath << "\n";
+	std::cout << "preset: " << presetName << "\n";
 	std::cout << "manifest: " << result.manifestPath << "\n";
 	std::cout << "duration: " << result.durationSeconds << "\n";
 	std::cout << "sample rate: " << result.sampleRate << "\n";

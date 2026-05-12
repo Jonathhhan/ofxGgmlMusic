@@ -12,14 +12,18 @@ namespace {
 	const char* modes[] = {
 		"major", "minor"
 	};
+
+	const char* presets[] = {
+		"ambient", "lofi", "pulse"
+	};
 }
 
 void ofApp::setup() {
 	ofSetWindowTitle("ofxGgmlMusic generation example");
 	gui.setup();
 	backend = ofxGgmlMakeProceduralMusicGenerationBackend();
-	std::snprintf(promptBuffer.data(), promptBuffer.size(), "%s", "loopable ambient piano motif with granular texture");
-	std::snprintf(styleBuffer.data(), styleBuffer.size(), "%s", "ambient");
+	ofxGgmlMusicUtils::applyGenerationPreset("ambient", request);
+	syncControlsFromRequest();
 	rebuildRequest();
 	status = "ready";
 	detail = backend->getBackendName();
@@ -39,6 +43,50 @@ void ofApp::keyPressed(int key) {
 		} else if (ofFile::doesFileExist(request.outputPath, false)) {
 			player.play();
 		}
+	}
+}
+
+void ofApp::applyPreset(int index) {
+	if (index < 0 || index >= 3) {
+		return;
+	}
+	ofxGgmlMusicGenerationRequest presetRequest;
+	presetRequest.outputPath = getOutputPath();
+	presetRequest.settings.seed = seed;
+	presetRequest.settings.backend = ofxGgmlMusicGenerationBackendFamily::External;
+	if (!ofxGgmlMusicUtils::applyGenerationPreset(presets[index], presetRequest)) {
+		return;
+	}
+	request = presetRequest;
+	syncControlsFromRequest();
+	rebuildRequest();
+}
+
+void ofApp::syncControlsFromRequest() {
+	std::snprintf(promptBuffer.data(), promptBuffer.size(), "%s", request.prompt.c_str());
+	std::snprintf(styleBuffer.data(), styleBuffer.size(), "%s", request.style.c_str());
+	tempo = request.tempo.bpm > 0.0f ? request.tempo.bpm : tempo;
+	duration = static_cast<float>(request.settings.durationSeconds);
+	loop = request.settings.loop;
+	for (int i = 0; i < 12; ++i) {
+		if (request.key.tonic == tonics[i]) {
+			tonicIndex = i;
+			break;
+		}
+	}
+	for (int i = 0; i < 2; ++i) {
+		if (request.key.mode == modes[i]) {
+			modeIndex = i;
+			break;
+		}
+	}
+	exportMelodyStem = false;
+	exportBassStem = false;
+	exportPulseStem = false;
+	for (const auto & stem : request.targetStems) {
+		exportMelodyStem = exportMelodyStem || stem == "melody";
+		exportBassStem = exportBassStem || stem == "bass";
+		exportPulseStem = exportPulseStem || stem == "pulse";
 	}
 }
 
@@ -131,6 +179,10 @@ void ofApp::draw() {
 	ImGui::Begin("ofxGgmlMusic Generation");
 
 	bool changed = false;
+	if (ImGui::Combo("Preset", &presetIndex, presets, 3)) {
+		applyPreset(presetIndex);
+		changed = false;
+	}
 	changed |= ImGui::InputTextMultiline("Prompt", promptBuffer.data(), promptBuffer.size(), ImVec2(-1.0f, 84.0f));
 	changed |= ImGui::InputText("Style", styleBuffer.data(), styleBuffer.size());
 	changed |= ImGui::SliderFloat("Tempo", &tempo, 48.0f, 180.0f, "%.0f bpm");

@@ -28,6 +28,7 @@ No dependency should point from `ofxGgmlCore` or `ofxGgmlAudio` back to
 - procedural stem export for named music components such as melody, bass, and
   pulse
 - a tiny native procedural generation CLI used by scripts for no-IDE smoke runs
+- shared generation presets used by both the CLI and openFrameworks example
 - model-specific preprocessing and postprocessing
 - beat, downbeat, tempo, key, chord, chroma, stem, and arrangement workflows
 - prompt-to-music, loop, stem-targeted, and reference-audio generation workflows

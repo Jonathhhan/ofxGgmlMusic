@@ -18,6 +18,8 @@ public:
 private:
 	void rebuildRequest();
 	void runGeneration();
+	void applyPreset(int index);
+	void syncControlsFromRequest();
 	void loadWaveform();
 	void drawWaveform(float x, float y, float width, float height);
 	std::string getOutputPath() const;
@@ -35,6 +37,7 @@ private:
 	float tempo = 92.0f;
 	float duration = 8.0f;
 	int seed = 42;
+	int presetIndex = 0;
 	int tonicIndex = 0;
 	int modeIndex = 0;
 	bool loop = true;

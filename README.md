@@ -66,11 +66,13 @@ openFrameworks projectGenerator using addons `ofxGgmlMusic`, `ofxGgmlCore`, and
 For a no-IDE smoke run, use the procedural CLI helper:
 
 ```powershell
-scripts\generate-procedural-music.bat -Output C:\temp\music.wav -Stem melody,bass -Loop
+scripts\generate-procedural-music.bat -Preset lofi -Output C:\temp\music.wav -Loop
 ```
 
 The helper builds `tools/ofxGgmlMusicGenerate`, writes the WAV, writes the
-`.wav.json` manifest, and writes requested stem WAVs next to the mix.
+`.wav.json` manifest, and writes requested stem WAVs next to the mix. Built-in
+presets are `ambient`, `lofi`, and `pulse`; explicit prompt, tempo, key,
+duration, seed, and stem flags override the preset defaults.
 
 ## Dependencies
 

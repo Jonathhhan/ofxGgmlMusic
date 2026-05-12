@@ -3,6 +3,7 @@
 #include "ofxGgmlMusicTypes.h"
 
 #include <string>
+#include <vector>
 
 namespace ofxGgmlMusicUtils {
 	bool hasInput(const ofxGgmlMusicRequest & request);
@@ -17,6 +18,10 @@ namespace ofxGgmlMusicUtils {
 	std::string getTaskName(ofxGgmlMusicTask task);
 	std::string getGenerationBackendName(ofxGgmlMusicGenerationBackendFamily backend);
 	std::string formatKey(const ofxGgmlMusicKey & key);
+	std::vector<std::string> getGenerationPresetNames();
+	bool applyGenerationPreset(
+		const std::string & presetName,
+		ofxGgmlMusicGenerationRequest & request);
 	std::string describe(const ofxGgmlMusicRequest & request);
 	std::string describe(const ofxGgmlMusicGenerationRequest & request);
 	std::string getGenerationManifestPath(const std::string & outputPath);

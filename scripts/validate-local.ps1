@@ -122,6 +122,7 @@ if (Test-Path -LiteralPath $scratchDir) {
 New-Item -ItemType Directory -Path $scratchDir | Out-Null
 $cliOutput = Join-Path $scratchDir "procedural.wav"
 & (Join-Path $scriptRoot "generate-procedural-music.ps1") `
+	-Preset lofi `
 	-Prompt "loopable validation motif" `
 	-Output $cliOutput `
 	-Duration 1.0 `

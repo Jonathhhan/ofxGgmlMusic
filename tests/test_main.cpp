@@ -86,6 +86,25 @@ int main() {
 	generation.key.tonic = "D";
 	generation.key.mode = "major";
 	generation.targetStems = { "piano", "texture" };
+	auto presetNames = ofxGgmlMusicUtils::getGenerationPresetNames();
+	if (presetNames.size() != 3 ||
+		presetNames.front() != "ambient") {
+		std::cerr << "generation preset names were unexpected\n";
+		return 1;
+	}
+	ofxGgmlMusicGenerationRequest presetRequest;
+	presetRequest.settings.seed = 7;
+	if (!ofxGgmlMusicUtils::applyGenerationPreset("lofi", presetRequest) ||
+		presetRequest.style != "lofi" ||
+		presetRequest.tempo.bpm != 76.0f ||
+		presetRequest.key.mode != "minor" ||
+		presetRequest.targetStems.size() != 3 ||
+		presetRequest.settings.seed != 7 ||
+		!presetRequest.settings.loop ||
+		ofxGgmlMusicUtils::applyGenerationPreset("unknown", presetRequest)) {
+		std::cerr << "generation preset helper failed\n";
+		return 1;
+	}
 	if (!ofxGgmlMusicUtils::hasPrompt(generation) ||
 		!ofxGgmlMusicUtils::hasTempo(generation) ||
 		!ofxGgmlMusicUtils::hasKey(generation)) {

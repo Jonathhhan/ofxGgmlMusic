@@ -1,5 +1,7 @@
 #include "ofxGgmlMusicUtils.h"
 
+#include <algorithm>
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -34,6 +36,18 @@ namespace {
 
 	std::string quoteJson(const std::string & text) {
 		return "\"" + escapeJson(text) + "\"";
+	}
+
+	std::string normalizeName(const std::string & text) {
+		std::string normalized;
+		for (const auto c : text) {
+			if (std::isalnum(static_cast<unsigned char>(c))) {
+				normalized.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+			} else if (c == '-' || c == '_') {
+				normalized.push_back(c);
+			}
+		}
+		return normalized;
 	}
 }
 
@@ -125,6 +139,53 @@ namespace ofxGgmlMusicUtils {
 			return key.mode;
 		}
 		return key.tonic + " " + key.mode;
+	}
+
+	std::vector<std::string> getGenerationPresetNames() {
+		return { "ambient", "lofi", "pulse" };
+	}
+
+	bool applyGenerationPreset(
+		const std::string & presetName,
+		ofxGgmlMusicGenerationRequest & request) {
+		const auto preset = normalizeName(presetName);
+		if (preset == "ambient") {
+			if (request.prompt.empty()) {
+				request.prompt = "loopable ambient piano motif with granular texture";
+			}
+			request.style = "ambient";
+			request.settings.durationSeconds = 8.0;
+			request.settings.loop = true;
+			request.tempo = { 92.0f, 1.0f };
+			request.key = { "C", "major", 1.0f };
+			request.targetStems = { "melody", "bass" };
+			return true;
+		}
+		if (preset == "lofi" || preset == "lo-fi") {
+			if (request.prompt.empty()) {
+				request.prompt = "warm lofi keys with soft pulse and tape texture";
+			}
+			request.style = "lofi";
+			request.settings.durationSeconds = 10.0;
+			request.settings.loop = true;
+			request.tempo = { 76.0f, 1.0f };
+			request.key = { "D", "minor", 1.0f };
+			request.targetStems = { "melody", "bass", "pulse" };
+			return true;
+		}
+		if (preset == "pulse" || preset == "pulsed") {
+			if (request.prompt.empty()) {
+				request.prompt = "tight pulsing synth pattern with simple bass";
+			}
+			request.style = "pulse";
+			request.settings.durationSeconds = 6.0;
+			request.settings.loop = true;
+			request.tempo = { 126.0f, 1.0f };
+			request.key = { "A", "minor", 1.0f };
+			request.targetStems = { "pulse", "bass" };
+			return true;
+		}
+		return false;
 	}
 
 	std::string describe(const ofxGgmlMusicRequest & request) {

@@ -1,5 +1,6 @@
 param(
-	[string]$Prompt = "loopable ambient piano motif with granular texture",
+	[string]$Prompt = "",
+	[string]$Preset = "ambient",
 	[string]$Output = "",
 	[string]$Style = "ambient",
 	[double]$Tempo = 92.0,
@@ -7,7 +8,7 @@ param(
 	[int]$Seed = 42,
 	[string]$Key = "C",
 	[string]$Mode = "major",
-	[string[]]$Stem = @("melody", "bass"),
+	[string[]]$Stem = @(),
 	[string]$BuildDir = "",
 	[switch]$Loop,
 	[switch]$Clean
@@ -115,7 +116,7 @@ if (Test-WindowsHost) {
 }
 
 $args = @(
-	"--prompt", $Prompt,
+	"--preset", $Preset,
 	"--output", $Output,
 	"--style", $Style,
 	"--tempo", ([string]$Tempo),
@@ -124,6 +125,9 @@ $args = @(
 	"--key", $Key,
 	"--mode", $Mode
 )
+if (![string]::IsNullOrWhiteSpace($Prompt)) {
+	$args += @("--prompt", $Prompt)
+}
 if ($Loop) {
 	$args += "--loop"
 }
