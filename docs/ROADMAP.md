@@ -32,10 +32,13 @@
 - Add generation manifest loading for metadata round trips.
 - Reload the previous standard generation manifest in the openFrameworks example.
 - Add independent addon version metadata and release-candidate docs.
+- Add an external generation contract test that drives the local procedural CLI
+  through `ofxGgmlMusicExternalGenerationBackend`.
 
 ## Next Milestones
 
-- Use the external generation backend with one concrete local model runner.
+- Use the external generation backend with one concrete local model runner and
+  document the required setup path.
 - Add MusicGen-style transformer and diffusion bridge research notes with a
   clear runtime/setup decision.
 - Keep image and video GAN work in `ofxGgmlDiffusion` and `ofxGgmlVideo`; this

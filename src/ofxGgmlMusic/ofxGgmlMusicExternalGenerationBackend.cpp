@@ -64,6 +64,9 @@ namespace {
 			command << "cd " << quoteShellArgument(external.workingDirectory) << " && ";
 #endif
 		}
+#if defined(_WIN32)
+		command << "call ";
+#endif
 		command << quoteShellArgument(external.executablePath);
 		appendFlagValue(command, external.promptFlag, request.prompt);
 		appendFlagValue(command, external.outputFlag, request.outputPath);

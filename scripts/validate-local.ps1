@@ -66,6 +66,9 @@ Assert-Path (Join-Path $addonRoot "tools\ofxGgmlMusicGenerate\main.cpp") "genera
 Assert-Path (Join-Path $scriptRoot "generate-procedural-music.ps1") "procedural generation script"
 Assert-Path (Join-Path $scriptRoot "generate-procedural-music.bat") "procedural generation batch script"
 Assert-Path (Join-Path $scriptRoot "generate-procedural-music.sh") "procedural generation shell script"
+Assert-Path (Join-Path $scriptRoot "test-external-generation-contract.ps1") "external generation contract script"
+Assert-Path (Join-Path $scriptRoot "test-external-generation-contract.bat") "external generation contract batch script"
+Assert-Path (Join-Path $scriptRoot "test-external-generation-contract.sh") "external generation contract shell script"
 
 Write-Step "Checking dependency layout"
 Assert-Path (Join-Path $addonsRoot "ofxGgmlCore") "sibling ofxGgmlCore addon" -Directory
@@ -94,6 +97,7 @@ Assert-FileContains (Join-Path $generationExampleRoot "src\ofApp.cpp") "getGener
 Assert-FileContains (Join-Path $generationExampleRoot "src\ofApp.cpp") "getGenerationKeyModes" "generation example key mode source"
 Assert-Path (Join-Path $addonRoot "tests\CMakeLists.txt") "test CMakeLists"
 Assert-Path (Join-Path $addonRoot "tests\test_main.cpp") "test source"
+Assert-Path (Join-Path $addonRoot "tests\test_external_generation_contract.cpp") "external generation contract source"
 
 $nestedExamples = Join-Path $addonRoot "examples"
 if (Test-Path -LiteralPath $nestedExamples -PathType Container) {
@@ -124,6 +128,12 @@ Write-Step "Running headless tests"
 & (Join-Path $scriptRoot "test-addon.ps1")
 if ($LASTEXITCODE -ne 0) {
 	throw "Headless tests failed with exit code $LASTEXITCODE"
+}
+
+Write-Step "Checking external generation contract dry run"
+& (Join-Path $scriptRoot "test-external-generation-contract.ps1") -DryRun
+if ($LASTEXITCODE -ne 0) {
+	throw "External generation contract dry run failed with exit code $LASTEXITCODE"
 }
 
 Write-Step "Checking procedural generation CLI"
@@ -276,5 +286,13 @@ if ($LASTEXITCODE -ne 0 -or ($pruneJson -join "`n") -notmatch '"kept"') {
 	throw "Procedural generation JSON prune failed"
 }
 Remove-Item -LiteralPath $scratchDir -Recurse -Force
+
+Write-Step "Running external generation contract"
+& (Join-Path $scriptRoot "test-external-generation-contract.ps1") `
+	-BuildRoot (Join-Path ([System.IO.Path]::GetTempPath()) "ofxGgmlMusic-external-contract") `
+	-Clean
+if ($LASTEXITCODE -ne 0) {
+	throw "External generation contract failed with exit code $LASTEXITCODE"
+}
 
 Write-Step "ofxGgmlMusic local validation passed"

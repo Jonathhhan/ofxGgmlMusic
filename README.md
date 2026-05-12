@@ -64,7 +64,10 @@ optional `modelPath`, and the expected CLI flags; the backend calls that local
 generator, expects it to write `request.outputPath`, and then loads or writes
 the standard `.wav.json` manifest. This keeps MusicGen-style transformer tools,
 audio diffusion tools, or custom GGML generators outside the addon until one is
-chosen deliberately.
+chosen deliberately. If a generator does not take a model argument, set
+`request.external.modelFlag.clear()`. The external bridge is contract-tested
+against the local procedural CLI so future model-backed generators have a clear
+minimum interface to match.
 
 ## Example
 
@@ -129,6 +132,16 @@ tools\ofxGgmlMusicGenerate\build\ofxGgmlMusicGenerate.exe --prune-history C:\tem
 Add `--json` to render, list-presets, describe-preset, list-stems, list-keys,
 inspect, history, or prune commands when another tool needs machine-readable
 output.
+
+To verify that the external bridge can drive a local generator executable, run:
+
+```powershell
+scripts\test-external-generation-contract.bat -Clean
+```
+
+That script builds `tools\ofxGgmlMusicGenerate`, builds the external backend
+contract test, launches the generator through `ofxGgmlMusicExternalGenerationBackend`,
+and checks the generated WAV, manifest, history, MIDI, and stem artifacts.
 
 ## Dependencies
 

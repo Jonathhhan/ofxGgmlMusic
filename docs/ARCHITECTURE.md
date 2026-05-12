@@ -30,6 +30,8 @@ No dependency should point from `ofxGgmlCore` or `ofxGgmlAudio` back to
 - procedural stem export for named music components such as melody, bass, and
   pulse
 - a tiny native procedural generation CLI used by scripts for no-IDE smoke runs
+- an external generation backend contract test that launches a local generator
+  executable through the same bridge model-backed tools will use
 - shared generation presets used by both the CLI and openFrameworks example
 - model-specific preprocessing and postprocessing
 - beat, downbeat, tempo, key, chord, chroma, stem, and arrangement workflows
@@ -38,6 +40,8 @@ No dependency should point from `ofxGgmlCore` or `ofxGgmlAudio` back to
   and external bridge implementations
 - `ofxGgmlMusicGenerationBackend` implementations for concrete generation
   runtimes
+- `ofxGgmlMusicExternalGenerationBackend` as the explicit CLI boundary for
+  MusicGen-style, audio diffusion, or custom GGML music generator executables
 - the built-in `procedural-sketch` backend for deterministic model-free WAV
   generation smoke tests
 - typed result fields for beats, chords, keys, embeddings, and stems

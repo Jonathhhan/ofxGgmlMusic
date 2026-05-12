@@ -4,6 +4,8 @@
 
 - Added `ofxGgmlMusicExternalGenerationBackend` as the first explicit bridge
   boundary for local model-backed music generator executables.
+- Added an external generation contract test that proves the bridge can launch
+  a local generator and round-trip WAV, manifest, history, MIDI, and stem outputs.
 
 ## 1.0.1 - 2026-05-12
 
