@@ -53,6 +53,11 @@ Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicProceduralGenera
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicProceduralGenerationBackend.cpp") "procedural generation backend source"
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicUtils.h") "utility header"
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicUtils.cpp") "utility source"
+Assert-Path (Join-Path $addonRoot "tools\ofxGgmlMusicGenerate\CMakeLists.txt") "generation CLI CMakeLists"
+Assert-Path (Join-Path $addonRoot "tools\ofxGgmlMusicGenerate\main.cpp") "generation CLI source"
+Assert-Path (Join-Path $scriptRoot "generate-procedural-music.ps1") "procedural generation script"
+Assert-Path (Join-Path $scriptRoot "generate-procedural-music.bat") "procedural generation batch script"
+Assert-Path (Join-Path $scriptRoot "generate-procedural-music.sh") "procedural generation shell script"
 
 Write-Step "Checking dependency layout"
 Assert-Path (Join-Path $addonsRoot "ofxGgmlCore") "sibling ofxGgmlCore addon" -Directory
@@ -108,5 +113,31 @@ Write-Step "Running headless tests"
 if ($LASTEXITCODE -ne 0) {
 	throw "Headless tests failed with exit code $LASTEXITCODE"
 }
+
+Write-Step "Checking procedural generation CLI"
+$scratchDir = Join-Path ([System.IO.Path]::GetTempPath()) "ofxGgmlMusic-cli-smoke"
+if (Test-Path -LiteralPath $scratchDir) {
+	Remove-Item -LiteralPath $scratchDir -Recurse -Force
+}
+New-Item -ItemType Directory -Path $scratchDir | Out-Null
+$cliOutput = Join-Path $scratchDir "procedural.wav"
+& (Join-Path $scriptRoot "generate-procedural-music.ps1") `
+	-Prompt "loopable validation motif" `
+	-Output $cliOutput `
+	-Duration 1.0 `
+	-Tempo 100 `
+	-Key D `
+	-Mode major `
+	-Stem @("melody", "bass") `
+	-BuildDir (Join-Path $scratchDir "build") `
+	-Clean
+if ($LASTEXITCODE -ne 0) {
+	throw "Procedural generation CLI failed with exit code $LASTEXITCODE"
+}
+Assert-Path $cliOutput "procedural generation CLI wav"
+Assert-Path ($cliOutput + ".json") "procedural generation CLI manifest"
+Assert-Path (Join-Path $scratchDir "procedural-melody.wav") "procedural generation CLI melody stem"
+Assert-Path (Join-Path $scratchDir "procedural-bass.wav") "procedural generation CLI bass stem"
+Remove-Item -LiteralPath $scratchDir -Recurse -Force
 
 Write-Step "ofxGgmlMusic local validation passed"

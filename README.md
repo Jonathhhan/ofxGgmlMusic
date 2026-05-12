@@ -63,6 +63,15 @@ on the waveform. Generate either example with the
 openFrameworks projectGenerator using addons `ofxGgmlMusic`, `ofxGgmlCore`, and
 `ofxImGui`.
 
+For a no-IDE smoke run, use the procedural CLI helper:
+
+```powershell
+scripts\generate-procedural-music.bat -Output C:\temp\music.wav -Stem melody,bass -Loop
+```
+
+The helper builds `tools/ofxGgmlMusicGenerate`, writes the WAV, writes the
+`.wav.json` manifest, and writes requested stem WAVs next to the mix.
+
 ## Dependencies
 
 - openFrameworks
