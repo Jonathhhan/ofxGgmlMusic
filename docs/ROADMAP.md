@@ -28,6 +28,7 @@
   scripts for no-IDE smoke runs.
 - Add shared generation presets for ambient, lofi, and pulse workflows.
 - Add generation manifest loading for metadata round trips.
+- Reload the previous standard generation manifest in the openFrameworks example.
 
 ## Next Milestones
 

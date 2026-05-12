@@ -20,9 +20,11 @@ private:
 	void runGeneration();
 	void applyPreset(int index);
 	void syncControlsFromRequest();
+	void loadExistingRender();
 	void loadWaveform();
 	void drawWaveform(float x, float y, float width, float height);
 	std::string getOutputPath() const;
+	std::string getManifestPath() const;
 
 	ofxImGui::Gui gui;
 	std::unique_ptr<ofxGgmlMusicGenerationBackend> backend;

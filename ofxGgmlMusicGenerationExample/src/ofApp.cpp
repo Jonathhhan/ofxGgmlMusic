@@ -27,6 +27,7 @@ void ofApp::setup() {
 	rebuildRequest();
 	status = "ready";
 	detail = backend->getBackendName();
+	loadExistingRender();
 	ofLogNotice("ofxGgmlMusicGenerationExample") << ofxGgmlMusicUtils::describe(request);
 }
 
@@ -160,9 +161,43 @@ std::string ofApp::getOutputPath() const {
 	return ofFilePath::join(outputDir, "ofxGgmlMusicGenerationExample.wav");
 }
 
+std::string ofApp::getManifestPath() const {
+	return ofxGgmlMusicUtils::getGenerationManifestPath(getOutputPath());
+}
+
+void ofApp::loadExistingRender() {
+	const auto manifestPath = getManifestPath();
+	if (!ofFile::doesFileExist(manifestPath, false)) {
+		return;
+	}
+
+	std::string error;
+	ofxGgmlMusicGenerationResult loaded;
+	if (!ofxGgmlMusicUtils::loadGenerationManifest(manifestPath, loaded, error)) {
+		status = "manifest load failed";
+		detail = error;
+		ofLogWarning("ofxGgmlMusicGenerationExample") << detail;
+		return;
+	}
+
+	lastResult = loaded;
+	if (ofFile::doesFileExist(lastResult.outputPath, false)) {
+		player.stop();
+		player.load(lastResult.outputPath);
+		player.setLoop(loop);
+		loadWaveform();
+		status = "loaded";
+		detail = "Loaded " + lastResult.outputPath;
+	} else {
+		status = "manifest loaded";
+		detail = "Audio file missing: " + lastResult.outputPath;
+	}
+}
+
 void ofApp::loadWaveform() {
 	std::string error;
-	if (!ofxGgmlMusicAudioUtils::loadWav16(request.outputPath, waveform, error)) {
+	const auto path = lastResult.outputPath.empty() ? request.outputPath : lastResult.outputPath;
+	if (!ofxGgmlMusicAudioUtils::loadWav16(path, waveform, error)) {
 		waveform = {};
 		ofLogWarning("ofxGgmlMusicGenerationExample") << error;
 	}
@@ -205,6 +240,10 @@ void ofApp::draw() {
 
 	if (ImGui::Button("Generate")) {
 		runGeneration();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Reload")) {
+		loadExistingRender();
 	}
 	ImGui::SameLine();
 	if (ImGui::Button(player.isPlaying() ? "Stop" : "Play")) {

@@ -9,7 +9,8 @@ The preset menu starts from shared `ambient`, `lofi`, and `pulse` settings.
 The example loads the rendered WAV back into a waveform preview and writes a
 `.wav.json` manifest next to the audio file. The preview overlays generated
 beat/downbeat markers and chord changes. Optional melody, bass, and pulse stem
-WAVs are written next to the mix.
+WAVs are written next to the mix. On startup, the example reloads the previous
+standard output manifest if it exists; use `Reload` to refresh it manually.
 
 The backend is not a trained music model. It gives the addon a real generation
 path while transformer, diffusion, SampleRNN, or external model bridges remain
