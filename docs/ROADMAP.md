@@ -29,6 +29,7 @@
 - Add shared generation presets for ambient, lofi, and pulse workflows.
 - Add generation manifest loading for metadata round trips.
 - Reload the previous standard generation manifest in the openFrameworks example.
+- Add independent addon version metadata and release-candidate docs.
 
 ## Next Milestones
 
