@@ -159,6 +159,32 @@ if ($LASTEXITCODE -ne 0) {
 if ($LASTEXITCODE -ne 0) {
 	throw "Procedural generation history inspection failed with exit code $LASTEXITCODE"
 }
+$secondOutput = Join-Path $scratchDir "procedural-two.wav"
+& $cliExe `
+	--preset pulse `
+	--prompt "second validation motif" `
+	--output $secondOutput `
+	--duration 1.0 `
+	--tempo 110 `
+	--key A `
+	--mode minor
+if ($LASTEXITCODE -ne 0) {
+	throw "Second procedural generation CLI run failed with exit code $LASTEXITCODE"
+}
+Assert-Path $secondOutput "second procedural generation CLI wav"
+Assert-Path ($secondOutput + ".json") "second procedural generation CLI manifest"
+& $cliExe --prune-history $historyPath --keep 1
+if ($LASTEXITCODE -ne 0) {
+	throw "Procedural generation history prune failed with exit code $LASTEXITCODE"
+}
+if (Test-Path -LiteralPath $cliOutput) {
+	throw "Procedural generation prune kept an older wav unexpectedly: $cliOutput"
+}
+Assert-Path $secondOutput "newest procedural generation CLI wav after prune"
+& $cliExe --history $historyPath
+if ($LASTEXITCODE -ne 0) {
+	throw "Procedural generation history inspection after prune failed with exit code $LASTEXITCODE"
+}
 Remove-Item -LiteralPath $scratchDir -Recurse -Force
 
 Write-Step "ofxGgmlMusic local validation passed"

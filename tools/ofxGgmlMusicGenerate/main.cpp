@@ -1,6 +1,7 @@
 #include "ofxGgmlMusic.h"
 
 #include <cstdlib>
+#include <filesystem>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -13,6 +14,8 @@ namespace {
 			<< "Options:\n"
 			<< "  --inspect PATH     Load and summarize a generated manifest\n"
 			<< "  --history PATH     Load and list a generation history index\n"
+			<< "  --prune-history PATH --keep N\n"
+			<< "                     Keep the newest N history entries and delete older artifacts\n"
 			<< "  --preset NAME      Preset: ambient, lofi, pulse\n"
 			<< "  --style TEXT       Style tag, for example ambient\n"
 			<< "  --tempo BPM        Tempo in beats per minute\n"
@@ -30,6 +33,68 @@ namespace {
 		}
 		value = argv[++index];
 		return true;
+	}
+
+	bool removeFileIfPresent(const std::string & path) {
+		if (path.empty()) {
+			return false;
+		}
+		std::error_code code;
+		if (!std::filesystem::exists(path, code) || code) {
+			return false;
+		}
+		if (!std::filesystem::is_regular_file(path, code) || code) {
+			return false;
+		}
+		return std::filesystem::remove(path, code) && !code;
+	}
+
+	int pruneHistory(const std::string & historyPath, int keepCount) {
+		if (keepCount < 0) {
+			std::cerr << "Keep count must be zero or greater.\n";
+			return 2;
+		}
+
+		std::vector<std::string> manifests;
+		std::string error;
+		if (!ofxGgmlMusicUtils::loadGenerationHistory(historyPath, manifests, error)) {
+			std::cerr << error << "\n";
+			return 1;
+		}
+
+		const auto keep = static_cast<std::size_t>(keepCount);
+		if (manifests.size() <= keep) {
+			std::cout << "history: " << historyPath << "\n";
+			std::cout << "kept: " << manifests.size() << "\n";
+			std::cout << "pruned: 0\n";
+			return 0;
+		}
+
+		std::size_t removedFiles = 0;
+		for (std::size_t i = keep; i < manifests.size(); ++i) {
+			ofxGgmlMusicGenerationResult manifest;
+			std::string manifestError;
+			if (ofxGgmlMusicUtils::loadGenerationManifest(manifests[i], manifest, manifestError)) {
+				removedFiles += removeFileIfPresent(manifest.outputPath) ? 1 : 0;
+				removedFiles += removeFileIfPresent(manifest.midiPath) ? 1 : 0;
+				removedFiles += removeFileIfPresent(manifest.chordMidiPath) ? 1 : 0;
+				removedFiles += removeFileIfPresent(manifest.arrangementMidiPath) ? 1 : 0;
+				for (const auto & stem : manifest.stems) {
+					removedFiles += removeFileIfPresent(stem.path) ? 1 : 0;
+				}
+			}
+			removedFiles += removeFileIfPresent(manifests[i]) ? 1 : 0;
+		}
+
+		manifests.resize(keep);
+		if (!ofxGgmlMusicUtils::writeGenerationHistory(historyPath, manifests, error)) {
+			std::cerr << error << "\n";
+			return 1;
+		}
+		std::cout << "history: " << historyPath << "\n";
+		std::cout << "kept: " << manifests.size() << "\n";
+		std::cout << "pruned: " << removedFiles << "\n";
+		return 0;
 	}
 }
 
@@ -71,6 +136,21 @@ int main(int argc, char ** argv) {
 				std::cout << "manifest: " << manifest << "\n";
 			}
 			return 0;
+		} else if (arg == "--prune-history" && readValue(i, argc, argv, value)) {
+			std::string keepValue;
+			bool foundKeep = false;
+			for (int j = 1; j < argc; ++j) {
+				const std::string pruneArg = argv[j];
+				if (pruneArg == "--keep" && readValue(j, argc, argv, keepValue)) {
+					foundKeep = true;
+					break;
+				}
+			}
+			if (!foundKeep) {
+				std::cerr << "--prune-history requires --keep N.\n";
+				return 2;
+			}
+			return pruneHistory(value, std::atoi(keepValue.c_str()));
 		}
 	}
 
@@ -103,6 +183,10 @@ int main(int argc, char ** argv) {
 		} else if (arg == "--inspect" && readValue(i, argc, argv, value)) {
 			continue;
 		} else if (arg == "--history" && readValue(i, argc, argv, value)) {
+			continue;
+		} else if (arg == "--prune-history" && readValue(i, argc, argv, value)) {
+			continue;
+		} else if (arg == "--keep" && readValue(i, argc, argv, value)) {
 			continue;
 		} else if (arg == "--preset" && readValue(i, argc, argv, value)) {
 			continue;

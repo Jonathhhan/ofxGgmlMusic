@@ -85,7 +85,12 @@ override the preset defaults. Use
 `ofxGgmlMusicUtils::loadGenerationManifest()` to load the sidecar back into an
 `ofxGgmlMusicGenerationResult`; the CLI also supports
 `--inspect C:\temp\music.wav.json` and
-`--history C:\temp\ofxGgmlMusic-history.json`.
+`--history C:\temp\ofxGgmlMusic-history.json`. To keep a render folder from
+growing indefinitely, prune older history entries and their generated artifacts:
+
+```powershell
+tools\ofxGgmlMusicGenerate\build\ofxGgmlMusicGenerate.exe --prune-history C:\temp\ofxGgmlMusic-history.json --keep 8
+```
 
 ## Dependencies
 
