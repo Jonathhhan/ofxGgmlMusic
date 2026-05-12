@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <string>
 #include <vector>
 
 namespace {
@@ -45,39 +46,28 @@ namespace {
 		bytes.push_back(b);
 	}
 
+	void appendMetaText(
+		std::vector<std::uint8_t> & bytes,
+		std::uint32_t delta,
+		std::uint8_t type,
+		const std::string & text) {
+		appendVarLen(bytes, delta);
+		bytes.push_back(0xff);
+		bytes.push_back(type);
+		appendVarLen(bytes, static_cast<std::uint32_t>(text.size()));
+		bytes.insert(bytes.end(), text.begin(), text.end());
+	}
+
 	std::uint32_t secondsToTicks(double seconds, float bpm) {
 		const auto safeBpm = bpm > 0.0f ? bpm : 120.0f;
 		const auto quarters = seconds * static_cast<double>(safeBpm) / 60.0;
 		return static_cast<std::uint32_t>(std::max(0.0, quarters * ticksPerQuarter + 0.5));
 	}
-}
 
-namespace ofxGgmlMusicMidiUtils {
-	bool writeMidiFile(
-		const std::string & path,
-		const std::vector<ofxGgmlMusicMidiNote> & notes,
+	std::vector<std::uint8_t> makeTrackBytes(
+		const ofxGgmlMusicMidiTrack & track,
 		float bpm,
-		std::string & error) {
-		error.clear();
-		if (path.empty()) {
-			error = "midi output path is empty";
-			return false;
-		}
-		if (notes.empty()) {
-			error = "midi note list is empty";
-			return false;
-		}
-
-		std::filesystem::path outputPath(path);
-		if (outputPath.has_parent_path()) {
-			std::error_code code;
-			std::filesystem::create_directories(outputPath.parent_path(), code);
-			if (code) {
-				error = "could not create midi output directory";
-				return false;
-			}
-		}
-
+		bool includeTempo) {
 		struct Event {
 			std::uint32_t tick = 0;
 			std::uint8_t status = 0;
@@ -85,7 +75,7 @@ namespace ofxGgmlMusicMidiUtils {
 			std::uint8_t velocity = 0;
 		};
 		std::vector<Event> events;
-		for (const auto & note : notes) {
+		for (const auto & note : track.notes) {
 			const auto startTick = secondsToTicks(note.startSeconds, bpm);
 			const auto endTick = secondsToTicks(note.startSeconds + note.durationSeconds, bpm);
 			const auto pitch = static_cast<std::uint8_t>(std::max(0, std::min(127, note.pitch)));
@@ -100,26 +90,79 @@ namespace ofxGgmlMusicMidiUtils {
 			return a.status < b.status;
 		});
 
-		std::vector<std::uint8_t> track;
-		const auto safeBpm = bpm > 0.0f ? bpm : 120.0f;
-		const auto microsPerQuarter = static_cast<std::uint32_t>(60000000.0f / safeBpm + 0.5f);
-		appendVarLen(track, 0);
-		track.insert(track.end(), {
-			0xff, 0x51, 0x03,
-			static_cast<std::uint8_t>((microsPerQuarter >> 16) & 0xff),
-			static_cast<std::uint8_t>((microsPerQuarter >> 8) & 0xff),
-			static_cast<std::uint8_t>(microsPerQuarter & 0xff)
+		std::vector<std::uint8_t> bytes;
+		if (!track.name.empty()) {
+			appendMetaText(bytes, 0, 0x03, track.name);
+		}
+		if (includeTempo) {
+			const auto safeBpm = bpm > 0.0f ? bpm : 120.0f;
+			const auto microsPerQuarter = static_cast<std::uint32_t>(60000000.0f / safeBpm + 0.5f);
+			appendVarLen(bytes, 0);
+			bytes.insert(bytes.end(), {
+				0xff, 0x51, 0x03,
+				static_cast<std::uint8_t>((microsPerQuarter >> 16) & 0xff),
+				static_cast<std::uint8_t>((microsPerQuarter >> 8) & 0xff),
+				static_cast<std::uint8_t>(microsPerQuarter & 0xff)
+			});
+		}
+		appendVarLen(bytes, 0);
+		bytes.insert(bytes.end(), {
+			0xc0,
+			static_cast<std::uint8_t>(std::max(0, std::min(127, track.program)))
 		});
-		appendVarLen(track, 0);
-		track.insert(track.end(), { 0xc0, 0x04 });
 
 		std::uint32_t cursor = 0;
 		for (const auto & event : events) {
-			appendEvent(track, event.tick - cursor, event.status, event.pitch, event.velocity);
+			appendEvent(bytes, event.tick - cursor, event.status, event.pitch, event.velocity);
 			cursor = event.tick;
 		}
-		appendVarLen(track, 0);
-		track.insert(track.end(), { 0xff, 0x2f, 0x00 });
+		appendVarLen(bytes, 0);
+		bytes.insert(bytes.end(), { 0xff, 0x2f, 0x00 });
+		return bytes;
+	}
+}
+
+namespace ofxGgmlMusicMidiUtils {
+	bool writeMidiFile(
+		const std::string & path,
+		const std::vector<ofxGgmlMusicMidiNote> & notes,
+		float bpm,
+		std::string & error) {
+		return writeMidiFile(path, { { "notes", 4, notes } }, bpm, error);
+	}
+
+	bool writeMidiFile(
+		const std::string & path,
+		const std::vector<ofxGgmlMusicMidiTrack> & tracks,
+		float bpm,
+		std::string & error) {
+		error.clear();
+		if (path.empty()) {
+			error = "midi output path is empty";
+			return false;
+		}
+		if (tracks.empty()) {
+			error = "midi track list is empty";
+			return false;
+		}
+		bool hasNotes = false;
+		for (const auto & track : tracks) {
+			hasNotes = hasNotes || !track.notes.empty();
+		}
+		if (!hasNotes) {
+			error = "midi note list is empty";
+			return false;
+		}
+
+		std::filesystem::path outputPath(path);
+		if (outputPath.has_parent_path()) {
+			std::error_code code;
+			std::filesystem::create_directories(outputPath.parent_path(), code);
+			if (code) {
+				error = "could not create midi output directory";
+				return false;
+			}
+		}
 
 		std::ofstream output(path, std::ios::binary | std::ios::trunc);
 		if (!output) {
@@ -128,12 +171,15 @@ namespace ofxGgmlMusicMidiUtils {
 		}
 		output.write("MThd", 4);
 		writeU32(output, 6);
-		writeU16(output, 0);
-		writeU16(output, 1);
+		writeU16(output, tracks.size() > 1 ? 1 : 0);
+		writeU16(output, static_cast<std::uint16_t>(tracks.size()));
 		writeU16(output, ticksPerQuarter);
-		output.write("MTrk", 4);
-		writeU32(output, static_cast<std::uint32_t>(track.size()));
-		output.write(reinterpret_cast<const char *>(track.data()), static_cast<std::streamsize>(track.size()));
+		for (std::size_t i = 0; i < tracks.size(); ++i) {
+			const auto track = makeTrackBytes(tracks[i], bpm, i == 0);
+			output.write("MTrk", 4);
+			writeU32(output, static_cast<std::uint32_t>(track.size()));
+			output.write(reinterpret_cast<const char *>(track.data()), static_cast<std::streamsize>(track.size()));
+		}
 		return true;
 	}
 }

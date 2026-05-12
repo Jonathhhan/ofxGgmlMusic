@@ -62,9 +62,9 @@ can find recent manifests without guessing output filenames.
 `ofxGgmlMusicGenerationExample` is a root-level prompt-to-music sketch that
 writes a WAV file with the built-in `procedural-sketch` backend and draws a
 waveform preview after generation. It also writes a `.wav.json` manifest next to
-the audio file, writes editable melody and chord `.mid` files, can export
-melody/bass/pulse stems, and overlays sections plus beat/chord timing on the
-waveform. Each Generate press writes a timestamped WAV so the history
+the audio file, writes editable melody, chord, and combined arrangement `.mid`
+files, can export melody/bass/pulse stems, and overlays sections plus beat/chord
+timing on the waveform. Each Generate press writes a timestamped WAV so the history
 index can track multiple renders. The generation example reloads recent renders
 from that index on startup when available, falling back to the standard render
 manifest. Generate either example with the
@@ -78,10 +78,10 @@ scripts\generate-procedural-music.bat -Preset lofi -Output C:\temp\music.wav -Lo
 ```
 
 The helper builds `tools/ofxGgmlMusicGenerate`, writes the WAV, writes the
-`.wav.json` manifest, writes editable melody/chord `.mid` files, and writes
-requested stem WAVs next to the mix. Built-in presets are `ambient`, `lofi`, and
-`pulse`; explicit prompt, tempo, key, duration, seed, and stem flags override
-the preset defaults. Use
+`.wav.json` manifest, writes editable melody/chord/arrangement `.mid` files, and
+writes requested stem WAVs next to the mix. Built-in presets are `ambient`,
+`lofi`, and `pulse`; explicit prompt, tempo, key, duration, seed, and stem flags
+override the preset defaults. Use
 `ofxGgmlMusicUtils::loadGenerationManifest()` to load the sidecar back into an
 `ofxGgmlMusicGenerationResult`; the CLI also supports
 `--inspect C:\temp\music.wav.json` and

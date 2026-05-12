@@ -341,6 +341,7 @@ ofxGgmlMusicGenerationResult ofxGgmlMusicProceduralGenerationBackend::setup(
 	result.historyPath = ofxGgmlMusicUtils::getGenerationHistoryPath(request.outputPath);
 	result.midiPath = makeMidiOutputPath(request.outputPath, "melody");
 	result.chordMidiPath = makeMidiOutputPath(request.outputPath, "chords");
+	result.arrangementMidiPath = makeMidiOutputPath(request.outputPath, "arrangement");
 	result.success = true;
 	loaded = true;
 	return result;
@@ -358,6 +359,7 @@ ofxGgmlMusicGenerationResult ofxGgmlMusicProceduralGenerationBackend::generate(
 	result.historyPath = ofxGgmlMusicUtils::getGenerationHistoryPath(request.outputPath);
 	result.midiPath = makeMidiOutputPath(request.outputPath, "melody");
 	result.chordMidiPath = makeMidiOutputPath(request.outputPath, "chords");
+	result.arrangementMidiPath = makeMidiOutputPath(request.outputPath, "arrangement");
 	result.references.push_back("procedural-sketch");
 
 	if (!ofxGgmlMusicUtils::hasPrompt(request)) {
@@ -392,6 +394,17 @@ ofxGgmlMusicGenerationResult ofxGgmlMusicProceduralGenerationBackend::generate(
 	}
 	if (!ofxGgmlMusicMidiUtils::writeMidiFile(result.chordMidiPath, rendered.chordNotes, request.tempo.bpm, writeError)) {
 		result.error = "could not write chord midi output: " + writeError;
+		return result;
+	}
+	if (!ofxGgmlMusicMidiUtils::writeMidiFile(
+			result.arrangementMidiPath,
+			{
+				{ "melody", 4, rendered.melodyNotes },
+				{ "chords", 0, rendered.chordNotes }
+			},
+			request.tempo.bpm,
+			writeError)) {
+		result.error = "could not write arrangement midi output: " + writeError;
 		return result;
 	}
 
