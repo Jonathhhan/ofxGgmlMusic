@@ -499,6 +499,16 @@ namespace ofxGgmlMusicUtils {
 			json << (i + 1 < result.chords.size() ? "," : "") << "\n";
 		}
 		json << "  ],\n";
+		json << "  \"sections\": [\n";
+		for (std::size_t i = 0; i < result.sections.size(); ++i) {
+			const auto & section = result.sections[i];
+			json << "    { \"name\": " << quoteJson(section.name) <<
+				", \"startSeconds\": " << section.startSeconds <<
+				", \"durationSeconds\": " << section.durationSeconds <<
+				", \"confidence\": " << section.confidence << " }";
+			json << (i + 1 < result.sections.size() ? "," : "") << "\n";
+		}
+		json << "  ],\n";
 		json << "  \"loop\": " << (request.settings.loop ? "true" : "false") << ",\n";
 		json << "  \"targetStems\": [";
 		for (std::size_t i = 0; i < request.targetStems.size(); ++i) {
@@ -612,6 +622,15 @@ namespace ofxGgmlMusicUtils {
 			chord.label = extractString(chordText, "label");
 			chord.confidence = static_cast<float>(extractDouble(chordText, "confidence"));
 			result.chords.push_back(chord);
+		}
+
+		for (const auto & sectionText : splitArrayObjects(extractArray(text, "sections"))) {
+			ofxGgmlMusicSection section;
+			section.name = extractString(sectionText, "name");
+			section.startSeconds = extractDouble(sectionText, "startSeconds");
+			section.durationSeconds = extractDouble(sectionText, "durationSeconds");
+			section.confidence = static_cast<float>(extractDouble(sectionText, "confidence"));
+			result.sections.push_back(section);
 		}
 
 		for (const auto & stemText : splitArrayObjects(extractArray(text, "stems"))) {

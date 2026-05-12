@@ -141,6 +141,8 @@ int main() {
 	generationResult.beats.push_back({ 0.0, 1.0f, true });
 	generationResult.beats.push_back({ 60.0 / generation.tempo.bpm, 0.78f, false });
 	generationResult.chords.push_back({ 0.0, "D", 0.84f });
+	generationResult.sections.push_back({ "intro", 0.0, 2.0, 0.85f });
+	generationResult.sections.push_back({ "body", 2.0, 8.0, 0.88f });
 	generationResult.stems.push_back({ "piano", "renders/piano.wav", 1.0f });
 	if (ofxGgmlMusicUtils::getGenerationBackendName(generation.settings.backend) != "transformer" ||
 		!generationResult ||
@@ -154,6 +156,8 @@ int main() {
 		generationResult.beats.empty() ||
 		!generationResult.beats.front().downbeat ||
 		generationResult.chords.front().label != "D" ||
+		generationResult.sections.size() != 2 ||
+		generationResult.sections.front().name != "intro" ||
 		generationResult.stems.front().path != "renders/piano.wav") {
 		std::cerr << "generation result helpers failed\n";
 		return 1;
@@ -170,6 +174,7 @@ int main() {
 		manifestText.find("\"chordMidiPath\"") == std::string::npos ||
 		manifestText.find("\"beats\"") == std::string::npos ||
 		manifestText.find("\"chords\"") == std::string::npos ||
+		manifestText.find("\"sections\"") == std::string::npos ||
 		manifestText.find("\"stems\"") == std::string::npos) {
 		std::cerr << "generation manifest serialization failed\n";
 		return 1;
@@ -282,6 +287,7 @@ int main() {
 		proceduralResult.beats.empty() ||
 		!proceduralResult.beats.front().downbeat ||
 		proceduralResult.chords.empty() ||
+		proceduralResult.sections.empty() ||
 		proceduralResult.stems.size() != 3 ||
 		proceduralResult.references.empty() ||
 		!std::filesystem::exists(tempOutput) ||
@@ -327,6 +333,7 @@ int main() {
 		loadedManifest.sampleRate != proceduralResult.sampleRate ||
 		loadedManifest.beats.size() != proceduralResult.beats.size() ||
 		loadedManifest.chords.size() != proceduralResult.chords.size() ||
+		loadedManifest.sections.size() != proceduralResult.sections.size() ||
 		loadedManifest.stems.size() != proceduralResult.stems.size() ||
 		loadedManifest.references.empty()) {
 		std::cerr << "generation manifest failed to load: " << manifestError << "\n";

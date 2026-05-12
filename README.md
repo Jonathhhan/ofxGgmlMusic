@@ -26,6 +26,8 @@ The public API starts with typed music workflow shapes:
   recognition, embeddings, stem separation, and generation
 - `ofxGgmlMusicTempo`, `ofxGgmlMusicBeat`, `ofxGgmlMusicKey`, and
   `ofxGgmlMusicChord` for common analysis output
+- `ofxGgmlMusicSection` for generated arrangement regions such as loop halves,
+  intro/body/outro, or model-provided song sections
 - `ofxGgmlMusicStem` for stem-aware workflows
 - `ofxGgmlMusicResult` fields for beats, chords, embeddings, and stems
 - `ofxGgmlMusicGenerationRequest` and `ofxGgmlMusicGenerationResult` for
@@ -50,7 +52,7 @@ testable before a real model bridge is selected. Shared WAV helpers live in
 simple PCM16 files through one path. Generation results also carry a manifest
 path; backends can write a `.wav.json` sidecar with prompt, backend, seed, tempo,
 key, duration, sample rate, peak level, beat/downbeat markers, chords, generated
-stems, MIDI sidecars, and references. Backends also update an
+sections, stems, MIDI sidecars, and references. Backends also update an
 `ofxGgmlMusic-history.json` index next to generated audio so tools and examples
 can find recent manifests without guessing output filenames.
 
@@ -61,8 +63,8 @@ can find recent manifests without guessing output filenames.
 writes a WAV file with the built-in `procedural-sketch` backend and draws a
 waveform preview after generation. It also writes a `.wav.json` manifest next to
 the audio file, writes editable melody and chord `.mid` files, can export
-melody/bass/pulse stems, and overlays beat/chord timing on the waveform. Each
-Generate press writes a timestamped WAV so the history
+melody/bass/pulse stems, and overlays sections plus beat/chord timing on the
+waveform. Each Generate press writes a timestamped WAV so the history
 index can track multiple renders. The generation example reloads recent renders
 from that index on startup when available, falling back to the standard render
 manifest. Generate either example with the

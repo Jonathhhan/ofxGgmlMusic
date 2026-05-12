@@ -126,6 +126,33 @@ namespace {
 		return chords;
 	}
 
+	std::vector<ofxGgmlMusicSection> makeSections(
+		const ofxGgmlMusicGenerationRequest & request,
+		double duration) {
+		std::vector<ofxGgmlMusicSection> sections;
+		if (duration <= 0.0) {
+			return sections;
+		}
+		if (duration < 6.0) {
+			sections.push_back({ request.settings.loop ? "loop" : "sketch", 0.0, duration, 0.9f });
+			return sections;
+		}
+		if (request.settings.loop) {
+			const auto half = duration * 0.5;
+			sections.push_back({ "loop-a", 0.0, half, 0.88f });
+			sections.push_back({ "loop-b", half, duration - half, 0.88f });
+			return sections;
+		}
+
+		const auto intro = std::min(2.0, duration * 0.25);
+		const auto outro = std::min(2.0, duration * 0.20);
+		const auto body = std::max(0.1, duration - intro - outro);
+		sections.push_back({ "intro", 0.0, intro, 0.85f });
+		sections.push_back({ "body", intro, body, 0.88f });
+		sections.push_back({ "outro", intro + body, outro, 0.85f });
+		return sections;
+	}
+
 	std::string normalizeStemName(const std::string & name) {
 		std::string normalized;
 		for (const auto c : name) {
@@ -378,6 +405,7 @@ ofxGgmlMusicGenerationResult ofxGgmlMusicProceduralGenerationBackend::generate(
 	result.peakAbs = buffer.getPeakAbs();
 	result.beats = makeBeatGrid(request, result.durationSeconds);
 	result.chords = makeChordProgression(request, result.durationSeconds);
+	result.sections = makeSections(request, result.durationSeconds);
 	std::string manifestError;
 	if (!ofxGgmlMusicUtils::writeGenerationManifest(request, result, getBackendName(), manifestError)) {
 		result.error = "could not write generation manifest: " + manifestError;

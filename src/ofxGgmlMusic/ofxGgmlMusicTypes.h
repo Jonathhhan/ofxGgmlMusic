@@ -45,6 +45,13 @@ struct ofxGgmlMusicChord {
 	float confidence = 0.0f;
 };
 
+struct ofxGgmlMusicSection {
+	std::string name;
+	double startSeconds = 0.0;
+	double durationSeconds = 0.0;
+	float confidence = 0.0f;
+};
+
 struct ofxGgmlMusicStem {
 	std::string name;
 	std::string path;
@@ -112,6 +119,7 @@ struct ofxGgmlMusicGenerationResult {
 	ofxGgmlMusicKey key;
 	std::vector<ofxGgmlMusicBeat> beats;
 	std::vector<ofxGgmlMusicChord> chords;
+	std::vector<ofxGgmlMusicSection> sections;
 	std::vector<ofxGgmlMusicStem> stems;
 	std::vector<std::string> references;
 

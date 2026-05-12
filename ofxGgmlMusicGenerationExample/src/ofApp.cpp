@@ -354,9 +354,10 @@ void ofApp::draw() {
 			lastResult.peakAbs);
 	}
 	if (!lastResult.beats.empty() || !lastResult.chords.empty()) {
-		ImGui::Text("Timing: %d beats, %d chords",
+		ImGui::Text("Timing: %d beats, %d chords, %d sections",
 			static_cast<int>(lastResult.beats.size()),
-			static_cast<int>(lastResult.chords.size()));
+			static_cast<int>(lastResult.chords.size()),
+			static_cast<int>(lastResult.sections.size()));
 	}
 	if (!lastResult.stems.empty()) {
 		ImGui::Text("Stems: %d", static_cast<int>(lastResult.stems.size()));
@@ -401,6 +402,15 @@ void ofApp::drawWaveform(float x, float y, float width, float height) {
 	}
 
 	if (lastResult.durationSeconds > 0.0) {
+		for (std::size_t i = 0; i < lastResult.sections.size(); ++i) {
+			const auto & section = lastResult.sections[i];
+			const float px = x + static_cast<float>(section.startSeconds / lastResult.durationSeconds) * width;
+			const float sectionWidth = static_cast<float>(section.durationSeconds / lastResult.durationSeconds) * width;
+			ofSetColor(i % 2 == 0 ? ofColor(55, 65, 78, 120) : ofColor(45, 52, 64, 120));
+			ofDrawRectangle(px, plotY, sectionWidth, height);
+			ofSetColor(210);
+			ofDrawBitmapString(section.name, px + 4.0f, plotY + height - 8.0f);
+		}
 		for (const auto & beat : lastResult.beats) {
 			const float px = x + static_cast<float>(beat.timeSeconds / lastResult.durationSeconds) * width;
 			ofSetColor(beat.downbeat ? ofColor(245, 176, 65) : ofColor(130));

@@ -54,6 +54,7 @@ int main(int argc, char ** argv) {
 			std::cout << "peak: " << manifest.peakAbs << "\n";
 			std::cout << "beats: " << manifest.beats.size() << "\n";
 			std::cout << "chords: " << manifest.chords.size() << "\n";
+			std::cout << "sections: " << manifest.sections.size() << "\n";
 			std::cout << "stems: " << manifest.stems.size() << "\n";
 			return 0;
 		} else if (arg == "--history" && readValue(i, argc, argv, value)) {
@@ -166,6 +167,7 @@ int main(int argc, char ** argv) {
 	std::cout << "peak: " << result.peakAbs << "\n";
 	std::cout << "beats: " << result.beats.size() << "\n";
 	std::cout << "chords: " << result.chords.size() << "\n";
+	std::cout << "sections: " << result.sections.size() << "\n";
 	std::cout << "stems: " << result.stems.size() << "\n";
 	for (const auto & stem : result.stems) {
 		std::cout << "stem: " << stem.name << " " << stem.path << "\n";
