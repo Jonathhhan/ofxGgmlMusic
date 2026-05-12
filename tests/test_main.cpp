@@ -282,6 +282,19 @@ int main() {
 		std::cerr << "procedural generation failed to write a manifest file\n";
 		return 1;
 	}
+	ofxGgmlMusicGenerationResult loadedManifest;
+	std::string manifestError;
+	if (!ofxGgmlMusicUtils::loadGenerationManifest(proceduralResult.manifestPath, loadedManifest, manifestError) ||
+		!loadedManifest ||
+		loadedManifest.outputPath != proceduralResult.outputPath ||
+		loadedManifest.sampleRate != proceduralResult.sampleRate ||
+		loadedManifest.beats.size() != proceduralResult.beats.size() ||
+		loadedManifest.chords.size() != proceduralResult.chords.size() ||
+		loadedManifest.stems.size() != proceduralResult.stems.size() ||
+		loadedManifest.references.empty()) {
+		std::cerr << "generation manifest failed to load: " << manifestError << "\n";
+		return 1;
+	}
 	procedural->close();
 	if (procedural->isLoaded()) {
 		std::cerr << "procedural backend did not unload\n";

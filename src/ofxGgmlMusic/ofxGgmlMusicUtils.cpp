@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 
 namespace {
 	std::string escapeJson(const std::string & text) {
@@ -38,6 +39,35 @@ namespace {
 		return "\"" + escapeJson(text) + "\"";
 	}
 
+	std::string unescapeJson(const std::string & text) {
+		std::string unescaped;
+		bool escaping = false;
+		for (const auto c : text) {
+			if (escaping) {
+				switch (c) {
+				case 'n':
+					unescaped.push_back('\n');
+					break;
+				case 'r':
+					unescaped.push_back('\r');
+					break;
+				case 't':
+					unescaped.push_back('\t');
+					break;
+				default:
+					unescaped.push_back(c);
+					break;
+				}
+				escaping = false;
+			} else if (c == '\\') {
+				escaping = true;
+			} else {
+				unescaped.push_back(c);
+			}
+		}
+		return unescaped;
+	}
+
 	std::string normalizeName(const std::string & text) {
 		std::string normalized;
 		for (const auto c : text) {
@@ -48,6 +78,194 @@ namespace {
 			}
 		}
 		return normalized;
+	}
+
+	std::string readTextFile(const std::string & path, std::string & error) {
+		std::ifstream input(path, std::ios::in);
+		if (!input) {
+			error = "could not open generation manifest";
+			return "";
+		}
+		std::ostringstream text;
+		text << input.rdbuf();
+		return text.str();
+	}
+
+	std::size_t findMatching(
+		const std::string & text,
+		std::size_t open,
+		char openChar,
+		char closeChar) {
+		int depth = 0;
+		bool inString = false;
+		bool escaping = false;
+		for (std::size_t i = open; i < text.size(); ++i) {
+			const auto c = text[i];
+			if (inString) {
+				if (escaping) {
+					escaping = false;
+				} else if (c == '\\') {
+					escaping = true;
+				} else if (c == '"') {
+					inString = false;
+				}
+				continue;
+			}
+			if (c == '"') {
+				inString = true;
+			} else if (c == openChar) {
+				++depth;
+			} else if (c == closeChar) {
+				--depth;
+				if (depth == 0) {
+					return i;
+				}
+			}
+		}
+		return std::string::npos;
+	}
+
+	std::size_t findKeyValueStart(const std::string & text, const std::string & key) {
+		const auto keyText = quoteJson(key);
+		const auto keyPos = text.find(keyText);
+		if (keyPos == std::string::npos) {
+			return std::string::npos;
+		}
+		const auto colon = text.find(':', keyPos + keyText.size());
+		if (colon == std::string::npos) {
+			return std::string::npos;
+		}
+		auto value = colon + 1;
+		while (value < text.size() && std::isspace(static_cast<unsigned char>(text[value]))) {
+			++value;
+		}
+		return value;
+	}
+
+	std::string extractString(const std::string & text, const std::string & key) {
+		const auto start = findKeyValueStart(text, key);
+		if (start == std::string::npos || start >= text.size() || text[start] != '"') {
+			return "";
+		}
+		bool escaping = false;
+		for (std::size_t i = start + 1; i < text.size(); ++i) {
+			const auto c = text[i];
+			if (escaping) {
+				escaping = false;
+			} else if (c == '\\') {
+				escaping = true;
+			} else if (c == '"') {
+				return unescapeJson(text.substr(start + 1, i - start - 1));
+			}
+		}
+		return "";
+	}
+
+	std::string extractToken(const std::string & text, const std::string & key) {
+		const auto start = findKeyValueStart(text, key);
+		if (start == std::string::npos) {
+			return "";
+		}
+		auto end = start;
+		while (end < text.size() &&
+			text[end] != ',' &&
+			text[end] != '\n' &&
+			text[end] != '\r' &&
+			text[end] != '}' &&
+			text[end] != ']') {
+			++end;
+		}
+		auto token = text.substr(start, end - start);
+		while (!token.empty() && std::isspace(static_cast<unsigned char>(token.back()))) {
+			token.pop_back();
+		}
+		return token;
+	}
+
+	double extractDouble(const std::string & text, const std::string & key, double fallback = 0.0) {
+		try {
+			const auto token = extractToken(text, key);
+			return token.empty() ? fallback : std::stod(token);
+		} catch (const std::exception &) {
+			return fallback;
+		}
+	}
+
+	int extractInt(const std::string & text, const std::string & key, int fallback = 0) {
+		try {
+			const auto token = extractToken(text, key);
+			return token.empty() ? fallback : std::stoi(token);
+		} catch (const std::exception &) {
+			return fallback;
+		}
+	}
+
+	bool extractBool(const std::string & text, const std::string & key) {
+		return extractToken(text, key) == "true";
+	}
+
+	std::string extractObject(const std::string & text, const std::string & key) {
+		const auto start = findKeyValueStart(text, key);
+		if (start == std::string::npos || start >= text.size() || text[start] != '{') {
+			return "";
+		}
+		const auto end = findMatching(text, start, '{', '}');
+		return end == std::string::npos ? "" : text.substr(start, end - start + 1);
+	}
+
+	std::string extractArray(const std::string & text, const std::string & key) {
+		const auto start = findKeyValueStart(text, key);
+		if (start == std::string::npos || start >= text.size() || text[start] != '[') {
+			return "";
+		}
+		const auto end = findMatching(text, start, '[', ']');
+		return end == std::string::npos ? "" : text.substr(start + 1, end - start - 1);
+	}
+
+	std::vector<std::string> splitArrayObjects(const std::string & arrayText) {
+		std::vector<std::string> objects;
+		std::size_t cursor = 0;
+		while (cursor < arrayText.size()) {
+			const auto start = arrayText.find('{', cursor);
+			if (start == std::string::npos) {
+				break;
+			}
+			const auto end = findMatching(arrayText, start, '{', '}');
+			if (end == std::string::npos) {
+				break;
+			}
+			objects.push_back(arrayText.substr(start, end - start + 1));
+			cursor = end + 1;
+		}
+		return objects;
+	}
+
+	std::vector<std::string> parseStringArray(const std::string & arrayText) {
+		std::vector<std::string> values;
+		std::size_t cursor = 0;
+		while (cursor < arrayText.size()) {
+			const auto start = arrayText.find('"', cursor);
+			if (start == std::string::npos) {
+				break;
+			}
+			bool escaping = false;
+			for (std::size_t i = start + 1; i < arrayText.size(); ++i) {
+				const auto c = arrayText[i];
+				if (escaping) {
+					escaping = false;
+				} else if (c == '\\') {
+					escaping = true;
+				} else if (c == '"') {
+					values.push_back(unescapeJson(arrayText.substr(start + 1, i - start - 1)));
+					cursor = i + 1;
+					break;
+				}
+			}
+			if (cursor <= start) {
+				break;
+			}
+		}
+		return values;
 	}
 }
 
@@ -321,6 +539,75 @@ namespace ofxGgmlMusicUtils {
 			return false;
 		}
 		output << serializeGenerationManifest(request, result, backendName);
+		return true;
+	}
+
+	bool loadGenerationManifest(
+		const std::string & path,
+		ofxGgmlMusicGenerationResult & result,
+		std::string & error) {
+		result = {};
+		error.clear();
+		const auto text = readTextFile(path, error);
+		if (!error.empty()) {
+			return false;
+		}
+		if (text.empty()) {
+			error = "generation manifest is empty";
+			return false;
+		}
+
+		result.manifestPath = path;
+		result.outputPath = extractString(text, "outputPath");
+		const auto manifestPath = extractString(text, "manifestPath");
+		if (!manifestPath.empty()) {
+			result.manifestPath = manifestPath;
+		}
+		result.seed = extractInt(text, "seed", -1);
+		result.durationSeconds = extractDouble(text, "durationSeconds");
+		result.sampleRate = extractInt(text, "sampleRate");
+		result.channels = extractInt(text, "channels");
+		result.peakAbs = static_cast<float>(extractDouble(text, "peakAbs"));
+
+		const auto tempoText = extractObject(text, "tempo");
+		result.tempo.bpm = static_cast<float>(extractDouble(tempoText, "bpm"));
+		result.tempo.confidence = static_cast<float>(extractDouble(tempoText, "confidence"));
+
+		const auto keyText = extractObject(text, "key");
+		result.key.tonic = extractString(keyText, "tonic");
+		result.key.mode = extractString(keyText, "mode");
+		result.key.confidence = static_cast<float>(extractDouble(keyText, "confidence"));
+
+		for (const auto & beatText : splitArrayObjects(extractArray(text, "beats"))) {
+			ofxGgmlMusicBeat beat;
+			beat.timeSeconds = extractDouble(beatText, "timeSeconds");
+			beat.confidence = static_cast<float>(extractDouble(beatText, "confidence"));
+			beat.downbeat = extractBool(beatText, "downbeat");
+			result.beats.push_back(beat);
+		}
+
+		for (const auto & chordText : splitArrayObjects(extractArray(text, "chords"))) {
+			ofxGgmlMusicChord chord;
+			chord.timeSeconds = extractDouble(chordText, "timeSeconds");
+			chord.label = extractString(chordText, "label");
+			chord.confidence = static_cast<float>(extractDouble(chordText, "confidence"));
+			result.chords.push_back(chord);
+		}
+
+		for (const auto & stemText : splitArrayObjects(extractArray(text, "stems"))) {
+			ofxGgmlMusicStem stem;
+			stem.name = extractString(stemText, "name");
+			stem.path = extractString(stemText, "path");
+			stem.gain = static_cast<float>(extractDouble(stemText, "gain", 1.0));
+			result.stems.push_back(stem);
+		}
+
+		result.references = parseStringArray(extractArray(text, "references"));
+		result.success = !result.outputPath.empty();
+		if (!result.success) {
+			error = "generation manifest did not contain an outputPath";
+			return false;
+		}
 		return true;
 	}
 }

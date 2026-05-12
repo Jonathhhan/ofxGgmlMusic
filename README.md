@@ -72,7 +72,10 @@ scripts\generate-procedural-music.bat -Preset lofi -Output C:\temp\music.wav -Lo
 The helper builds `tools/ofxGgmlMusicGenerate`, writes the WAV, writes the
 `.wav.json` manifest, and writes requested stem WAVs next to the mix. Built-in
 presets are `ambient`, `lofi`, and `pulse`; explicit prompt, tempo, key,
-duration, seed, and stem flags override the preset defaults.
+duration, seed, and stem flags override the preset defaults. Use
+`ofxGgmlMusicUtils::loadGenerationManifest()` to load the sidecar back into an
+`ofxGgmlMusicGenerationResult`; the CLI also supports
+`--inspect C:\temp\music.wav.json`.
 
 ## Dependencies
 

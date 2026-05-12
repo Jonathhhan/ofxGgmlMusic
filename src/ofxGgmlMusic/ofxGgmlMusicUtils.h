@@ -34,4 +34,8 @@ namespace ofxGgmlMusicUtils {
 		const ofxGgmlMusicGenerationResult & result,
 		const std::string & backendName,
 		std::string & error);
+	bool loadGenerationManifest(
+		const std::string & path,
+		ofxGgmlMusicGenerationResult & result,
+		std::string & error);
 }

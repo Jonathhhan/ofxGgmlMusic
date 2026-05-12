@@ -25,6 +25,8 @@ No dependency should point from `ofxGgmlCore` or `ofxGgmlAudio` back to
 - generation manifests that record prompt, backend, seed, tempo, key, audio
   stats, beat/downbeat markers, chord changes, and references next to rendered
   audio
+- generation manifest loading for round-tripping generated metadata back into
+  `ofxGgmlMusicGenerationResult`
 - procedural stem export for named music components such as melody, bass, and
   pulse
 - a tiny native procedural generation CLI used by scripts for no-IDE smoke runs

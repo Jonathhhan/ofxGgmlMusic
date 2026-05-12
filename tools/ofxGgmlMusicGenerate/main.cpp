@@ -11,6 +11,7 @@ namespace {
 			<< "ofxGgmlMusicGenerate --prompt TEXT --output PATH [options]\n"
 			<< "\n"
 			<< "Options:\n"
+			<< "  --inspect PATH     Load and summarize a generated manifest\n"
 			<< "  --preset NAME      Preset: ambient, lofi, pulse\n"
 			<< "  --style TEXT       Style tag, for example ambient\n"
 			<< "  --tempo BPM        Tempo in beats per minute\n"
@@ -32,6 +33,28 @@ namespace {
 }
 
 int main(int argc, char ** argv) {
+	for (int i = 1; i < argc; ++i) {
+		const std::string arg = argv[i];
+		std::string value;
+		if (arg == "--inspect" && readValue(i, argc, argv, value)) {
+			ofxGgmlMusicGenerationResult manifest;
+			std::string error;
+			if (!ofxGgmlMusicUtils::loadGenerationManifest(value, manifest, error)) {
+				std::cerr << error << "\n";
+				return 1;
+			}
+			std::cout << "output: " << manifest.outputPath << "\n";
+			std::cout << "manifest: " << manifest.manifestPath << "\n";
+			std::cout << "duration: " << manifest.durationSeconds << "\n";
+			std::cout << "sample rate: " << manifest.sampleRate << "\n";
+			std::cout << "peak: " << manifest.peakAbs << "\n";
+			std::cout << "beats: " << manifest.beats.size() << "\n";
+			std::cout << "chords: " << manifest.chords.size() << "\n";
+			std::cout << "stems: " << manifest.stems.size() << "\n";
+			return 0;
+		}
+	}
+
 	ofxGgmlMusicGenerationRequest request;
 	request.outputPath = "ofxGgmlMusicGenerate.wav";
 	request.settings.backend = ofxGgmlMusicGenerationBackendFamily::External;
@@ -58,6 +81,8 @@ int main(int argc, char ** argv) {
 		if (arg == "--help" || arg == "-h") {
 			printUsage();
 			return 0;
+		} else if (arg == "--inspect" && readValue(i, argc, argv, value)) {
+			continue;
 		} else if (arg == "--preset" && readValue(i, argc, argv, value)) {
 			continue;
 		} else if (arg == "--prompt" && readValue(i, argc, argv, value)) {

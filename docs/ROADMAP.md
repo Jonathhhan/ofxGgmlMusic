@@ -27,6 +27,7 @@
 - Add a native procedural generation CLI plus Windows/macOS/Linux wrapper
   scripts for no-IDE smoke runs.
 - Add shared generation presets for ambient, lofi, and pulse workflows.
+- Add generation manifest loading for metadata round trips.
 
 ## Next Milestones
 
