@@ -5,11 +5,12 @@ Root-level prompt-to-music sketch example for `ofxGgmlMusic`.
 This example uses the built-in `procedural-sketch` backend. It is deterministic,
 model-free, and intended as a workflow proof: edit a prompt, tempo, key, style,
 duration, and seed, then generate a small WAV file into `bin/data/outputs`.
-The preset menu starts from shared `ambient`, `lofi`, and `pulse` settings.
+The preset menu uses the shared generation preset list.
 The example loads the rendered WAV back into a waveform preview and writes a
 `.wav.json` manifest next to the audio file. The preview overlays generated
-arrangement sections, beat/downbeat markers, and chord changes. Optional melody,
-bass, and pulse stem WAVs are written next to the mix. Editable melody, chord,
+arrangement sections, beat/downbeat markers, and chord changes. Optional shared
+stem exports, including melody, bass, pulse, and mix, are written next to the mix.
+Editable melody, chord,
 and combined arrangement `.mid` files are written beside the WAV. Each Generate
 press writes a timestamped WAV instead of overwriting the previous render. On
 startup, the example reloads the previous history entry or standard output

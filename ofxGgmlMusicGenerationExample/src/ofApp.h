@@ -42,6 +42,8 @@ private:
 	std::array<char, 512> promptBuffer{};
 	std::array<char, 64> styleBuffer{};
 	std::vector<std::string> presetNames;
+	std::vector<std::string> stemNames;
+	std::vector<bool> stemEnabled;
 	std::vector<std::string> historyManifestPaths;
 	std::string currentOutputPath;
 	std::string status;
@@ -56,7 +58,4 @@ private:
 	int modeIndex = 0;
 	bool loop = true;
 	bool autoPlay = true;
-	bool exportMelodyStem = true;
-	bool exportBassStem = true;
-	bool exportPulseStem = false;
 };

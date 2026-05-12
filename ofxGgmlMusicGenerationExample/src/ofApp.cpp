@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <iterator>
 
 namespace {
 	const char* tonics[] = {
@@ -18,6 +19,7 @@ void ofApp::setup() {
 	ofSetWindowTitle("ofxGgmlMusic generation example");
 	gui.setup();
 	presetNames = ofxGgmlMusicUtils::getGenerationPresetNames();
+	stemNames = ofxGgmlMusicUtils::getGenerationStemNames();
 	backend = ofxGgmlMakeProceduralMusicGenerationBackend();
 	ofxGgmlMusicUtils::applyGenerationPreset("ambient", request);
 	syncControlsFromRequest();
@@ -78,13 +80,12 @@ void ofApp::syncControlsFromRequest() {
 			break;
 		}
 	}
-	exportMelodyStem = false;
-	exportBassStem = false;
-	exportPulseStem = false;
+	stemEnabled.assign(stemNames.size(), false);
 	for (const auto & stem : request.targetStems) {
-		exportMelodyStem = exportMelodyStem || stem == "melody";
-		exportBassStem = exportBassStem || stem == "bass";
-		exportPulseStem = exportPulseStem || stem == "pulse";
+		const auto found = std::find(stemNames.begin(), stemNames.end(), stem);
+		if (found != stemNames.end()) {
+			stemEnabled[static_cast<std::size_t>(std::distance(stemNames.begin(), found))] = true;
+		}
 	}
 }
 
@@ -102,14 +103,13 @@ void ofApp::rebuildRequest() {
 	request.key.mode = modes[modeIndex];
 	request.key.confidence = 1.0f;
 	request.targetStems.clear();
-	if (exportMelodyStem) {
-		request.targetStems.push_back("melody");
+	if (stemEnabled.size() != stemNames.size()) {
+		stemEnabled.resize(stemNames.size(), false);
 	}
-	if (exportBassStem) {
-		request.targetStems.push_back("bass");
-	}
-	if (exportPulseStem) {
-		request.targetStems.push_back("pulse");
+	for (std::size_t i = 0; i < stemNames.size(); ++i) {
+		if (stemEnabled[i]) {
+			request.targetStems.push_back(stemNames[i]);
+		}
 	}
 }
 
@@ -300,11 +300,20 @@ void ofApp::draw() {
 	changed |= ImGui::Checkbox("Loop", &loop);
 	ImGui::SameLine();
 	changed |= ImGui::Checkbox("Auto-play", &autoPlay);
-	changed |= ImGui::Checkbox("Melody stem", &exportMelodyStem);
-	ImGui::SameLine();
-	changed |= ImGui::Checkbox("Bass stem", &exportBassStem);
-	ImGui::SameLine();
-	changed |= ImGui::Checkbox("Pulse stem", &exportPulseStem);
+	if (stemEnabled.size() != stemNames.size()) {
+		stemEnabled.resize(stemNames.size(), false);
+	}
+	for (std::size_t i = 0; i < stemNames.size(); ++i) {
+		bool selected = stemEnabled[i];
+		const auto label = stemNames[i] + " stem";
+		if (ImGui::Checkbox(label.c_str(), &selected)) {
+			stemEnabled[i] = selected;
+			changed = true;
+		}
+		if (i + 1 < stemNames.size()) {
+			ImGui::SameLine();
+		}
+	}
 	if (changed) {
 		rebuildRequest();
 		player.setLoop(loop);
