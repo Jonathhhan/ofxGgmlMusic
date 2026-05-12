@@ -58,6 +58,14 @@ sections, stems, MIDI sidecars, and references. Backends also update an
 `ofxGgmlMusic-history.json` index next to generated audio so tools and examples
 can find recent manifests without guessing output filenames.
 
+`ofxGgmlMusicExternalGenerationBackend` is the first explicit bridge boundary
+for real local music models. Configure `request.external.executablePath`,
+optional `modelPath`, and the expected CLI flags; the backend calls that local
+generator, expects it to write `request.outputPath`, and then loads or writes
+the standard `.wav.json` manifest. This keeps MusicGen-style transformer tools,
+audio diffusion tools, or custom GGML generators outside the addon until one is
+chosen deliberately.
+
 ## Example
 
 `ofxGgmlMusicAnalysisExample` is a root-level audio analysis request smoke test.

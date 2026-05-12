@@ -26,6 +26,8 @@
 - Add optional procedural stem exports for melody, bass, and pulse components.
 - Add a native procedural generation CLI plus Windows/macOS/Linux wrapper
   scripts for no-IDE smoke runs.
+- Add an explicit external generation backend boundary for local model-backed
+  music generator executables.
 - Add shared generation presets for ambient, lofi, and pulse workflows.
 - Add generation manifest loading for metadata round trips.
 - Reload the previous standard generation manifest in the openFrameworks example.
@@ -33,7 +35,7 @@
 
 ## Next Milestones
 
-- Connect the first real local backend or bridge adapter.
+- Use the external generation backend with one concrete local model runner.
 - Add MusicGen-style transformer and diffusion bridge research notes with a
   clear runtime/setup decision.
 - Keep image and video GAN work in `ofxGgmlDiffusion` and `ofxGgmlVideo`; this

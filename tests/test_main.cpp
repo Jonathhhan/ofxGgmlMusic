@@ -238,6 +238,41 @@ int main() {
 		return 1;
 	}
 
+	auto external = ofxGgmlMakeExternalMusicGenerationBackend();
+	if (!external ||
+		external->getBackendName() != "external-generator" ||
+		external->getBackendFamily() != ofxGgmlMusicGenerationBackendFamily::External ||
+		!external->isAvailable() ||
+		external->isLoaded()) {
+		std::cerr << "external generation backend reported unexpected initial state\n";
+		return 1;
+	}
+	auto externalRequest = generation;
+	externalRequest.settings.backend = ofxGgmlMusicGenerationBackendFamily::External;
+	externalRequest.external.executablePath.clear();
+	const auto missingExternalSetup = external->setup(externalRequest);
+	if (missingExternalSetup ||
+		missingExternalSetup.error.find("executable is not configured") == std::string::npos ||
+		external->isLoaded()) {
+		std::cerr << "external setup without executable was unexpected\n";
+		return 1;
+	}
+	externalRequest.external.executablePath = "missing-local-music-generator.exe";
+	externalRequest.external.modelPath = "missing-local-music-model.gguf";
+	const auto missingExternalExecutable = external->setup(externalRequest);
+	if (missingExternalExecutable ||
+		missingExternalExecutable.error.find("executable was not found") == std::string::npos ||
+		missingExternalExecutable.references.size() > 0) {
+		std::cerr << "external setup with missing executable was unexpected\n";
+		return 1;
+	}
+	const auto emptyExternalPrompt = external->generate(ofxGgmlMusicGenerationRequest{});
+	if (emptyExternalPrompt ||
+		emptyExternalPrompt.error.find("prompt is empty") == std::string::npos) {
+		std::cerr << "external generation accepted an empty prompt\n";
+		return 1;
+	}
+
 	const auto tempOutput = std::filesystem::temp_directory_path() / "ofxGgmlMusic-procedural-test.wav";
 	if (std::filesystem::exists(tempOutput)) {
 		std::filesystem::remove(tempOutput);

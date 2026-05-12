@@ -66,6 +66,22 @@ struct ofxGgmlMusicGenerationSettings {
 	bool loop = false;
 };
 
+struct ofxGgmlMusicExternalGenerationSettings {
+	std::string executablePath;
+	std::string modelPath;
+	std::string workingDirectory;
+	std::vector<std::string> extraArguments;
+	std::string promptFlag = "--prompt";
+	std::string outputFlag = "--output";
+	std::string modelFlag = "--model";
+	std::string durationFlag = "--duration";
+	std::string seedFlag = "--seed";
+
+	bool isConfigured() const {
+		return !executablePath.empty();
+	}
+};
+
 struct ofxGgmlMusicRequest {
 	std::string audioPath;
 	ofxGgmlMusicTask task = ofxGgmlMusicTask::Analysis;
@@ -82,6 +98,7 @@ struct ofxGgmlMusicGenerationRequest {
 	ofxGgmlMusicTempo tempo;
 	ofxGgmlMusicKey key;
 	ofxGgmlMusicGenerationSettings settings;
+	ofxGgmlMusicExternalGenerationSettings external;
 	std::vector<std::string> targetStems;
 };
 

@@ -55,6 +55,8 @@ Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicMidiUtils.cpp") 
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicTypes.h") "types header"
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicGenerationBackend.h") "generation backend header"
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicGenerationBackend.cpp") "generation backend source"
+Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicExternalGenerationBackend.h") "external generation backend header"
+Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicExternalGenerationBackend.cpp") "external generation backend source"
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicProceduralGenerationBackend.h") "procedural generation backend header"
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicProceduralGenerationBackend.cpp") "procedural generation backend source"
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicUtils.h") "utility header"

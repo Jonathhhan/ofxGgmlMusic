@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Added `ofxGgmlMusicExternalGenerationBackend` as the first explicit bridge
+  boundary for local model-backed music generator executables.
+
 ## 1.0.1 - 2026-05-12
 
 - Added independent Music addon version metadata.
