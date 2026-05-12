@@ -197,6 +197,10 @@ if ($LASTEXITCODE -eq 0) {
 if ($LASTEXITCODE -eq 0) {
 	throw "Procedural generation CLI accepted an invalid seed"
 }
+& $cliExe --preset ambient --prompt "invalid stem" --output (Join-Path $scratchDir "invalid-stem.wav") --stem not-a-stem
+if ($LASTEXITCODE -eq 0) {
+	throw "Procedural generation CLI accepted an invalid stem"
+}
 & $cliExe --prune-history $historyPath --keep not-an-int
 if ($LASTEXITCODE -eq 0) {
 	throw "Procedural generation CLI accepted an invalid keep count"

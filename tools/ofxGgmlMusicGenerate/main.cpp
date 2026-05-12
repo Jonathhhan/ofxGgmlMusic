@@ -91,6 +91,15 @@ namespace {
 		return true;
 	}
 
+	bool isGenerationStemName(const std::string & name) {
+		for (const auto & stemName : ofxGgmlMusicUtils::getGenerationStemNames()) {
+			if (name == stemName) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	std::string escapeJson(const std::string & text) {
 		std::string escaped;
 		for (const auto c : text) {
@@ -487,6 +496,11 @@ int main(int argc, char ** argv) {
 		} else if (arg == "--mode" && readValue(i, argc, argv, value)) {
 			request.key.mode = value;
 		} else if (arg == "--stem" && readValue(i, argc, argv, value)) {
+			if (!isGenerationStemName(value)) {
+				std::cerr << "Unknown stem: " << value << "\n";
+				std::cerr << "Run --list-stems to see supported stem names.\n";
+				return 2;
+			}
 			explicitStems.push_back(value);
 		} else if (arg == "--loop") {
 			request.settings.loop = true;
