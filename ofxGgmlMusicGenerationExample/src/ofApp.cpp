@@ -41,7 +41,7 @@ void ofApp::keyPressed(int key) {
 	if (key == ' ') {
 		if (player.isPlaying()) {
 			player.stop();
-		} else if (ofFile::doesFileExist(request.outputPath, false)) {
+		} else if (ofFile::doesFileExist(getPlayablePath(), false)) {
 			player.play();
 		}
 	}
@@ -117,6 +117,7 @@ void ofApp::rebuildRequest() {
 }
 
 void ofApp::runGeneration() {
+	currentOutputPath = getNextOutputPath();
 	rebuildRequest();
 	if (!backend) {
 		status = "backend missing";
@@ -156,10 +157,30 @@ void ofApp::runGeneration() {
 	ofLogNotice("ofxGgmlMusicGenerationExample") << detail;
 }
 
-std::string ofApp::getOutputPath() const {
+std::string ofApp::getOutputDirectory() const {
 	const auto outputDir = ofToDataPath("outputs", true);
 	ofDirectory::createDirectory(outputDir, false, true);
-	return ofFilePath::join(outputDir, "ofxGgmlMusicGenerationExample.wav");
+	return outputDir;
+}
+
+std::string ofApp::getOutputPath() const {
+	if (!currentOutputPath.empty()) {
+		return currentOutputPath;
+	}
+	return ofFilePath::join(getOutputDirectory(), "ofxGgmlMusicGenerationExample.wav");
+}
+
+std::string ofApp::getNextOutputPath() {
+	const auto outputDir = getOutputDirectory();
+	for (;;) {
+		const auto name = "ofxGgmlMusicGenerationExample-" +
+			ofToString(ofGetUnixTime()) + "-" +
+			ofToString(renderSerial++) + ".wav";
+		const auto path = ofFilePath::join(outputDir, name);
+		if (!ofFile::doesFileExist(path, false)) {
+			return path;
+		}
+	}
 }
 
 std::string ofApp::getManifestPath() const {
@@ -168,6 +189,13 @@ std::string ofApp::getManifestPath() const {
 
 std::string ofApp::getHistoryPath() const {
 	return ofxGgmlMusicUtils::getGenerationHistoryPath(getOutputPath());
+}
+
+std::string ofApp::getPlayablePath() const {
+	if (!lastResult.outputPath.empty()) {
+		return lastResult.outputPath;
+	}
+	return request.outputPath;
 }
 
 void ofApp::loadRenderManifest(const std::string & manifestPath) {
@@ -181,6 +209,7 @@ void ofApp::loadRenderManifest(const std::string & manifestPath) {
 	}
 
 	lastResult = loaded;
+	currentOutputPath = loaded.outputPath;
 	if (ofFile::doesFileExist(lastResult.outputPath, false)) {
 		player.stop();
 		player.load(lastResult.outputPath);
@@ -281,7 +310,7 @@ void ofApp::draw() {
 	if (ImGui::Button(player.isPlaying() ? "Stop" : "Play")) {
 		if (player.isPlaying()) {
 			player.stop();
-		} else if (ofFile::doesFileExist(request.outputPath, false)) {
+		} else if (ofFile::doesFileExist(getPlayablePath(), false)) {
 			player.play();
 		}
 	}

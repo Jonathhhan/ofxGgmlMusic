@@ -26,9 +26,12 @@ private:
 	void refreshGenerationHistory();
 	void loadWaveform();
 	void drawWaveform(float x, float y, float width, float height);
+	std::string getOutputDirectory() const;
 	std::string getOutputPath() const;
+	std::string getNextOutputPath();
 	std::string getManifestPath() const;
 	std::string getHistoryPath() const;
+	std::string getPlayablePath() const;
 
 	ofxImGui::Gui gui;
 	std::unique_ptr<ofxGgmlMusicGenerationBackend> backend;
@@ -39,6 +42,7 @@ private:
 	std::array<char, 512> promptBuffer{};
 	std::array<char, 64> styleBuffer{};
 	std::vector<std::string> historyManifestPaths;
+	std::string currentOutputPath;
 	std::string status;
 	std::string detail;
 	float tempo = 92.0f;
@@ -46,6 +50,7 @@ private:
 	int seed = 42;
 	int presetIndex = 0;
 	int historyIndex = 0;
+	int renderSerial = 1;
 	int tonicIndex = 0;
 	int modeIndex = 0;
 	bool loop = true;
