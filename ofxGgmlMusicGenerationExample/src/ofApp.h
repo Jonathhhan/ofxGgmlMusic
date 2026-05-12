@@ -41,6 +41,7 @@ private:
 	ofSoundPlayer player;
 	std::array<char, 512> promptBuffer{};
 	std::array<char, 64> styleBuffer{};
+	std::vector<std::string> presetNames;
 	std::vector<std::string> historyManifestPaths;
 	std::string currentOutputPath;
 	std::string status;

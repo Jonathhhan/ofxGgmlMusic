@@ -82,6 +82,7 @@ Assert-Path (Join-Path $generationExampleRoot "README.md") "generation example R
 Assert-Path (Join-Path $generationExampleRoot "src\main.cpp") "generation example main.cpp"
 Assert-Path (Join-Path $generationExampleRoot "src\ofApp.h") "generation example ofApp.h"
 Assert-Path (Join-Path $generationExampleRoot "src\ofApp.cpp") "generation example ofApp.cpp"
+Assert-FileContains (Join-Path $generationExampleRoot "src\ofApp.cpp") "getGenerationPresetNames" "generation example preset source"
 Assert-Path (Join-Path $addonRoot "tests\CMakeLists.txt") "test CMakeLists"
 Assert-Path (Join-Path $addonRoot "tests\test_main.cpp") "test source"
 

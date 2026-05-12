@@ -12,15 +12,12 @@ namespace {
 	const char* modes[] = {
 		"major", "minor"
 	};
-
-	const char* presets[] = {
-		"ambient", "lofi", "pulse"
-	};
 }
 
 void ofApp::setup() {
 	ofSetWindowTitle("ofxGgmlMusic generation example");
 	gui.setup();
+	presetNames = ofxGgmlMusicUtils::getGenerationPresetNames();
 	backend = ofxGgmlMakeProceduralMusicGenerationBackend();
 	ofxGgmlMusicUtils::applyGenerationPreset("ambient", request);
 	syncControlsFromRequest();
@@ -48,14 +45,14 @@ void ofApp::keyPressed(int key) {
 }
 
 void ofApp::applyPreset(int index) {
-	if (index < 0 || index >= 3) {
+	if (index < 0 || index >= static_cast<int>(presetNames.size())) {
 		return;
 	}
 	ofxGgmlMusicGenerationRequest presetRequest;
 	presetRequest.outputPath = getOutputPath();
 	presetRequest.settings.seed = seed;
 	presetRequest.settings.backend = ofxGgmlMusicGenerationBackendFamily::External;
-	if (!ofxGgmlMusicUtils::applyGenerationPreset(presets[index], presetRequest)) {
+	if (!ofxGgmlMusicUtils::applyGenerationPreset(presetNames[index], presetRequest)) {
 		return;
 	}
 	request = presetRequest;
@@ -275,9 +272,23 @@ void ofApp::draw() {
 	ImGui::Begin("ofxGgmlMusic Generation");
 
 	bool changed = false;
-	if (ImGui::Combo("Preset", &presetIndex, presets, 3)) {
-		applyPreset(presetIndex);
-		changed = false;
+	if (!presetNames.empty() && presetIndex >= static_cast<int>(presetNames.size())) {
+		presetIndex = 0;
+	}
+	const auto presetLabel = presetNames.empty() ? "(none)" : presetNames[presetIndex].c_str();
+	if (ImGui::BeginCombo("Preset", presetLabel)) {
+		for (int i = 0; i < static_cast<int>(presetNames.size()); ++i) {
+			const bool selected = i == presetIndex;
+			if (ImGui::Selectable(presetNames[i].c_str(), selected)) {
+				presetIndex = i;
+				applyPreset(presetIndex);
+				changed = false;
+			}
+			if (selected) {
+				ImGui::SetItemDefaultFocus();
+			}
+		}
+		ImGui::EndCombo();
 	}
 	changed |= ImGui::InputTextMultiline("Prompt", promptBuffer.data(), promptBuffer.size(), ImVec2(-1.0f, 84.0f));
 	changed |= ImGui::InputText("Style", styleBuffer.data(), styleBuffer.size());
