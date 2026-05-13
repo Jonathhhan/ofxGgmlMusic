@@ -1,0 +1,24 @@
+{
+  "name": "ofxGgmlMusic",
+  "lane": "music",
+  "coreBaseline": "v1.0.1",
+  "requires": [
+    "ofxGgmlCore"
+  ],
+  "owns": [
+    "music analysis",
+    "beat detection",
+    "key/chord workflows",
+    "stems",
+    "music generation"
+  ],
+  "platforms": [
+    "windows",
+    "macos",
+    "linux"
+  ],
+  "backends": [
+    "cpu",
+    "cuda"
+  ]
+}
