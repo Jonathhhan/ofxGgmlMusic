@@ -73,6 +73,9 @@ For model ids such as `facebook/musicgen-small`, set
 `request.external.requireModelPathExists = false`. Local model files keep the
 default file-existence check.
 
+For music-lane planning and backend boundaries, see
+[docs/MUSIC_WORKFLOWS.md](docs/MUSIC_WORKFLOWS.md).
+
 ## Example
 
 `ofxGgmlMusicAnalysisExample` is a root-level audio analysis request smoke test.
