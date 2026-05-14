@@ -77,6 +77,10 @@ Assert-Path (Join-Path $scriptRoot "generate-musicgen-hf.bat") "Hugging Face Mus
 Assert-Path (Join-Path $scriptRoot "generate-musicgen-hf.sh") "Hugging Face MusicGen shell script"
 Assert-Path (Join-Path $scriptRoot "run-musicgen-hf.bat") "Hugging Face MusicGen Windows runner"
 Assert-Path (Join-Path $scriptRoot "run-musicgen-hf.sh") "Hugging Face MusicGen shell runner"
+Assert-Path (Join-Path $scriptRoot "doctor-music.ps1") "Music doctor script"
+Assert-Path (Join-Path $scriptRoot "doctor-music.bat") "Music doctor Windows wrapper"
+Assert-Path (Join-Path $scriptRoot "doctor-music.sh") "Music doctor shell wrapper"
+Assert-Path (Join-Path $scriptRoot "test-doctor-music.ps1") "Music doctor smoke test"
 Assert-Path (Join-Path $scriptRoot "test-external-generation-contract.ps1") "external generation contract script"
 Assert-Path (Join-Path $scriptRoot "test-external-generation-contract.bat") "external generation contract batch script"
 Assert-Path (Join-Path $scriptRoot "test-external-generation-contract.sh") "external generation contract shell script"
@@ -133,6 +137,12 @@ foreach ($relative in $forbidden) {
 	if (Test-Path -LiteralPath $path) {
 		throw "Generated or local-only path should not be committed here: $relative"
 	}
+}
+
+Write-Step "Checking Music doctor"
+& (Join-Path $scriptRoot "test-doctor-music.ps1")
+if (!$?) {
+	throw "Music doctor smoke test failed"
 }
 
 Write-Step "Running headless tests"
