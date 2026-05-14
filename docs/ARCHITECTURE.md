@@ -70,3 +70,8 @@ or Transformers.
 - generic audio stream chunking, PCM, VAD, and low-level feature primitives
 - generic tensor, graph, model metadata, and result types
 - unrelated companion workflows
+
+See `docs/MUSIC_WORKFLOWS.md` before expanding this lane. It defines the
+planning handoff, generated-artifact boundaries, backend-family split, and
+validation ladder for procedural, external-generator, MusicGen, and future
+music model workflows.
