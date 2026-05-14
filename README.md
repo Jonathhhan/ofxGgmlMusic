@@ -179,12 +179,14 @@ dependency of the addon.
 ## Validate
 
 ```powershell
+scripts\doctor-music.bat
 scripts\validate-local.bat
 ```
 
 On macOS/Linux:
 
 ```sh
+./scripts/doctor-music.sh
 ./scripts/validate-local.sh
 ```
 
