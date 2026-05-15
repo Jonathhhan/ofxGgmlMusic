@@ -66,10 +66,19 @@ Use the smallest command that proves the changed layer:
 | --- | --- |
 | Docs or planning only | `scripts\validate-local.bat` |
 | Procedural generation path | `scripts\generate-procedural-music.bat` |
+| Ecosystem runtime smoke evidence | `scripts\run-music-runtime-smoke.bat -Json -SummaryOnly -Clean` |
 | External generator bridge | `scripts\test-external-generation-contract.bat -Clean` |
 | MusicGen runner profile | `scripts\generate-musicgen-hf.bat -DryRun` |
 | Local setup diagnosis | `scripts\doctor-music.bat` |
 | Request/result/helper changes | `scripts\test-addon.bat` |
+
+`scripts\run-music-runtime-smoke.*` is intentionally model-free but generation
+backed. It validates helper tests and doctor readiness, then runs the
+`procedural-sketch` backend through the no-IDE generator and verifies WAV,
+manifest, history, MIDI, and stem artifacts in a temp directory. Model-backed
+MusicGen, diffusion, SampleRNN, and custom GGML generator checks should be
+added only after their model paths, executables, outputs, and cleanup rules are
+explicit.
 
 ## Safe first tasks
 
