@@ -86,6 +86,10 @@ Assert-Path (Join-Path $scriptRoot "doctor-music.ps1") "Music doctor script"
 Assert-Path (Join-Path $scriptRoot "doctor-music.bat") "Music doctor Windows wrapper"
 Assert-Path (Join-Path $scriptRoot "doctor-music.sh") "Music doctor shell wrapper"
 Assert-Path (Join-Path $scriptRoot "test-doctor-music.ps1") "Music doctor smoke test"
+Assert-Path (Join-Path $scriptRoot "run-music-runtime-smoke.ps1") "Music runtime smoke script"
+Assert-Path (Join-Path $scriptRoot "run-music-runtime-smoke.bat") "Music runtime smoke Windows wrapper"
+Assert-Path (Join-Path $scriptRoot "run-music-runtime-smoke.sh") "Music runtime smoke shell wrapper"
+Assert-Path (Join-Path $scriptRoot "test-music-runtime-smoke.ps1") "Music runtime smoke contract test"
 Assert-Path (Join-Path $scriptRoot "test-external-generation-contract.ps1") "external generation contract script"
 Assert-Path (Join-Path $scriptRoot "test-external-generation-contract.bat") "external generation contract batch script"
 Assert-Path (Join-Path $scriptRoot "test-external-generation-contract.sh") "external generation contract shell script"
@@ -149,6 +153,9 @@ Write-Step "Checking Music doctor"
 if (!$?) {
 	throw "Music doctor smoke test failed"
 }
+
+Write-Step "Checking Music runtime smoke contract"
+& (Join-Path $scriptRoot "test-music-runtime-smoke.ps1")
 
 Write-Step "Running headless tests"
 & (Join-Path $scriptRoot "test-addon.ps1")

@@ -183,6 +183,7 @@ dependency of the addon.
 
 ```powershell
 scripts\doctor-music.bat
+scripts\run-music-runtime-smoke.bat -Json -SummaryOnly -Clean
 scripts\validate-local.bat
 ```
 
@@ -190,8 +191,16 @@ On macOS/Linux:
 
 ```sh
 ./scripts/doctor-music.sh
+./scripts/run-music-runtime-smoke.sh -Json -SummaryOnly -Clean
 ./scripts/validate-local.sh
 ```
+
+`scripts\run-music-runtime-smoke.*` is the lane-owned runtime-smoke entrypoint
+for ecosystem planning and CI rollouts. It runs the deterministic helper tests,
+checks doctor readiness, builds the no-IDE procedural generator, writes a short
+model-free `procedural-sketch` WAV into a temp directory, and verifies the
+manifest, history, MIDI, and stem sidecars. It does not claim model-backed
+MusicGen, audio diffusion, SampleRNN, or custom GGML generator coverage.
 
 ## Boundary
 
