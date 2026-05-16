@@ -19,6 +19,11 @@ build/
 libs/*/.source/
 libs/*/build/
 libs/*/build*/
+lib/acestep/bin/
+lib/acestep/models/
+lib/acestep/.source/
+lib/acestep/build/
+lib/acestep/build*/
 
 ofxGgml*Example/bin/
 ofxGgml*Example/obj/

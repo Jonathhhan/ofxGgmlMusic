@@ -82,6 +82,9 @@ Assert-Path (Join-Path $scriptRoot "generate-external-music.sh") "external gener
 Assert-Path (Join-Path $scriptRoot "generate-musicgen-hf.ps1") "Hugging Face MusicGen generation script"
 Assert-Path (Join-Path $scriptRoot "generate-musicgen-hf.bat") "Hugging Face MusicGen batch script"
 Assert-Path (Join-Path $scriptRoot "generate-musicgen-hf.sh") "Hugging Face MusicGen shell script"
+Assert-Path (Join-Path $scriptRoot "start-acestep-server.ps1") "AceStep server launch script"
+Assert-Path (Join-Path $scriptRoot "start-acestep-server.bat") "AceStep server launch batch script"
+Assert-Path (Join-Path $scriptRoot "start-acestep-server.sh") "AceStep server launch shell script"
 Assert-Path (Join-Path $scriptRoot "run-musicgen-hf.bat") "Hugging Face MusicGen Windows runner"
 Assert-Path (Join-Path $scriptRoot "run-musicgen-hf.sh") "Hugging Face MusicGen shell runner"
 Assert-Path (Join-Path $scriptRoot "doctor-music.ps1") "Music doctor script"
@@ -201,6 +204,15 @@ if (!$musicGenDryRun.Contains("External music generation plan") -or
 	!$musicGenDryRun.Contains("facebook/musicgen-small") -or
 	!$musicGenDryRun.Contains("Dry run complete; no files were changed")) {
 	throw "MusicGen HF dry-run output was unexpected:`n$musicGenDryRun"
+}
+$acestepDryRun = & (Join-Path $scriptRoot "start-acestep-server.ps1") `
+	-ServerExecutable "mock-acestep-server.exe" `
+	-ServerUrl "http://127.0.0.1:8085" `
+	-DryRun 2>&1 6>&1 | Out-String
+if (!$acestepDryRun.Contains("OFXGGML_ACESTEP_SERVER_DRY_RUN=1") -or
+	!$acestepDryRun.Contains("OFXGGML_ACESTEP_SERVER_URL=http://127.0.0.1:8085") -or
+	!$acestepDryRun.Contains("OFXGGML_ACESTEP_SERVER_COMMAND")) {
+	throw "AceStep server dry-run output was unexpected:`n$acestepDryRun"
 }
 
 Write-Step "Checking procedural generation CLI"

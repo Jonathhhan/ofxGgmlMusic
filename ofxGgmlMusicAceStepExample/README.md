@@ -20,6 +20,30 @@ waveform preview.
 
 Generate the project with the openFrameworks projectGenerator using the addons
 listed in `addons.make`, start your AceStep server, then run the example.
+Start the server with the new helper:
+
+```powershell
+From the addon root:
+..\scripts\start-acestep-server.ps1 -ServerExecutable C:\path\to\ace-server.exe -ModelPath C:\models\...
+```
+
+Or place `ace-server(.exe)` at:
+
+```powershell
+ofxGgmlMusic\lib\acestep\bin\ace-server(.exe)
+```
+and launch with:
+
+```powershell
+..\scripts\start-acestep-server.ps1 -ModelPath C:\models\...
+```
+
+Optional environment variables:
+
+- `OFXGGML_ACESTEP_SERVER_EXE`
+- `OFXGGML_ACESTEP_SERVER_URL` (defaults to `http://127.0.0.1:8085`)
+- `OFXGGML_ACESTEP_MODEL_PATH`
+- `OFXGGML_ACESTEP_SERVER_ARGS` (optional extra flags)
 
 Useful controls:
 

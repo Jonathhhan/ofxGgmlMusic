@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <cstdlib>
 
 namespace {
 	void copyToBuffer(std::array<char, 2048> & buffer, const std::string & value) {
@@ -21,7 +22,8 @@ void ofApp::setup() {
 	ofSetFrameRate(60);
 	gui.setup();
 
-	copyToBuffer(serverUrlBuffer, "http://127.0.0.1:8085");
+	const char * initialServerUrl = std::getenv("OFXGGML_ACESTEP_SERVER_URL");
+	copyToBuffer(serverUrlBuffer, initialServerUrl ? initialServerUrl : "http://127.0.0.1:8085");
 	copyToBuffer(captionBuffer,
 		"cinematic electronic instrumental, warm analog pads, plucked arpeggios, "
 		"subtle pulse, hopeful nocturnal mood, polished stereo mix");

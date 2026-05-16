@@ -98,6 +98,30 @@ from the legacy GUI lane. It connects to an AceStep-compatible server, checks
 the generated track back with a waveform preview for WAV output. The heavy
 server, models, and generated audio remain local artifacts outside git.
 
+To run it, start an AceStep server first. The launcher prefers:
+
+1) `OFXGGML_ACESTEP_SERVER_EXE`
+2) `lib/acestep/bin/ace-server(.exe)` (built from [ServeurpersoCom/acestep.cpp](https://github.com/ServeurpersoCom/acestep.cpp))
+3) explicit `-ServerExecutable`
+
+```powershell
+scripts\start-acestep-server.ps1 -ServerExecutable "C:\path\to\ace-server.exe" -ModelPath "C:\models\..."
+```
+
+If you keep `ace-server(.exe)` at `ofxGgmlMusic/lib/acestep/bin`, you can just run:
+
+```powershell
+scripts\start-acestep-server.ps1 -ModelPath "C:\models\..."
+```
+
+The example reads `OFXGGML_ACESTEP_SERVER_URL` automatically at startup.
+You can also set these optional environment variables:
+
+- `OFXGGML_ACESTEP_SERVER_EXE`
+- `OFXGGML_ACESTEP_SERVER_URL` (defaults to `http://127.0.0.1:8085`)
+- `OFXGGML_ACESTEP_MODEL_PATH`
+- `OFXGGML_ACESTEP_SERVER_ARGS` (optional extra flags passed to the server)
+
 For a no-IDE smoke run, use the procedural CLI helper:
 
 ```powershell
