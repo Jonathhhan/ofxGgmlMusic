@@ -87,9 +87,16 @@ files, can export shared melody, bass, pulse, and mix stems, and overlays
 sections plus beat/chord timing on the waveform. Each Generate press writes a
 timestamped WAV so the history index can track multiple renders. The generation
 example reloads recent renders from that index on startup when available,
-falling back to the standard render manifest. Generate either example with the
+falling back to the standard render manifest. Generate these examples with the
 openFrameworks projectGenerator using addons `ofxGgmlMusic`, `ofxGgmlCore`, and
 `ofxImGui`.
+
+`ofxGgmlMusicAceStepExample` is the real local music generation example ported
+from the legacy GUI lane. It connects to an AceStep-compatible server, checks
+`/health`, runs the `/lm` prompt-enrichment stage, forwards that result to
+`/synth`, writes the returned audio into `bin/data/generated/acestep`, and plays
+the generated track back with a waveform preview for WAV output. The heavy
+server, models, and generated audio remain local artifacts outside git.
 
 For a no-IDE smoke run, use the procedural CLI helper:
 

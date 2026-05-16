@@ -58,6 +58,8 @@ Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicAudioUtils.cpp")
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicMidiUtils.h") "midi utils header"
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicMidiUtils.cpp") "midi utils source"
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicTypes.h") "types header"
+Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicAceStepBridge.h") "AceStep bridge header"
+Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicAceStepBridge.cpp") "AceStep bridge source"
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicGenerationBackend.h") "generation backend header"
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicGenerationBackend.cpp") "generation backend source"
 Assert-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicExternalGenerationBackend.h") "external generation backend header"
@@ -119,6 +121,17 @@ Assert-FileContains (Join-Path $generationExampleRoot "src\ofApp.cpp") "getGener
 Assert-FileContains (Join-Path $generationExampleRoot "src\ofApp.cpp") "getGenerationStemNames" "generation example stem source"
 Assert-FileContains (Join-Path $generationExampleRoot "src\ofApp.cpp") "getGenerationKeyTonics" "generation example key tonic source"
 Assert-FileContains (Join-Path $generationExampleRoot "src\ofApp.cpp") "getGenerationKeyModes" "generation example key mode source"
+
+$aceStepExampleRoot = Join-Path $addonRoot "ofxGgmlMusicAceStepExample"
+Assert-Path $aceStepExampleRoot "root-level AceStep music example" -Directory
+Assert-Path (Join-Path $aceStepExampleRoot "addons.make") "AceStep example addons.make"
+Assert-FileContains (Join-Path $aceStepExampleRoot "addons.make") "(?m)^ofxImGui\s*$" "AceStep example addons.make"
+Assert-Path (Join-Path $aceStepExampleRoot "README.md") "AceStep example README"
+Assert-Path (Join-Path $aceStepExampleRoot "src\main.cpp") "AceStep example main.cpp"
+Assert-Path (Join-Path $aceStepExampleRoot "src\ofApp.h") "AceStep example ofApp.h"
+Assert-Path (Join-Path $aceStepExampleRoot "src\ofApp.cpp") "AceStep example ofApp.cpp"
+Assert-FileContains (Join-Path $aceStepExampleRoot "src\ofApp.cpp") "ofxGgmlMusicAceStepBridge" "AceStep example bridge usage"
+Assert-FileContains (Join-Path $aceStepExampleRoot "README.md") "AceStep-compatible local server" "AceStep example README"
 Assert-Path (Join-Path $addonRoot "tests\CMakeLists.txt") "test CMakeLists"
 Assert-Path (Join-Path $addonRoot "tests\test_main.cpp") "test source"
 Assert-Path (Join-Path $addonRoot "tests\test_external_generation_contract.cpp") "external generation contract source"
@@ -138,6 +151,9 @@ $forbidden = @(
 	"ofxGgmlMusicGenerationExample\bin",
 	"ofxGgmlMusicGenerationExample\obj",
 	"ofxGgmlMusicGenerationExample\.vs",
+	"ofxGgmlMusicAceStepExample\bin",
+	"ofxGgmlMusicAceStepExample\obj",
+	"ofxGgmlMusicAceStepExample\.vs",
 	"models"
 )
 
