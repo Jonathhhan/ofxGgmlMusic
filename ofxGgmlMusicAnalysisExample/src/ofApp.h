@@ -2,6 +2,7 @@
 
 #include "ofMain.h"
 #include "ofxGgmlMusic.h"
+#include "ofxImGui.h"
 
 class ofApp : public ofBaseApp {
 public:
@@ -11,4 +12,5 @@ public:
 private:
 	ofxGgmlMusicRequest request;
 	std::string status;
+	ofxImGui::Gui gui;
 };
