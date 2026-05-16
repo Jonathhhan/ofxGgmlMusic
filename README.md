@@ -105,6 +105,8 @@ To run it, start an AceStep server first. The launcher prefers:
 3) explicit `-ServerExecutable`
 
 ```powershell
+scripts\setup-acestep-server.ps1 -DryRun
+scripts\setup-acestep-server.ps1 -BundledGgml
 scripts\start-acestep-server.ps1 -ServerExecutable "C:\path\to\ace-server.exe" -ModelPath "C:\models\..."
 ```
 
@@ -113,6 +115,11 @@ If you keep `ace-server(.exe)` at `ofxGgmlMusic/lib/acestep/bin`, you can just r
 ```powershell
 scripts\start-acestep-server.ps1 -ModelPath "C:\models\..."
 ```
+
+`setup-acestep-server.ps1` prefers `ofxGgmlCore/libs/ggml/.source` whenever that
+source tree is available. If the core ggml source is missing, it automatically
+falls back to the `acestep.cpp` bundled ggml copy so users can still complete
+setup in a minimal checkout.
 
 The example reads `OFXGGML_ACESTEP_SERVER_URL` automatically at startup.
 You can also set these optional environment variables:
@@ -215,6 +222,7 @@ dependency of the addon.
 ```powershell
 scripts\doctor-music.bat
 scripts\run-music-runtime-smoke.bat -Json -SummaryOnly -Clean
+scripts\setup-acestep-server.ps1 -DryRun
 scripts\validate-local.bat
 ```
 

@@ -85,6 +85,12 @@ Assert-Path (Join-Path $scriptRoot "generate-musicgen-hf.sh") "Hugging Face Musi
 Assert-Path (Join-Path $scriptRoot "start-acestep-server.ps1") "AceStep server launch script"
 Assert-Path (Join-Path $scriptRoot "start-acestep-server.bat") "AceStep server launch batch script"
 Assert-Path (Join-Path $scriptRoot "start-acestep-server.sh") "AceStep server launch shell script"
+Assert-Path (Join-Path $scriptRoot "setup-acestep-server.ps1") "AceStep server setup script"
+Assert-Path (Join-Path $scriptRoot "setup-acestep-server.bat") "AceStep server setup batch script"
+Assert-Path (Join-Path $scriptRoot "setup-acestep-server.sh") "AceStep server setup shell script"
+Assert-Path (Join-Path $scriptRoot "test-acestep-setup-dry-run.ps1") "AceStep setup dry-run script"
+Assert-Path (Join-Path $scriptRoot "test-acestep-setup-dry-run.bat") "AceStep setup dry-run batch script"
+Assert-Path (Join-Path $scriptRoot "test-acestep-setup-dry-run.sh") "AceStep setup dry-run shell script"
 Assert-Path (Join-Path $scriptRoot "run-musicgen-hf.bat") "Hugging Face MusicGen Windows runner"
 Assert-Path (Join-Path $scriptRoot "run-musicgen-hf.sh") "Hugging Face MusicGen shell runner"
 Assert-Path (Join-Path $scriptRoot "doctor-music.ps1") "Music doctor script"
@@ -213,6 +219,12 @@ if (!$acestepDryRun.Contains("OFXGGML_ACESTEP_SERVER_DRY_RUN=1") -or
 	!$acestepDryRun.Contains("OFXGGML_ACESTEP_SERVER_URL=http://127.0.0.1:8085") -or
 	!$acestepDryRun.Contains("OFXGGML_ACESTEP_SERVER_COMMAND")) {
 	throw "AceStep server dry-run output was unexpected:`n$acestepDryRun"
+}
+
+Write-Step "Checking AceStep setup dry-run contract"
+& (Join-Path $scriptRoot "test-acestep-setup-dry-run.ps1")
+if ($LASTEXITCODE -ne 0) {
+	throw "AceStep setup dry-run contract failed with exit code $LASTEXITCODE"
 }
 
 Write-Step "Checking procedural generation CLI"

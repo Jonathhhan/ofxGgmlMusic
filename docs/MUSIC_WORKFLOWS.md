@@ -67,6 +67,7 @@ Use the smallest command that proves the changed layer:
 | Docs or planning only | `scripts\validate-local.bat` |
 | Procedural generation path | `scripts\generate-procedural-music.bat` |
 | Ecosystem runtime smoke evidence | `scripts\run-music-runtime-smoke.bat -Json -SummaryOnly -Clean` |
+| AceStep runtime setup | `scripts\test-acestep-setup-dry-run.ps1` |
 | External generator bridge | `scripts\test-external-generation-contract.bat -Clean` |
 | MusicGen runner profile | `scripts\generate-musicgen-hf.bat -DryRun` |
 | Local setup diagnosis | `scripts\doctor-music.bat` |

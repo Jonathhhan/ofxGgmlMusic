@@ -24,6 +24,7 @@ Start the server with the new helper:
 
 ```powershell
 From the addon root:
+..\scripts\setup-acestep-server.ps1
 ..\scripts\start-acestep-server.ps1 -ServerExecutable C:\path\to\ace-server.exe -ModelPath C:\models\...
 ```
 
