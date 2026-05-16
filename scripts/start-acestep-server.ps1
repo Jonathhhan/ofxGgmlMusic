@@ -19,7 +19,7 @@ $ErrorActionPreference = "Stop"
 
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $addonRoot = Resolve-Path (Join-Path $scriptRoot "..")
-$libAcestepRoot = Join-Path $addonRoot "lib\\acestep"
+$libAcestepRoot = Join-Path $addonRoot "libs\\acestep"
 $acestepBinRoot = Join-Path $libAcestepRoot "bin"
 
 function Normalize-ServerUrl {
@@ -143,7 +143,7 @@ function Resolve-Executable {
 			}
 		}
 
-		throw "Could not determine AceStep executable. Set OFXGGML_ACESTEP_SERVER_EXE, pass -ServerExecutable, or build ace-server into lib/acestep/bin."
+		throw "Could not determine AceStep executable. Set OFXGGML_ACESTEP_SERVER_EXE, pass -ServerExecutable, or build ace-server into libs/acestep/bin."
 	}
 	if (Test-Path -LiteralPath $Executable -PathType Leaf) {
 		return (Resolve-Path -LiteralPath $Executable).Path

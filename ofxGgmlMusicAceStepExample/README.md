@@ -31,7 +31,7 @@ From the addon root:
 Or place `ace-server(.exe)` at:
 
 ```powershell
-ofxGgmlMusic\lib\acestep\bin\ace-server(.exe)
+ofxGgmlMusic\libs\acestep\bin\ace-server(.exe)
 ```
 and launch with:
 

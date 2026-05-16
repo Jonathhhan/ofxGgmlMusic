@@ -101,7 +101,7 @@ server, models, and generated audio remain local artifacts outside git.
 To run it, start an AceStep server first. The launcher prefers:
 
 1) `OFXGGML_ACESTEP_SERVER_EXE`
-2) `lib/acestep/bin/ace-server(.exe)` (built from [ServeurpersoCom/acestep.cpp](https://github.com/ServeurpersoCom/acestep.cpp))
+2) `libs/acestep/bin/ace-server(.exe)` (built from [ServeurpersoCom/acestep.cpp](https://github.com/ServeurpersoCom/acestep.cpp))
 3) explicit `-ServerExecutable`
 
 ```powershell
@@ -110,7 +110,7 @@ scripts\setup-acestep-server.ps1 -BundledGgml
 scripts\start-acestep-server.ps1 -ServerExecutable "C:\path\to\ace-server.exe" -ModelPath "C:\models\..."
 ```
 
-If you keep `ace-server(.exe)` at `ofxGgmlMusic/lib/acestep/bin`, you can just run:
+If you keep `ace-server(.exe)` at `ofxGgmlMusic/libs/acestep/bin`, you can just run:
 
 ```powershell
 scripts\start-acestep-server.ps1 -ModelPath "C:\models\..."
