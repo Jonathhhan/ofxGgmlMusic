@@ -110,16 +110,27 @@ scripts\setup-acestep-server.ps1 -BundledGgml
 scripts\start-acestep-server.ps1 -ServerExecutable "C:\path\to\ace-server.exe" -ModelPath "C:\models\..."
 ```
 
+By default the setup script clones the remote default branch of `acestep.cpp`.
+Pass `-Revision <branch-or-tag>` only when you intentionally want to pin an
+upstream branch or tag.
+
+AceStep currently builds against its bundled `ggml` submodule by default because
+upstream ACE-Step uses ggml helpers that are not present in every shared Core
+ggml checkout. Use `-UseCoreGgml` only when you are testing a known-compatible
+Core ggml source with the ACE-Step fork ops such as `ggml_col2im_1d`. Core's
+upstream `ggml 0.12.0` setup intentionally remains backend-neutral and is not
+patched for this VAE-specific fork by default. Use `-Blas` only when a system
+BLAS installation is configured.
+
 If you keep `ace-server(.exe)` at `ofxGgmlMusic/libs/acestep/bin`, you can just run:
 
 ```powershell
 scripts\start-acestep-server.ps1 -ModelPath "C:\models\..."
 ```
 
-`setup-acestep-server.ps1` prefers `ofxGgmlCore/libs/ggml/.source` whenever that
-source tree is available. If the core ggml source is missing, it automatically
-falls back to the `acestep.cpp` bundled ggml copy so users can still complete
-setup in a minimal checkout.
+`setup-acestep-server.ps1` keeps downloaded ACE-Step source, build output, and
+installed server binaries under `libs/acestep`, which remains local artifact
+space outside git.
 
 The example reads `OFXGGML_ACESTEP_SERVER_URL` automatically at startup.
 You can also set these optional environment variables:
