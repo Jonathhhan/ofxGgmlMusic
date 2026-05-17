@@ -91,6 +91,14 @@ falling back to the standard render manifest. Generate these examples with the
 openFrameworks projectGenerator using addons `ofxGgmlMusic`, `ofxGgmlCore`, and
 `ofxImGui`.
 
+On Windows, if an existing generated Visual Studio project reports missing
+addon headers such as `ofxGgmlMusic.h` or `ofxImGui.h`, repair the generated
+metadata from the addon root:
+
+```powershell
+scripts\build-music-example.ps1 -Example ofxGgmlMusicAceStepExample -RepairOnly
+```
+
 `ofxGgmlMusicAceStepExample` is the real local music generation example ported
 from the legacy GUI lane. It connects to an AceStep-compatible server, checks
 `/health`, runs the `/lm` prompt-enrichment stage, forwards that result to

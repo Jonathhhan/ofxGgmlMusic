@@ -20,6 +20,20 @@ waveform preview.
 
 Generate the project with the openFrameworks projectGenerator using the addons
 listed in `addons.make`, start your AceStep server, then run the example.
+If Visual Studio reports missing headers such as `ofxGgmlMusic.h`,
+`ofxGgmlMusic/ofxGgmlMusicAceStepBridge.h`, or `ofxImGui.h`, repair the
+generated project metadata from the addon root:
+
+```powershell
+scripts\build-music-example.ps1 -Example ofxGgmlMusicAceStepExample -RepairOnly
+```
+
+To repair and build the example in one step:
+
+```powershell
+scripts\build-music-example.ps1 -Example ofxGgmlMusicAceStepExample -Jobs 0
+```
+
 Start the server with the new helper:
 
 ```powershell

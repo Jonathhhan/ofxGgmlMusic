@@ -9,8 +9,10 @@ common:
 	ADDON_DEPENDENCIES += ofxGgmlCore
 	ADDON_INCLUDES += src
 	ADDON_SOURCES_EXCLUDE += build/%
+	ADDON_SOURCES_EXCLUDE += libs/*/.source/%
 	ADDON_SOURCES_EXCLUDE += libs/*/build/%
 	ADDON_SOURCES_EXCLUDE += libs/*/build*/%
 	ADDON_INCLUDES_EXCLUDE += build/%
+	ADDON_INCLUDES_EXCLUDE += libs/*/.source/%
 	ADDON_INCLUDES_EXCLUDE += libs/*/build/%
 	ADDON_INCLUDES_EXCLUDE += libs/*/build*/%

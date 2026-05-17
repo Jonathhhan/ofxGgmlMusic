@@ -107,6 +107,13 @@ Assert-Path (Join-Path $scriptRoot "test-music-runtime-smoke.ps1") "Music runtim
 Assert-Path (Join-Path $scriptRoot "test-external-generation-contract.ps1") "external generation contract script"
 Assert-Path (Join-Path $scriptRoot "test-external-generation-contract.bat") "external generation contract batch script"
 Assert-Path (Join-Path $scriptRoot "test-external-generation-contract.sh") "external generation contract shell script"
+Assert-Path (Join-Path $scriptRoot "build-music-example.ps1") "Music example build script"
+Assert-Path (Join-Path $scriptRoot "build-music-example.bat") "Music example build batch script"
+Assert-Path (Join-Path $scriptRoot "build-music-example.sh") "Music example build shell script"
+Assert-Path (Join-Path $scriptRoot "test-example-project-repair.ps1") "Music example repair test"
+Assert-FileContains (Join-Path $scriptRoot "build-music-example.ps1") "ofxGgmlMusicAceStepExample" "Music example build script default"
+Assert-FileContains (Join-Path $scriptRoot "build-music-example.ps1") "Repair-VisualStudioProjectFile" "Music generated project repair"
+Assert-FileContains (Join-Path $addonRoot "addon_config.mk") "libs/\*/\.source/%" "addon source cache exclusion"
 
 Write-Step "Checking dependency layout"
 Assert-Path (Join-Path $addonsRoot "ofxGgmlCore") "sibling ofxGgmlCore addon" -Directory
@@ -243,6 +250,12 @@ Write-Step "Checking AceStep server dry-run contract"
 & (Join-Path $scriptRoot "test-acestep-server-dry-run.ps1")
 if ($LASTEXITCODE -ne 0) {
 	throw "AceStep server dry-run contract failed with exit code $LASTEXITCODE"
+}
+
+Write-Step "Checking generated example project repair"
+& (Join-Path $scriptRoot "test-example-project-repair.ps1")
+if ($LASTEXITCODE -ne 0) {
+	throw "Music example project repair failed with exit code $LASTEXITCODE"
 }
 
 Write-Step "Checking procedural generation CLI"
