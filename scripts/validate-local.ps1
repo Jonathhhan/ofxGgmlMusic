@@ -85,6 +85,9 @@ Assert-Path (Join-Path $scriptRoot "generate-musicgen-hf.sh") "Hugging Face Musi
 Assert-Path (Join-Path $scriptRoot "start-acestep-server.ps1") "AceStep server launch script"
 Assert-Path (Join-Path $scriptRoot "start-acestep-server.bat") "AceStep server launch batch script"
 Assert-Path (Join-Path $scriptRoot "start-acestep-server.sh") "AceStep server launch shell script"
+Assert-Path (Join-Path $scriptRoot "test-acestep-server-dry-run.ps1") "AceStep server dry-run script"
+Assert-Path (Join-Path $scriptRoot "test-acestep-server-dry-run.bat") "AceStep server dry-run batch script"
+Assert-Path (Join-Path $scriptRoot "test-acestep-server-dry-run.sh") "AceStep server dry-run shell script"
 Assert-Path (Join-Path $scriptRoot "setup-acestep-server.ps1") "AceStep server setup script"
 Assert-Path (Join-Path $scriptRoot "setup-acestep-server.bat") "AceStep server setup batch script"
 Assert-Path (Join-Path $scriptRoot "setup-acestep-server.sh") "AceStep server setup shell script"
@@ -166,10 +169,19 @@ $forbidden = @(
 	"models"
 )
 
+$trackedFiles = @(& git -C $addonRoot ls-files 2>$null)
+if ($LASTEXITCODE -ne 0) {
+	throw "Could not inspect tracked files for artifact hygiene."
+}
 foreach ($relative in $forbidden) {
-	$path = Join-Path $addonRoot $relative
-	if (Test-Path -LiteralPath $path) {
-		throw "Generated or local-only path should not be committed here: $relative"
+	$prefix = ($relative -replace '\\', '/').TrimEnd('/') + "/"
+	$exact = ($relative -replace '\\', '/').TrimEnd('/')
+	$trackedMatch = $trackedFiles | Where-Object {
+		$normalized = $_ -replace '\\', '/'
+		$normalized -eq $exact -or $normalized.StartsWith($prefix)
+	} | Select-Object -First 1
+	if ($trackedMatch) {
+		throw "Generated or local-only path is tracked and should not be committed here: $trackedMatch"
 	}
 }
 
@@ -225,6 +237,12 @@ Write-Step "Checking AceStep setup dry-run contract"
 & (Join-Path $scriptRoot "test-acestep-setup-dry-run.ps1")
 if ($LASTEXITCODE -ne 0) {
 	throw "AceStep setup dry-run contract failed with exit code $LASTEXITCODE"
+}
+
+Write-Step "Checking AceStep server dry-run contract"
+& (Join-Path $scriptRoot "test-acestep-server-dry-run.ps1")
+if ($LASTEXITCODE -ne 0) {
+	throw "AceStep server dry-run contract failed with exit code $LASTEXITCODE"
 }
 
 Write-Step "Checking procedural generation CLI"

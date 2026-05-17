@@ -62,6 +62,47 @@ function Join-ProcessArguments {
 	return ($Arguments | ForEach-Object { Quote-Argument $_ }) -join " "
 }
 
+function Split-ProcessArgumentText {
+	param([string]$Text)
+	if ([string]::IsNullOrWhiteSpace($Text)) {
+		return @()
+	}
+
+	$arguments = New-Object System.Collections.Generic.List[string]
+	$current = New-Object System.Text.StringBuilder
+	$quote = [char]0
+
+	foreach ($char in $Text.ToCharArray()) {
+		if ($quote -ne [char]0) {
+			if ($char -eq $quote) {
+				$quote = [char]0
+			} else {
+				[void]$current.Append($char)
+			}
+			continue
+		}
+		if ($char -eq '"' -or $char -eq "'") {
+			$quote = $char
+			continue
+		}
+		if ([char]::IsWhiteSpace($char)) {
+			if ($current.Length -gt 0) {
+				$arguments.Add($current.ToString())
+				[void]$current.Clear()
+			}
+			continue
+		}
+		[void]$current.Append($char)
+	}
+	if ($quote -ne [char]0) {
+		throw "Unclosed quote in OFXGGML_ACESTEP_SERVER_ARGS."
+	}
+	if ($current.Length -gt 0) {
+		$arguments.Add($current.ToString())
+	}
+	return @($arguments)
+}
+
 function Has-Arg {
 	param([string[]]$Arguments,[string]$Name)
 	foreach ($argument in $Arguments) {
@@ -124,7 +165,7 @@ function Resolve-EnvArgs {
 	if ([string]::IsNullOrWhiteSpace($raw)) {
 		return @()
 	}
-	return @($raw -split "\s+")
+	return @(Split-ProcessArgumentText $raw)
 }
 
 function Resolve-Executable {
@@ -277,7 +318,7 @@ if ($Detached) {
 
 	$startParams = @{
 		FilePath = $launchExe
-		ArgumentList = $launchArguments
+		ArgumentList = (Join-ProcessArguments $launchArguments)
 		WorkingDirectory = $workingDir
 		PassThru = $true
 		ErrorAction = "Stop"

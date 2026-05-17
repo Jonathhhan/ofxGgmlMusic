@@ -223,6 +223,7 @@ dependency of the addon.
 scripts\doctor-music.bat
 scripts\run-music-runtime-smoke.bat -Json -SummaryOnly -Clean
 scripts\setup-acestep-server.ps1 -DryRun
+scripts\test-acestep-server-dry-run.bat
 scripts\validate-local.bat
 ```
 
