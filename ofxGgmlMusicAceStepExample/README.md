@@ -34,10 +34,10 @@ To repair and build the example in one step:
 scripts\build-music-example.ps1 -Example ofxGgmlMusicAceStepExample -Jobs 0
 ```
 
-The example can start the server for you. Fill `Server exe` and `Model path`,
-then press `Start server`. By default it looks for `ace-server(.exe)` under
-`ofxGgmlMusic\libs\acestep\bin`, looks for models under
-`ofxGgmlMusicAceStepExample\bin\data\models`, and uses
+The example starts the server automatically on launch. You can also fill
+`Server exe` and `Model path`, then press `Start server` manually. By default
+it looks for `ace-server(.exe)` under `ofxGgmlMusic\libs\acestep\bin`, looks
+for models under `ofxGgmlMusicAceStepExample\bin\data\models`, and uses
 `http://127.0.0.1:8085`.
 
 You can also start the server from a terminal:
@@ -65,6 +65,7 @@ Optional environment variables:
 - `OFXGGML_ACESTEP_SERVER_URL` (defaults to `http://127.0.0.1:8085`)
 - `OFXGGML_ACESTEP_MODEL_PATH`
 - `OFXGGML_ACESTEP_SERVER_ARGS` (optional extra flags)
+- `OFXGGML_ACESTEP_AUTOSTART=0` (disable example auto-start)
 
 Useful controls:
 

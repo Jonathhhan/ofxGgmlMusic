@@ -3,6 +3,7 @@
 #include "imgui_stdlib.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cstdio>
 #include <filesystem>
 #include <sstream>
@@ -24,6 +25,24 @@ namespace {
 
 	std::string getEnvOrEmpty(const char * name) {
 		return ofGetEnv(name);
+	}
+
+	bool isEnvDisabled(const std::string & value) {
+		std::string normalized = value;
+		std::transform(
+			normalized.begin(),
+			normalized.end(),
+			normalized.begin(),
+			[](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+		return normalized == "0" ||
+			normalized == "false" ||
+			normalized == "no" ||
+			normalized == "off" ||
+			normalized == "disabled";
+	}
+
+	bool shouldAutoStartServer() {
+		return !isEnvDisabled(getEnvOrEmpty("OFXGGML_ACESTEP_AUTOSTART"));
 	}
 
 	std::string normalizePath(const std::filesystem::path & path) {
@@ -188,6 +207,9 @@ void ofApp::setup() {
 	status = "ready";
 	detail = "Server: " + std::string(serverUrlBuffer.data()) + ". " + startServerHint;
 	ofLogNotice("ofxGgmlMusicAceStepExample") << detail;
+	if (shouldAutoStartServer()) {
+		requestServerStart();
+	}
 }
 
 void ofApp::exit() {
