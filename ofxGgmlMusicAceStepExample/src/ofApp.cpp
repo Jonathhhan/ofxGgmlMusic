@@ -23,6 +23,76 @@ namespace {
 		std::snprintf(buffer.data(), buffer.size(), "%s", value.c_str());
 	}
 
+	template <std::size_t N>
+	void wrapTextBuffer(std::array<char, N> & buffer, float fieldWidth) {
+		const float characterWidth = std::max(1.0f, ImGui::CalcTextSize("M").x);
+		const int maxLineChars = std::max(
+			24,
+			static_cast<int>((std::max(96.0f, fieldWidth) - 12.0f) / characterWidth));
+		const std::string source(buffer.data());
+		std::istringstream sourceLines(source);
+		std::ostringstream wrapped;
+		std::string line;
+		bool firstLine = true;
+
+		while (std::getline(sourceLines, line)) {
+			std::istringstream words(line);
+			std::string word;
+			std::string outputLine;
+
+			while (words >> word) {
+				if (static_cast<int>(word.size()) > maxLineChars) {
+					if (!outputLine.empty()) {
+						if (!firstLine) {
+							wrapped << '\n';
+						}
+						wrapped << outputLine;
+						outputLine.clear();
+						firstLine = false;
+					}
+					for (std::size_t offset = 0; offset < word.size();) {
+						const std::size_t chunkSize = std::min<std::size_t>(
+							static_cast<std::size_t>(maxLineChars),
+							word.size() - offset);
+						if (!firstLine) {
+							wrapped << '\n';
+						}
+						wrapped << word.substr(offset, chunkSize);
+						firstLine = false;
+						offset += chunkSize;
+					}
+					continue;
+				}
+
+				const int nextLength = static_cast<int>(
+					outputLine.size() + word.size() + (outputLine.empty() ? 0 : 1));
+				if (nextLength > maxLineChars && !outputLine.empty()) {
+					if (!firstLine) {
+						wrapped << '\n';
+					}
+					wrapped << outputLine;
+					outputLine = word;
+					firstLine = false;
+				} else {
+					if (!outputLine.empty()) {
+						outputLine += ' ';
+					}
+					outputLine += word;
+				}
+			}
+
+			if (!outputLine.empty() || line.empty()) {
+				if (!firstLine) {
+					wrapped << '\n';
+				}
+				wrapped << outputLine;
+				firstLine = false;
+			}
+		}
+
+		copyToBuffer(buffer, wrapped.str());
+	}
+
 	std::string getEnvOrEmpty(const char * name) {
 		return ofGetEnv(name);
 	}
@@ -494,8 +564,21 @@ void ofApp::draw() {
 	ImGui::InputText("Server", serverUrlBuffer.data(), serverUrlBuffer.size());
 	ImGui::InputText("Server exe", serverExecutableBuffer.data(), serverExecutableBuffer.size());
 	ImGui::InputText("Model path", modelPathBuffer.data(), modelPathBuffer.size());
-	ImGui::InputTextMultiline("Caption", captionBuffer.data(), captionBuffer.size(), ImVec2(-1.0f, 112.0f));
-	ImGui::InputTextMultiline("Lyrics", lyricsBuffer.data(), lyricsBuffer.size(), ImVec2(-1.0f, 80.0f));
+	const float promptFieldWidth = ImGui::CalcItemWidth();
+	if (ImGui::InputTextMultiline(
+			"Caption",
+			captionBuffer.data(),
+			captionBuffer.size(),
+			ImVec2(promptFieldWidth, 112.0f))) {
+		wrapTextBuffer(captionBuffer, promptFieldWidth);
+	}
+	if (ImGui::InputTextMultiline(
+			"Lyrics",
+			lyricsBuffer.data(),
+			lyricsBuffer.size(),
+			ImVec2(promptFieldWidth, 80.0f))) {
+		wrapTextBuffer(lyricsBuffer, promptFieldWidth);
+	}
 	ImGui::InputText("Negative", negativePromptBuffer.data(), negativePromptBuffer.size());
 	ImGui::InputText("Keyscale", keyscaleBuffer.data(), keyscaleBuffer.size());
 	ImGui::InputText("Time signature", timeSignatureBuffer.data(), timeSignatureBuffer.size());
