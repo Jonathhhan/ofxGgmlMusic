@@ -36,7 +36,8 @@ scripts\build-music-example.ps1 -Example ofxGgmlMusicAceStepExample -Jobs 0
 
 The example can start the server for you. Fill `Server exe` and `Model path`,
 then press `Start server`. By default it looks for `ace-server(.exe)` under
-`ofxGgmlMusic\libs\acestep\bin` and uses
+`ofxGgmlMusic\libs\acestep\bin`, looks for models under
+`ofxGgmlMusicAceStepExample\bin\data\models`, and uses
 `http://127.0.0.1:8085`.
 
 You can also start the server from a terminal:

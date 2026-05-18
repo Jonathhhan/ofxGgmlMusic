@@ -91,6 +91,108 @@ namespace {
 		return wavRequested ? ".wav" : ".mp3";
 	}
 
+	std::string toLowerCopy(std::string text) {
+		std::transform(
+			text.begin(),
+			text.end(),
+			text.begin(),
+			[](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+		return text;
+	}
+
+	bool startsWith(const std::string & text, const std::string & prefix) {
+		return text.size() >= prefix.size() &&
+			text.compare(0, prefix.size(), prefix) == 0;
+	}
+
+	void trimLineBreaks(std::string & text) {
+		while (!text.empty() && (text.front() == '\r' || text.front() == '\n')) {
+			text.erase(text.begin());
+		}
+		while (!text.empty() && (text.back() == '\r' || text.back() == '\n')) {
+			text.pop_back();
+		}
+	}
+
+	bool extractFirstAudioPart(const ofBuffer & response, ofBuffer & audioData) {
+		if (response.size() == 0) {
+			return false;
+		}
+		const std::string body(response.getData(), response.size());
+		if (!startsWith(body, "--")) {
+			audioData = response;
+			return true;
+		}
+
+		size_t lineEnd = body.find("\r\n");
+		size_t lineBreakSize = 2;
+		if (lineEnd == std::string::npos) {
+			lineEnd = body.find('\n');
+			lineBreakSize = 1;
+		}
+		if (lineEnd == std::string::npos) {
+			return false;
+		}
+
+		const std::string delimiter = body.substr(0, lineEnd);
+		if (delimiter.size() <= 2) {
+			return false;
+		}
+
+		size_t cursor = 0;
+		while (cursor < body.size()) {
+			size_t partBegin = body.find(delimiter, cursor);
+			if (partBegin == std::string::npos) {
+				break;
+			}
+			partBegin += delimiter.size();
+			if (partBegin + 1 < body.size() && body.compare(partBegin, 2, "--") == 0) {
+				break;
+			}
+			if (partBegin + lineBreakSize <= body.size() &&
+				body.compare(partBegin, lineBreakSize, lineBreakSize == 2 ? "\r\n" : "\n") == 0) {
+				partBegin += lineBreakSize;
+			} else if (partBegin < body.size() &&
+				(body[partBegin] == '\r' || body[partBegin] == '\n')) {
+				++partBegin;
+			}
+
+			size_t nextPart = body.find(delimiter, partBegin);
+			if (nextPart == std::string::npos) {
+				break;
+			}
+			std::string part = body.substr(partBegin, nextPart - partBegin);
+			while (!part.empty() && (part.front() == '\r' || part.front() == '\n')) {
+				part.erase(part.begin());
+			}
+
+			size_t headerEnd = part.find("\r\n\r\n");
+			size_t bodyBegin = std::string::npos;
+			if (headerEnd != std::string::npos) {
+				bodyBegin = headerEnd + 4;
+			} else {
+				headerEnd = part.find("\n\n");
+				if (headerEnd != std::string::npos) {
+					bodyBegin = headerEnd + 2;
+				}
+			}
+			if (bodyBegin == std::string::npos) {
+				cursor = nextPart;
+				continue;
+			}
+
+			const std::string headers = toLowerCopy(part.substr(0, headerEnd));
+			if (headers.find("content-type: audio/") != std::string::npos) {
+				std::string audio = part.substr(bodyBegin);
+				trimLineBreaks(audio);
+				audioData.set(audio.data(), audio.size());
+				return audioData.size() > 0;
+			}
+			cursor = nextPart;
+		}
+		return false;
+	}
+
 	std::string summarizeCore(
 		const std::string & caption,
 		const std::string & lyrics,
@@ -361,6 +463,25 @@ namespace {
 		return synthRequest.dump();
 	}
 
+	std::string applyOutputFormatToSynthRequestBody(
+		const std::string & synthRequestBody,
+		bool wavOutput) {
+		ofJson synthRequest = parseJsonPayload(synthRequestBody);
+		if (synthRequest.is_object()) {
+			synthRequest["output_format"] = wavOutput ? "wav16" : "mp3";
+			return synthRequest.dump();
+		}
+		if (synthRequest.is_array()) {
+			for (auto & item : synthRequest) {
+				if (item.is_object()) {
+					item["output_format"] = wavOutput ? "wav16" : "mp3";
+				}
+			}
+			return synthRequest.dump();
+		}
+		return synthRequestBody;
+	}
+
 	ofxGgmlMusicGenerationResult makeBaseMusicResult(const ofxGgmlMusicGenerationRequest & request) {
 		ofxGgmlMusicGenerationResult result;
 		result.outputPath = request.outputPath;
@@ -438,6 +559,7 @@ ofJson ofxGgmlMusicAceStepBridge::buildRequestJson(const ofxGgmlMusicAceStepRequ
 	json["repainting_start"] = request.repaintingStart;
 	json["repainting_end"] = request.repaintingEnd;
 	json["lego"] = trimCopy(request.lego);
+	json["output_format"] = request.wavOutput ? "wav16" : "mp3";
 	return json;
 }
 
@@ -524,15 +646,17 @@ ofxGgmlMusicAceStepGenerateResult ofxGgmlMusicAceStepBridge::generate(
 	result.enrichedRequestJson = lmBody;
 
 	std::string synthRequestError;
-	const std::string synthRequestBody =
+	const std::string lmSynthRequestBody =
 		buildSynthRequestBodyFromLmResult(lmBody, synthRequestError);
-	if (synthRequestBody.empty()) {
+	if (lmSynthRequestBody.empty()) {
 		result.error = synthRequestError;
 		return result;
 	}
+	const std::string synthRequestBody =
+		applyOutputFormatToSynthRequestBody(lmSynthRequestBody, request.wavOutput);
 
 	HttpResponse synthResponse = performRequest(
-		normalizeServerUrl(baseUrl, request.wavOutput ? "/synth?wav=1" : "/synth"),
+		normalizeServerUrl(baseUrl, "/synth"),
 		"POST",
 		synthRequestBody,
 		request.wavOutput ? "audio/wav" : "audio/mpeg",
@@ -559,6 +683,12 @@ ofxGgmlMusicAceStepGenerateResult ofxGgmlMusicAceStepBridge::generate(
 			return result;
 		}
 	}
+	ofBuffer extractedAudio;
+	if (!extractFirstAudioPart(audioData, extractedAudio)) {
+		result.error = "AceStep /synth returned multipart data without an audio part";
+		return result;
+	}
+	audioData = extractedAudio;
 	if (audioData.size() == 0) {
 		result.error = "AceStep /synth returned empty audio";
 		return result;

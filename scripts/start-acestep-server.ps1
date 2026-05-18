@@ -209,6 +209,7 @@ function Resolve-DefaultModelDirectory {
 		(Join-Path $acestepBinRoot "models"),
 		(Join-Path $libAcestepRoot "models"),
 		(Join-Path $libAcestepRoot "source/models"),
+		(Join-Path $addonRoot "ofxGgmlMusicAceStepExample/bin/data/models"),
 		(Join-Path $addonRoot "models/acestep"),
 		(Join-Path $addonRoot "data/models/acestep")
 	)

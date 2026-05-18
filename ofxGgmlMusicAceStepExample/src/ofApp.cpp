@@ -46,6 +46,24 @@ namespace {
 		return {};
 	}
 
+	std::string findExistingModelDirectory(const std::vector<std::filesystem::path> & candidates) {
+		for (const auto & candidate : candidates) {
+			std::error_code ec;
+			if (!std::filesystem::is_directory(candidate, ec)) {
+				continue;
+			}
+			for (const auto & entry : std::filesystem::directory_iterator(candidate, ec)) {
+				if (ec) {
+					break;
+				}
+				if (entry.is_regular_file(ec) && entry.path().extension() == ".gguf") {
+					return normalizePath(candidate);
+				}
+			}
+		}
+		return {};
+	}
+
 	std::filesystem::path getExeDir() {
 		return std::filesystem::path(ofFilePath::getCurrentExeDir());
 	}
@@ -75,6 +93,25 @@ namespace {
 			current / ".." / "libs" / "acestep" / "bin" / "ace-server",
 			exeDir / ".." / ".." / "libs" / "acestep" / "bin" / "ace-server.exe",
 			exeDir / ".." / ".." / "libs" / "acestep" / "bin" / "ace-server"
+		});
+	}
+
+	std::string resolveDefaultModelPath() {
+		const std::string fromEnv = getEnvOrEmpty("OFXGGML_ACESTEP_MODEL_PATH");
+		if (!fromEnv.empty()) {
+			return fromEnv;
+		}
+		const auto current = std::filesystem::current_path();
+		const auto exeDir = getExeDir();
+		return findExistingModelDirectory({
+			current / "ofxGgmlMusicAceStepExample" / "bin" / "data" / "models",
+			current / "bin" / "data" / "models",
+			current / "models" / "acestep",
+			current / "data" / "models" / "acestep",
+			current / ".." / "ofxGgmlMusicAceStepExample" / "bin" / "data" / "models",
+			exeDir / "data" / "models",
+			exeDir / ".." / ".." / "ofxGgmlMusicAceStepExample" / "bin" / "data" / "models",
+			std::filesystem::path(ofToDataPath("models", true))
 		});
 	}
 
@@ -138,7 +175,7 @@ void ofApp::setup() {
 		serverUrlBuffer,
 		initialServerUrl.empty() ? std::string("http://127.0.0.1:8085") : initialServerUrl);
 	copyToBuffer(serverExecutableBuffer, resolveDefaultServerExecutable());
-	copyToBuffer(modelPathBuffer, getEnvOrEmpty("OFXGGML_ACESTEP_MODEL_PATH"));
+	copyToBuffer(modelPathBuffer, resolveDefaultModelPath());
 	copyToBuffer(captionBuffer,
 		"cinematic electronic instrumental, warm analog pads, plucked arpeggios, "
 		"subtle pulse, hopeful nocturnal mood, polished stereo mix");
