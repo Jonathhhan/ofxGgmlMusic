@@ -4,9 +4,15 @@
 
 #include <algorithm>
 #include <cstdio>
-#include <cstdlib>
+#include <filesystem>
+#include <sstream>
+#include <vector>
 
 namespace {
+	const std::string startServerHint =
+		"Start the AceStep server with scripts\\start-acestep-server.ps1 "
+		"or set OFXGGML_ACESTEP_SERVER_URL to the running AceStep-compatible server.";
+
 	void copyToBuffer(std::array<char, 2048> & buffer, const std::string & value) {
 		std::snprintf(buffer.data(), buffer.size(), "%s", value.c_str());
 	}
@@ -15,6 +21,111 @@ namespace {
 	void copyToBuffer(std::array<char, N> & buffer, const std::string & value) {
 		std::snprintf(buffer.data(), buffer.size(), "%s", value.c_str());
 	}
+
+	std::string getEnvOrEmpty(const char * name) {
+		return ofGetEnv(name);
+	}
+
+	std::string normalizePath(const std::filesystem::path & path) {
+		std::error_code ec;
+		const auto absolute = std::filesystem::absolute(path, ec);
+		if (ec) {
+			return path.lexically_normal().string();
+		}
+		const auto canonical = std::filesystem::weakly_canonical(absolute, ec);
+		return (ec ? absolute : canonical).lexically_normal().string();
+	}
+
+	std::string findExistingFile(const std::vector<std::filesystem::path> & candidates) {
+		for (const auto & candidate : candidates) {
+			std::error_code ec;
+			if (std::filesystem::is_regular_file(candidate, ec)) {
+				return normalizePath(candidate);
+			}
+		}
+		return {};
+	}
+
+	std::filesystem::path getExeDir() {
+		return std::filesystem::path(ofFilePath::getCurrentExeDir());
+	}
+
+	std::string resolveStartServerScript() {
+		const auto current = std::filesystem::current_path();
+		const auto exeDir = getExeDir();
+		return findExistingFile({
+			current / "scripts" / "start-acestep-server.ps1",
+			current / ".." / "scripts" / "start-acestep-server.ps1",
+			exeDir / ".." / ".." / "scripts" / "start-acestep-server.ps1",
+			std::filesystem::path(ofToDataPath("../../../scripts/start-acestep-server.ps1", true))
+		});
+	}
+
+	std::string resolveDefaultServerExecutable() {
+		const std::string fromEnv = getEnvOrEmpty("OFXGGML_ACESTEP_SERVER_EXE");
+		if (!fromEnv.empty()) {
+			return fromEnv;
+		}
+		const auto current = std::filesystem::current_path();
+		const auto exeDir = getExeDir();
+		return findExistingFile({
+			current / "libs" / "acestep" / "bin" / "ace-server.exe",
+			current / "libs" / "acestep" / "bin" / "ace-server",
+			current / ".." / "libs" / "acestep" / "bin" / "ace-server.exe",
+			current / ".." / "libs" / "acestep" / "bin" / "ace-server",
+			exeDir / ".." / ".." / "libs" / "acestep" / "bin" / "ace-server.exe",
+			exeDir / ".." / ".." / "libs" / "acestep" / "bin" / "ace-server"
+		});
+	}
+
+	std::string quoteCommandArgument(const std::string & value) {
+		std::string quoted = "\"";
+		for (char ch : value) {
+			if (ch == '"') {
+				quoted += "\\\"";
+			} else {
+				quoted += ch;
+			}
+		}
+		quoted += "\"";
+		return quoted;
+	}
+
+	std::string buildStartServerCommand(
+		const std::string & scriptPath,
+		const std::string & serverUrl,
+		const std::string & serverExecutable,
+		const std::string & modelPath) {
+		std::ostringstream command;
+#if defined(TARGET_WIN32)
+		command << "powershell -ExecutionPolicy Bypass -File "
+			<< quoteCommandArgument(scriptPath);
+#else
+		command << "pwsh -NoProfile -ExecutionPolicy Bypass -File "
+			<< quoteCommandArgument(scriptPath);
+#endif
+		command << " -ServerUrl " << quoteCommandArgument(serverUrl);
+		if (!serverExecutable.empty()) {
+			command << " -ServerExecutable " << quoteCommandArgument(serverExecutable);
+		}
+		if (!modelPath.empty()) {
+			command << " -ModelPath " << quoteCommandArgument(modelPath);
+		}
+		command << " -StartupTimeoutSeconds 60";
+		return command.str();
+	}
+
+	std::string makeServerUnavailableDetail(
+		const std::string & serverUrl,
+		const std::string & error) {
+		std::string detail = "AceStep server is not reachable at " +
+			ofxGgmlMusicAceStepBridge::normalizeServerUrl(serverUrl);
+		if (!error.empty()) {
+			detail += ": " + error;
+		}
+		detail += ". " + startServerHint;
+		return detail;
+	}
 }
 
 void ofApp::setup() {
@@ -22,8 +133,12 @@ void ofApp::setup() {
 	ofSetFrameRate(60);
 	gui.setup();
 
-	const char * initialServerUrl = std::getenv("OFXGGML_ACESTEP_SERVER_URL");
-	copyToBuffer(serverUrlBuffer, initialServerUrl ? initialServerUrl : "http://127.0.0.1:8085");
+	const std::string initialServerUrl = getEnvOrEmpty("OFXGGML_ACESTEP_SERVER_URL");
+	copyToBuffer(
+		serverUrlBuffer,
+		initialServerUrl.empty() ? std::string("http://127.0.0.1:8085") : initialServerUrl);
+	copyToBuffer(serverExecutableBuffer, resolveDefaultServerExecutable());
+	copyToBuffer(modelPathBuffer, getEnvOrEmpty("OFXGGML_ACESTEP_MODEL_PATH"));
 	copyToBuffer(captionBuffer,
 		"cinematic electronic instrumental, warm analog pads, plucked arpeggios, "
 		"subtle pulse, hopeful nocturnal mood, polished stereo mix");
@@ -34,7 +149,7 @@ void ofApp::setup() {
 	copyToBuffer(outputPrefixBuffer, "ofxGgmlMusicAceStep");
 
 	status = "ready";
-	detail = "Start an AceStep-compatible server, then press Health or Generate.";
+	detail = "Server: " + std::string(serverUrlBuffer.data()) + ". " + startServerHint;
 	ofLogNotice("ofxGgmlMusicAceStepExample") << detail;
 }
 
@@ -91,6 +206,26 @@ ofxGgmlMusicAceStepRequest ofApp::buildRequest() const {
 	return request;
 }
 
+void ofApp::requestServerStart() {
+	if (workerRunning.load()) {
+		return;
+	}
+	if (workerThread.joinable()) {
+		workerThread.join();
+	}
+	status = "starting server";
+	detail = "Starting AceStep server at " +
+		ofxGgmlMusicAceStepBridge::normalizeServerUrl(serverUrlBuffer.data());
+	ofLogNotice("ofxGgmlMusicAceStepExample") << detail;
+	workerRunning.store(true);
+	workerThread = std::thread(
+		&ofApp::runServerStartWorker,
+		this,
+		std::string(serverUrlBuffer.data()),
+		std::string(serverExecutableBuffer.data()),
+		std::string(modelPathBuffer.data()));
+}
+
 void ofApp::requestHealth() {
 	if (workerRunning.load()) {
 		return;
@@ -124,6 +259,46 @@ void ofApp::requestGeneration() {
 		std::string(serverUrlBuffer.data()));
 }
 
+void ofApp::runServerStartWorker(
+	std::string serverUrl,
+	std::string serverExecutable,
+	std::string modelPath) {
+	bool success = false;
+	std::string resultDetail;
+	const std::string scriptPath = resolveStartServerScript();
+	if (scriptPath.empty()) {
+		resultDetail = "Could not find scripts\\start-acestep-server.ps1 from the example.";
+	} else {
+		const std::string command =
+			buildStartServerCommand(scriptPath, serverUrl, serverExecutable, modelPath);
+		const std::string output = ofSystem(command + " 2>&1");
+		const auto health = bridge.healthCheck(serverUrl, 2);
+		if (health) {
+			success = true;
+			resultDetail = "AceStep server ready at " +
+				ofxGgmlMusicAceStepBridge::normalizeServerUrl(serverUrl);
+			{
+				std::lock_guard<std::mutex> lock(workerMutex);
+				pendingHealthResult = health;
+				pendingHealth = true;
+			}
+		} else {
+			resultDetail = makeServerUnavailableDetail(serverUrl, health.error);
+			if (!output.empty()) {
+				resultDetail += "\nLauncher output:\n" + output;
+			}
+		}
+	}
+
+	{
+		std::lock_guard<std::mutex> lock(workerMutex);
+		pendingServerStartSuccess = success;
+		pendingServerStartDetail = resultDetail;
+		pendingServerStart = true;
+	}
+	workerRunning.store(false);
+}
+
 void ofApp::runHealthWorker(std::string serverUrl) {
 	const auto result = bridge.healthCheck(serverUrl, 2);
 	{
@@ -135,6 +310,20 @@ void ofApp::runHealthWorker(std::string serverUrl) {
 }
 
 void ofApp::runGenerationWorker(ofxGgmlMusicAceStepRequest request, std::string serverUrl) {
+	const auto health = bridge.healthCheck(serverUrl, 2);
+	if (!health) {
+		ofxGgmlMusicAceStepGenerateResult result;
+		result.usedServerUrl = ofxGgmlMusicAceStepBridge::normalizeServerUrl(serverUrl);
+		result.error = makeServerUnavailableDetail(serverUrl, health.error);
+		{
+			std::lock_guard<std::mutex> lock(workerMutex);
+			pendingGenerateResult = result;
+			pendingGenerate = true;
+		}
+		workerRunning.store(false);
+		return;
+	}
+
 	const auto result = bridge.generate(request, serverUrl);
 	{
 		std::lock_guard<std::mutex> lock(workerMutex);
@@ -147,10 +336,19 @@ void ofApp::runGenerationWorker(ofxGgmlMusicAceStepRequest request, std::string 
 void ofApp::collectWorkerResult() {
 	bool hasHealth = false;
 	bool hasGenerate = false;
+	bool hasServerStart = false;
+	bool serverStartSuccess = false;
+	std::string serverStartDetail;
 	ofxGgmlMusicAceStepHealthResult health;
 	ofxGgmlMusicAceStepGenerateResult generated;
 	{
 		std::lock_guard<std::mutex> lock(workerMutex);
+		if (pendingServerStart) {
+			serverStartSuccess = pendingServerStartSuccess;
+			serverStartDetail = pendingServerStartDetail;
+			pendingServerStart = false;
+			hasServerStart = true;
+		}
 		if (pendingHealth) {
 			health = pendingHealthResult;
 			pendingHealth = false;
@@ -160,6 +358,16 @@ void ofApp::collectWorkerResult() {
 			generated = pendingGenerateResult;
 			pendingGenerate = false;
 			hasGenerate = true;
+		}
+	}
+
+	if (hasServerStart) {
+		status = serverStartSuccess ? "server ready" : "server start failed";
+		detail = serverStartDetail;
+		if (serverStartSuccess) {
+			ofLogNotice("ofxGgmlMusicAceStepExample") << detail;
+		} else {
+			ofLogWarning("ofxGgmlMusicAceStepExample") << detail;
 		}
 	}
 
@@ -220,6 +428,8 @@ void ofApp::draw() {
 	ImGui::Begin("ofxGgmlMusic AceStep");
 
 	ImGui::InputText("Server", serverUrlBuffer.data(), serverUrlBuffer.size());
+	ImGui::InputText("Server exe", serverExecutableBuffer.data(), serverExecutableBuffer.size());
+	ImGui::InputText("Model path", modelPathBuffer.data(), modelPathBuffer.size());
 	ImGui::InputTextMultiline("Caption", captionBuffer.data(), captionBuffer.size(), ImVec2(-1.0f, 112.0f));
 	ImGui::InputTextMultiline("Lyrics", lyricsBuffer.data(), lyricsBuffer.size(), ImVec2(-1.0f, 80.0f));
 	ImGui::InputText("Negative", negativePromptBuffer.data(), negativePromptBuffer.size());
@@ -247,6 +457,10 @@ void ofApp::draw() {
 	if (busy) {
 		ImGui::BeginDisabled();
 	}
+	if (ImGui::Button("Start server")) {
+		requestServerStart();
+	}
+	ImGui::SameLine();
 	if (ImGui::Button("Health")) {
 		requestHealth();
 	}

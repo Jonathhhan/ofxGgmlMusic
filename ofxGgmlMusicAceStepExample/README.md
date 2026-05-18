@@ -34,12 +34,17 @@ To repair and build the example in one step:
 scripts\build-music-example.ps1 -Example ofxGgmlMusicAceStepExample -Jobs 0
 ```
 
-Start the server with the new helper:
+The example can start the server for you. Fill `Server exe` and `Model path`,
+then press `Start server`. By default it looks for `ace-server(.exe)` under
+`ofxGgmlMusic\libs\acestep\bin` and uses
+`http://127.0.0.1:8085`.
+
+You can also start the server from a terminal:
 
 ```powershell
 From the addon root:
-..\scripts\setup-acestep-server.ps1
-..\scripts\start-acestep-server.ps1 -ServerExecutable C:\path\to\ace-server.exe -ModelPath C:\models\...
+scripts\setup-acestep-server.ps1
+scripts\start-acestep-server.ps1 -ServerExecutable C:\path\to\ace-server.exe -ModelPath C:\models\...
 ```
 
 Or place `ace-server(.exe)` at:
@@ -50,7 +55,7 @@ ofxGgmlMusic\libs\acestep\bin\ace-server(.exe)
 and launch with:
 
 ```powershell
-..\scripts\start-acestep-server.ps1 -ModelPath C:\models\...
+scripts\start-acestep-server.ps1 -ModelPath C:\models\...
 ```
 
 Optional environment variables:

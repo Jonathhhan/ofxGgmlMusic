@@ -20,8 +20,13 @@ public:
 	void keyPressed(int key) override;
 
 private:
+	void requestServerStart();
 	void requestHealth();
 	void requestGeneration();
+	void runServerStartWorker(
+		std::string serverUrl,
+		std::string serverExecutable,
+		std::string modelPath);
 	void runHealthWorker(std::string serverUrl);
 	void runGenerationWorker(ofxGgmlMusicAceStepRequest request, std::string serverUrl);
 	void collectWorkerResult();
@@ -38,6 +43,8 @@ private:
 	ofSoundPlayer player;
 
 	std::array<char, 256> serverUrlBuffer{};
+	std::array<char, 512> serverExecutableBuffer{};
+	std::array<char, 512> modelPathBuffer{};
 	std::array<char, 2048> captionBuffer{};
 	std::array<char, 2048> lyricsBuffer{};
 	std::array<char, 256> negativePromptBuffer{};
@@ -60,6 +67,9 @@ private:
 	std::thread workerThread;
 	std::mutex workerMutex;
 	std::atomic<bool> workerRunning{false};
+	bool pendingServerStart = false;
+	bool pendingServerStartSuccess = false;
+	std::string pendingServerStartDetail;
 	bool pendingHealth = false;
 	bool pendingGenerate = false;
 	ofxGgmlMusicAceStepHealthResult pendingHealthResult;

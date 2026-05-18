@@ -213,6 +213,21 @@ function Resolve-GeneratedServer {
 	return ""
 }
 
+function Install-RuntimeDlls {
+	param(
+		[string]$BuiltServer,
+		[string]$InstallBin
+	)
+	$builtServerDir = [System.IO.Path]::GetDirectoryName($BuiltServer)
+	$dlls = @(Get-ChildItem -LiteralPath $builtServerDir -File -Filter *.dll -ErrorAction SilentlyContinue)
+	foreach ($dll in $dlls) {
+		Copy-Item -LiteralPath $dll.FullName -Destination (Join-Path $InstallBin $dll.Name) -Force
+	}
+	if ($dlls.Count -gt 0) {
+		Write-Step "Installed $($dlls.Count) runtime DLL(s) to $InstallBin"
+	}
+}
+
 function Test-AcestepGgmlSubmodule {
 	param(
 		[string]$SourceDir,
@@ -544,6 +559,7 @@ New-Item -ItemType Directory -Force -Path $installBin | Out-Null
 $installedServer = Join-Path $installBin ([System.IO.Path]::GetFileName($builtServer))
 Copy-Item -LiteralPath $builtServer -Destination $installedServer -Force
 Write-Step "Installed ace-server to $installedServer"
+Install-RuntimeDlls -BuiltServer $builtServer -InstallBin $installBin
 
 Write-Step "Done. To start the server, run:"
 Write-Host "scripts\start-acestep-server.ps1 -ServerExecutable $installedServer -ModelPath <models folder>"
