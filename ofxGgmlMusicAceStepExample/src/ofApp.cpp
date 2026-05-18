@@ -447,7 +447,12 @@ void ofApp::collectWorkerResult() {
 		lastGenerateResult = generated;
 		if (generated) {
 			status = "generation complete";
-			detail = "Wrote " + generated.outputPath;
+			if (generated.outputPaths.size() > 1) {
+				detail = "Wrote " + std::to_string(generated.outputPaths.size()) +
+					" files. Previewing " + generated.outputPath;
+			} else {
+				detail = "Wrote " + generated.outputPath;
+			}
 			loadGeneratedAudio(generated.outputPath);
 			ofLogNotice("ofxGgmlMusicAceStepExample") << detail;
 		} else {

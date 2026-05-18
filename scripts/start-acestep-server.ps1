@@ -62,6 +62,13 @@ function Join-ProcessArguments {
 	return ($Arguments | ForEach-Object { Quote-Argument $_ }) -join " "
 }
 
+function Test-IsWindows {
+	if ($PSVersionTable.PSVersion.Major -ge 6) {
+		return $IsWindows
+	}
+	return [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT
+}
+
 function Split-ProcessArgumentText {
 	param([string]$Text)
 	if ([string]::IsNullOrWhiteSpace($Text)) {
@@ -245,6 +252,16 @@ $hostFromUrl = $resolvedUrl.Host
 $portFromUrl = $resolvedUrl.Port
 $healthUrl = $resolvedUrlValue.TrimEnd("/") + "/health"
 
+if (!$DryRun -and !$NoHealthCheck) {
+	$health = Test-ServerHealth $healthUrl
+	if ($health.Ready -and !$ForceNew) {
+		Write-Host "AceStep server already healthy at $resolvedUrlValue. Reusing running server."
+		Write-Output "OFXGGML_ACESTEP_SERVER_URL=$resolvedUrlValue"
+		Write-Output "OFXGGML_ACESTEP_SERVER_STARTED=0"
+		return
+	}
+}
+
 $ServerArguments = Resolve-EnvArgs $ServerArguments
 $arguments = $ServerArguments
 $resolvedExecutable = Resolve-Executable $ServerExecutable
@@ -324,7 +341,7 @@ if ($Detached) {
 		PassThru = $true
 		ErrorAction = "Stop"
 	}
-	if ($IsWindows) {
+	if (Test-IsWindows) {
 		$startParams.WindowStyle = "Hidden"
 	}
 	$process = Start-Process @startParams

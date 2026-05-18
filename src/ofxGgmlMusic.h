@@ -8,3 +8,7 @@
 #include "ofxGgmlMusic/ofxGgmlMusicExternalGenerationBackend.h"
 #include "ofxGgmlMusic/ofxGgmlMusicProceduralGenerationBackend.h"
 #include "ofxGgmlMusic/ofxGgmlMusicUtils.h"
+
+#if __has_include("ofJson.h")
+	#include "ofxGgmlMusic/ofxGgmlMusicAceStepBridge.h"
+#endif

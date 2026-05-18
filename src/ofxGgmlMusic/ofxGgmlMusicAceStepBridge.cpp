@@ -105,22 +105,39 @@ namespace {
 			text.compare(0, prefix.size(), prefix) == 0;
 	}
 
-	void trimLineBreaks(std::string & text) {
-		while (!text.empty() && (text.front() == '\r' || text.front() == '\n')) {
-			text.erase(text.begin());
+	size_t findBoundaryLine(
+		const std::string & body,
+		const std::string & delimiter,
+		size_t cursor) {
+		while (cursor < body.size()) {
+			const size_t boundary = body.find(delimiter, cursor);
+			if (boundary == std::string::npos) {
+				return std::string::npos;
+			}
+			if (boundary == 0 || body[boundary - 1] == '\n') {
+				return boundary;
+			}
+			cursor = boundary + delimiter.size();
 		}
-		while (!text.empty() && (text.back() == '\r' || text.back() == '\n')) {
-			text.pop_back();
+		return std::string::npos;
+	}
+
+	void trimBoundaryLineBreak(const std::string & body, size_t & partEnd) {
+		if (partEnd >= 2 && body[partEnd - 2] == '\r' && body[partEnd - 1] == '\n') {
+			partEnd -= 2;
+		} else if (partEnd >= 1 && body[partEnd - 1] == '\n') {
+			partEnd -= 1;
 		}
 	}
 
-	bool extractFirstAudioPart(const ofBuffer & response, ofBuffer & audioData) {
+	bool extractAudioParts(const ofBuffer & response, std::vector<ofBuffer> & audioParts) {
+		audioParts.clear();
 		if (response.size() == 0) {
 			return false;
 		}
 		const std::string body(response.getData(), response.size());
 		if (!startsWith(body, "--")) {
-			audioData = response;
+			audioParts.push_back(response);
 			return true;
 		}
 
@@ -141,7 +158,7 @@ namespace {
 
 		size_t cursor = 0;
 		while (cursor < body.size()) {
-			size_t partBegin = body.find(delimiter, cursor);
+			size_t partBegin = findBoundaryLine(body, delimiter, cursor);
 			if (partBegin == std::string::npos) {
 				break;
 			}
@@ -157,14 +174,15 @@ namespace {
 				++partBegin;
 			}
 
-			size_t nextPart = body.find(delimiter, partBegin);
+			size_t nextPart = findBoundaryLine(body, delimiter, partBegin);
 			if (nextPart == std::string::npos) {
 				break;
 			}
-			std::string part = body.substr(partBegin, nextPart - partBegin);
-			while (!part.empty() && (part.front() == '\r' || part.front() == '\n')) {
-				part.erase(part.begin());
-			}
+			size_t partEnd = nextPart;
+			trimBoundaryLineBreak(body, partEnd);
+			const std::string part = partEnd > partBegin
+				? body.substr(partBegin, partEnd - partBegin)
+				: std::string();
 
 			size_t headerEnd = part.find("\r\n\r\n");
 			size_t bodyBegin = std::string::npos;
@@ -183,14 +201,16 @@ namespace {
 
 			const std::string headers = toLowerCopy(part.substr(0, headerEnd));
 			if (headers.find("content-type: audio/") != std::string::npos) {
-				std::string audio = part.substr(bodyBegin);
-				trimLineBreaks(audio);
+				const std::string audio = part.substr(bodyBegin);
+				ofBuffer audioData;
 				audioData.set(audio.data(), audio.size());
-				return audioData.size() > 0;
+				if (audioData.size() > 0) {
+					audioParts.push_back(audioData);
+				}
 			}
 			cursor = nextPart;
 		}
-		return false;
+		return !audioParts.empty();
 	}
 
 	std::string summarizeCore(
@@ -402,11 +422,15 @@ namespace {
 			return false;
 		}
 		if (parsed.is_array()) {
-			if (parsed.empty() || !parsed.front().is_object()) {
+			const auto invalid = std::find_if(
+				parsed.begin(),
+				parsed.end(),
+				[](const ofJson & item) { return !item.is_object(); });
+			if (parsed.empty() || invalid != parsed.end()) {
 				error = "AceStep /lm result did not contain a usable request payload";
 				return false;
 			}
-			synthRequest = parsed.front();
+			synthRequest = parsed;
 			return true;
 		}
 		if (parsed.is_object()) {
@@ -423,11 +447,15 @@ namespace {
 					return true;
 				}
 				if (nested.is_array()) {
-					if (nested.empty() || !nested.front().is_object()) {
+					const auto invalid = std::find_if(
+						nested.begin(),
+						nested.end(),
+						[](const ofJson & item) { return !item.is_object(); });
+					if (nested.empty() || invalid != nested.end()) {
 						error = "AceStep /lm result did not contain a usable request payload";
 						return false;
 					}
-					synthRequest = nested.front();
+					synthRequest = nested;
 					return true;
 				}
 				if (nested.is_string()) {
@@ -683,13 +711,12 @@ ofxGgmlMusicAceStepGenerateResult ofxGgmlMusicAceStepBridge::generate(
 			return result;
 		}
 	}
-	ofBuffer extractedAudio;
-	if (!extractFirstAudioPart(audioData, extractedAudio)) {
+	std::vector<ofBuffer> audioParts;
+	if (!extractAudioParts(audioData, audioParts)) {
 		result.error = "AceStep /synth returned multipart data without an audio part";
 		return result;
 	}
-	audioData = extractedAudio;
-	if (audioData.size() == 0) {
+	if (audioParts.empty()) {
 		result.error = "AceStep /synth returned empty audio";
 		return result;
 	}
@@ -704,16 +731,20 @@ ofxGgmlMusicAceStepGenerateResult ofxGgmlMusicAceStepBridge::generate(
 	}
 	const auto nowMs = std::chrono::duration_cast<std::chrono::milliseconds>(
 		std::chrono::system_clock::now().time_since_epoch()).count();
-	const std::filesystem::path outputPath =
-		outputDir /
-		(normalizePrefix(request) + "-" + std::to_string(nowMs) +
-			detectAudioExtension(audioData, request.wavOutput));
-	if (!ofBufferToFile(outputPath.string(), audioData, true)) {
-		result.error = "Could not write AceStep audio: " + outputPath.string();
-		return result;
+	const std::string outputPrefix = normalizePrefix(request) + "-" + std::to_string(nowMs);
+	for (size_t i = 0; i < audioParts.size(); ++i) {
+		const std::string suffix = audioParts.size() == 1 ? std::string() : "-" + std::to_string(i + 1);
+		const std::filesystem::path outputPath =
+			outputDir /
+			(outputPrefix + suffix + detectAudioExtension(audioParts[i], request.wavOutput));
+		if (!ofBufferToFile(outputPath.string(), audioParts[i], true)) {
+			result.error = "Could not write AceStep audio: " + outputPath.string();
+			return result;
+		}
+		result.outputPaths.push_back(outputPath.lexically_normal().string());
 	}
 
-	result.outputPath = outputPath.lexically_normal().string();
+	result.outputPath = result.outputPaths.front();
 	result.elapsedMs = std::chrono::duration<float, std::milli>(
 		std::chrono::steady_clock::now() - start).count();
 	result.success = true;

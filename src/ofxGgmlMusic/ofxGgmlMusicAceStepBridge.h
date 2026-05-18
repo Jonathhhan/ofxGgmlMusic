@@ -57,6 +57,7 @@ struct ofxGgmlMusicAceStepGenerateResult {
 	std::string requestJson;
 	std::string enrichedRequestJson;
 	std::string outputPath;
+	std::vector<std::string> outputPaths;
 	std::string error;
 
 	explicit operator bool() const {

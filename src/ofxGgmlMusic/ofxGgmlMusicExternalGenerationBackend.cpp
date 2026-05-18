@@ -2,9 +2,19 @@
 
 #include "ofxGgmlMusicUtils.h"
 
-#include <cstdlib>
 #include <filesystem>
 #include <sstream>
+#include <vector>
+
+#if defined(_WIN32)
+	#ifndef NOMINMAX
+		#define NOMINMAX
+	#endif
+	#include <windows.h>
+#else
+	#include <sys/wait.h>
+	#include <unistd.h>
+#endif
 
 namespace {
 	ofxGgmlMusicGenerationResult makeResultBase(const ofxGgmlMusicGenerationRequest & request) {
@@ -32,58 +42,191 @@ namespace {
 		return !path.empty() && std::filesystem::exists(std::filesystem::path(path));
 	}
 
-	std::string quoteShellArgument(const std::string & value) {
-		std::string quoted = "\"";
-		for (const auto c : value) {
-			if (c == '"') {
-				quoted += "\\\"";
-			} else {
-				quoted.push_back(c);
-			}
-		}
-		quoted += "\"";
-		return quoted;
-	}
-
 	void appendFlagValue(
-		std::ostringstream & command,
+		std::vector<std::string> & arguments,
 		const std::string & flag,
 		const std::string & value) {
 		if (!flag.empty() && !value.empty()) {
-			command << " " << quoteShellArgument(flag) << " " << quoteShellArgument(value);
+			arguments.push_back(flag);
+			arguments.push_back(value);
 		}
 	}
 
-	std::string buildCommand(const ofxGgmlMusicGenerationRequest & request) {
+	std::vector<std::string> buildArguments(const ofxGgmlMusicGenerationRequest & request) {
 		const auto & external = request.external;
-		std::ostringstream command;
-		if (!external.workingDirectory.empty()) {
-#if defined(_WIN32)
-			command << "cd /d " << quoteShellArgument(external.workingDirectory) << " && ";
-#else
-			command << "cd " << quoteShellArgument(external.workingDirectory) << " && ";
-#endif
-		}
-#if defined(_WIN32)
-		command << "call ";
-#endif
-		command << quoteShellArgument(external.executablePath);
-		appendFlagValue(command, external.promptFlag, request.prompt);
-		appendFlagValue(command, external.outputFlag, request.outputPath);
-		appendFlagValue(command, external.modelFlag, external.modelPath);
+		std::vector<std::string> arguments;
+		appendFlagValue(arguments, external.promptFlag, request.prompt);
+		appendFlagValue(arguments, external.outputFlag, request.outputPath);
+		appendFlagValue(arguments, external.modelFlag, external.modelPath);
 		if (!external.durationFlag.empty() && request.settings.durationSeconds > 0.0) {
-			command << " " << quoteShellArgument(external.durationFlag) << " " << request.settings.durationSeconds;
+			std::ostringstream duration;
+			duration << request.settings.durationSeconds;
+			arguments.push_back(external.durationFlag);
+			arguments.push_back(duration.str());
 		}
 		if (!external.seedFlag.empty() && request.settings.seed >= 0) {
-			command << " " << quoteShellArgument(external.seedFlag) << " " << request.settings.seed;
+			arguments.push_back(external.seedFlag);
+			arguments.push_back(std::to_string(request.settings.seed));
 		}
 		for (const auto & argument : external.extraArguments) {
 			if (!argument.empty()) {
-				command << " " << quoteShellArgument(argument);
+				arguments.push_back(argument);
 			}
 		}
-		return command.str();
+		return arguments;
 	}
+
+	struct ProcessResult {
+		int exitCode = -1;
+		std::string error;
+	};
+
+#if defined(_WIN32)
+	std::wstring widenUtf8(const std::string & text) {
+		if (text.empty()) {
+			return {};
+		}
+		const int size = MultiByteToWideChar(
+			CP_UTF8,
+			MB_ERR_INVALID_CHARS,
+			text.data(),
+			static_cast<int>(text.size()),
+			nullptr,
+			0);
+		if (size <= 0) {
+			return std::wstring(text.begin(), text.end());
+		}
+		std::wstring wide(size, L'\0');
+		MultiByteToWideChar(
+			CP_UTF8,
+			MB_ERR_INVALID_CHARS,
+			text.data(),
+			static_cast<int>(text.size()),
+			wide.data(),
+			size);
+		return wide;
+	}
+
+	std::wstring quoteWindowsArgument(const std::wstring & value) {
+		if (value.empty()) {
+			return L"\"\"";
+		}
+		if (value.find_first_of(L" \t\n\v\"") == std::wstring::npos) {
+			return value;
+		}
+
+		std::wstring quoted = L"\"";
+		size_t backslashes = 0;
+		for (const wchar_t ch : value) {
+			if (ch == L'\\') {
+				++backslashes;
+				continue;
+			}
+			if (ch == L'"') {
+				quoted.append(backslashes * 2 + 1, L'\\');
+				quoted.push_back(ch);
+				backslashes = 0;
+				continue;
+			}
+			quoted.append(backslashes, L'\\');
+			backslashes = 0;
+			quoted.push_back(ch);
+		}
+		quoted.append(backslashes * 2, L'\\');
+		quoted.push_back(L'"');
+		return quoted;
+	}
+
+	ProcessResult executeProcess(
+		const std::string & executablePath,
+		const std::vector<std::string> & arguments,
+		const std::string & workingDirectory) {
+		const std::wstring executable = widenUtf8(executablePath);
+		std::wstring commandLine = quoteWindowsArgument(executable);
+		for (const auto & argument : arguments) {
+			commandLine += L" ";
+			commandLine += quoteWindowsArgument(widenUtf8(argument));
+		}
+		std::vector<wchar_t> mutableCommandLine(commandLine.begin(), commandLine.end());
+		mutableCommandLine.push_back(L'\0');
+
+		STARTUPINFOW startupInfo{};
+		startupInfo.cb = sizeof(startupInfo);
+		PROCESS_INFORMATION processInfo{};
+		std::wstring workingDirectoryWide = widenUtf8(workingDirectory);
+		const wchar_t * workingDirectoryPtr = workingDirectoryWide.empty()
+			? nullptr
+			: workingDirectoryWide.c_str();
+
+		if (!CreateProcessW(
+				executable.c_str(),
+				mutableCommandLine.data(),
+				nullptr,
+				nullptr,
+				FALSE,
+				0,
+				nullptr,
+				workingDirectoryPtr,
+				&startupInfo,
+				&processInfo)) {
+			return {
+				-1,
+				"could not launch external music generator: Windows error " +
+					std::to_string(GetLastError())
+			};
+		}
+
+		WaitForSingleObject(processInfo.hProcess, INFINITE);
+		DWORD exitCode = 1;
+		if (!GetExitCodeProcess(processInfo.hProcess, &exitCode)) {
+			exitCode = 1;
+		}
+		CloseHandle(processInfo.hThread);
+		CloseHandle(processInfo.hProcess);
+		return { static_cast<int>(exitCode), {} };
+	}
+#else
+	ProcessResult executeProcess(
+		const std::string & executablePath,
+		const std::vector<std::string> & arguments,
+		const std::string & workingDirectory) {
+		std::vector<std::string> ownedArguments;
+		ownedArguments.reserve(arguments.size() + 1);
+		ownedArguments.push_back(executablePath);
+		ownedArguments.insert(ownedArguments.end(), arguments.begin(), arguments.end());
+
+		std::vector<char *> argv;
+		argv.reserve(ownedArguments.size() + 1);
+		for (auto & argument : ownedArguments) {
+			argv.push_back(const_cast<char *>(argument.c_str()));
+		}
+		argv.push_back(nullptr);
+
+		const pid_t pid = fork();
+		if (pid < 0) {
+			return { -1, "could not fork external music generator process" };
+		}
+		if (pid == 0) {
+			if (!workingDirectory.empty()) {
+				chdir(workingDirectory.c_str());
+			}
+			execv(executablePath.c_str(), argv.data());
+			_exit(127);
+		}
+
+		int status = 0;
+		if (waitpid(pid, &status, 0) < 0) {
+			return { -1, "could not wait for external music generator process" };
+		}
+		if (WIFEXITED(status)) {
+			return { WEXITSTATUS(status), {} };
+		}
+		if (WIFSIGNALED(status)) {
+			return { 128 + WTERMSIG(status), {} };
+		}
+		return { -1, "external music generator ended with an unknown process status" };
+	}
+#endif
 }
 
 std::string ofxGgmlMusicExternalGenerationBackend::getBackendName() const {
@@ -149,10 +292,13 @@ ofxGgmlMusicGenerationResult ofxGgmlMusicExternalGenerationBackend::generate(
 		}
 	}
 
-	const auto command = buildCommand(request);
-	const auto exitCode = std::system(command.c_str());
-	if (exitCode != 0) {
-		return makeError(request, "external music generator failed with exit code " + std::to_string(exitCode));
+	const auto processResult =
+		executeProcess(request.external.executablePath, buildArguments(request), request.external.workingDirectory);
+	if (processResult.exitCode != 0) {
+		const std::string detail = processResult.error.empty()
+			? "exit code " + std::to_string(processResult.exitCode)
+			: processResult.error;
+		return makeError(request, "external music generator failed with " + detail);
 	}
 	if (!fileExists(request.outputPath)) {
 		return makeError(request, "external music generator did not write the expected output: " + request.outputPath);
