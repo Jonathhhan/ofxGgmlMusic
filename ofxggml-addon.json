@@ -12,6 +12,13 @@
     "stems",
     "music generation"
   ],
+  "features": [
+    "music analysis helpers",
+    "beat and timing workflows",
+    "key/chord workflow boundaries",
+    "stem and generation lane planning",
+    "runtime smoke validation entrypoint"
+  ],
   "platforms": [
     "windows",
     "macos",
