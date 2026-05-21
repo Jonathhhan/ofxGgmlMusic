@@ -13,6 +13,14 @@ Family map: https://jonathhhan.github.io/ofxGgmlCore/
 
 Current addon API version: `1.0.1`.
 
+## Features
+
+- music analysis helpers
+- beat and timing workflows
+- key/chord workflow boundaries
+- stem and generation lane planning
+- runtime smoke validation entrypoint
+
 ## First Milestone
 
 - define small music-specific request/result types
