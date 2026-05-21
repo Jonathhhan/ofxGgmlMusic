@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 import argparse
+import importlib.util
 import json
 import math
 import os
 from pathlib import Path
+import platform
 import sys
 import wave
 
@@ -100,18 +102,95 @@ def _load_dependencies():
         raise error
 
 
+def _dependency_probe():
+    dependencies = {}
+    for name in ["numpy", "torch", "transformers"]:
+        dependencies[name] = importlib.util.find_spec(name) is not None
+    return dependencies
+
+
+def _write_smoke_status(args, status):
+    if args.json:
+        print(json.dumps(status, indent=2))
+        return
+
+    print("Hugging Face MusicGen smoke")
+    print(f"passed: {str(status['passed']).lower()}")
+    print(f"python: {status['pythonExecutable']}")
+    print(f"model: {status['model']}")
+    print(f"device: {status['device']}")
+    print(f"loadModel: {str(status['loadModel']).lower()}")
+    for name, present in status["dependencies"].items():
+        print(f"{name}: {str(present).lower()}")
+    if status["error"]:
+        print(f"error: {status['error']}")
+
+
+def _smoke_test(args):
+    dependencies = _dependency_probe()
+    missing = [name for name, present in dependencies.items() if not present]
+    status = {
+        "name": "ofxGgmlMusic Hugging Face MusicGen smoke",
+        "passed": len(missing) == 0,
+        "pythonExecutable": sys.executable,
+        "pythonVersion": platform.python_version(),
+        "model": args.model,
+        "device": args.device,
+        "loadModel": bool(args.load_model),
+        "dependencies": dependencies,
+        "missingDependencies": missing,
+        "error": "",
+    }
+
+    if missing:
+        status["error"] = "missing Python dependencies: " + ", ".join(missing)
+        _write_smoke_status(args, status)
+        return 0 if args.allow_missing_deps else 1
+
+    if args.load_model:
+        try:
+            np, torch, AutoProcessor, MusicgenForConditionalGeneration = _load_dependencies()
+            device = args.device
+            if device == "auto":
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+            status["device"] = device
+            AutoProcessor.from_pretrained(args.model)
+            MusicgenForConditionalGeneration.from_pretrained(args.model)
+        except Exception as error:
+            status["passed"] = False
+            status["error"] = str(error)
+            _write_smoke_status(args, status)
+            return 1
+
+    _write_smoke_status(args, status)
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description="Generate a WAV with Hugging Face Transformers MusicGen.")
-    parser.add_argument("--prompt", required=True)
-    parser.add_argument("--output", required=True)
+    parser.add_argument("--prompt")
+    parser.add_argument("--output")
     parser.add_argument("--model", default="facebook/musicgen-small")
     parser.add_argument("--duration", type=float, default=8.0)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--guidance", type=float, default=3.0)
     parser.add_argument("--max-new-tokens", type=int, default=0)
     parser.add_argument("--device", default="auto")
+    parser.add_argument("--json", action="store_true")
+    parser.add_argument("--smoke-test", action="store_true")
+    parser.add_argument("--load-model", action="store_true")
+    parser.add_argument("--allow-missing-deps", action="store_true")
     args = parser.parse_args()
 
+    if args.smoke_test:
+        return _smoke_test(args)
+
+    if not args.prompt:
+        print("--prompt is required unless --smoke-test is set", file=sys.stderr)
+        return 2
+    if not args.output:
+        print("--output is required unless --smoke-test is set", file=sys.stderr)
+        return 2
     if args.duration <= 0:
         print("duration must be greater than zero", file=sys.stderr)
         return 2

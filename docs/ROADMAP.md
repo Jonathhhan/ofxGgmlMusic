@@ -36,11 +36,11 @@
   through `ofxGgmlMusicExternalGenerationBackend`.
 - Add a user-facing external generation CLI and an opt-in Hugging Face
   Transformers MusicGen runner profile.
+- Add a smoke test mode for installed MusicGen Python environments without
+  making PyTorch a required addon dependency.
 
 ## Next Milestones
 
-- Add a smoke test mode for installed MusicGen Python environments without
-  making PyTorch a required addon dependency.
 - Add audio diffusion bridge research notes with a clear runtime/setup decision.
 - Keep image and video GAN work in `ofxGgmlDiffusion` and `ofxGgmlVideo`; this
   addon should focus on audio-producing music generators.

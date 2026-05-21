@@ -8,7 +8,10 @@ param(
 	[string]$BuildDir = "",
 	[switch]$Json,
 	[switch]$Clean,
-	[switch]$DryRun
+	[switch]$DryRun,
+	[switch]$SmokeTest,
+	[switch]$LoadModel,
+	[switch]$AllowMissingDeps
 )
 
 $ErrorActionPreference = "Stop"
@@ -29,6 +32,28 @@ $runner = if (Test-WindowsHost) {
 	Join-Path $scriptRoot "run-musicgen-hf.bat"
 } else {
 	Join-Path $scriptRoot "run-musicgen-hf.sh"
+}
+
+if ($SmokeTest) {
+	$runnerArgs = @(
+		"--smoke-test",
+		"--model",
+		$Model
+	)
+	if ($Json) {
+		$runnerArgs += "--json"
+	}
+	if ($LoadModel) {
+		$runnerArgs += "--load-model"
+	}
+	if ($AllowMissingDeps) {
+		$runnerArgs += "--allow-missing-deps"
+	}
+	& $runner @runnerArgs
+	if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) {
+		throw "MusicGen HF smoke test failed with exit code $LASTEXITCODE"
+	}
+	return
 }
 
 $args = @{

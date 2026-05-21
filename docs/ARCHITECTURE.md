@@ -62,7 +62,9 @@ runner's richer metadata. Otherwise the backend writes a minimal manifest.
 The Hugging Face MusicGen profile is kept as a Python wrapper under
 `tools/musicgen_hf_runner.py`. It is useful for proving the bridge with a real
 transformer model, but it remains opt-in so the addon does not depend on PyTorch
-or Transformers.
+or Transformers. The runner also has a smoke-test mode that reports Python
+executable, dependency, device, and optional model-load readiness without
+generating audio.
 
 ## Not Owned Here
 

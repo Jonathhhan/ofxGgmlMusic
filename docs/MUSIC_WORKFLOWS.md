@@ -71,6 +71,9 @@ Use the smallest command that proves the changed layer:
 | AceStep server launch contract | `scripts\test-acestep-server-dry-run.ps1` |
 | External generator bridge | `scripts\test-external-generation-contract.bat -Clean` |
 | MusicGen runner profile | `scripts\generate-musicgen-hf.bat -DryRun` |
+| Installed MusicGen Python probe | `scripts\generate-musicgen-hf.bat -SmokeTest -Json` |
+| Optional MusicGen JSON readiness report | `scripts\generate-musicgen-hf.bat -SmokeTest -Json -AllowMissingDeps` |
+| Installed MusicGen model-load probe | `scripts\generate-musicgen-hf.bat -SmokeTest -LoadModel -Json` |
 | Local setup diagnosis | `scripts\doctor-music.bat` |
 | Request/result/helper changes | `scripts\test-addon.bat` |
 
@@ -81,6 +84,16 @@ manifest, history, MIDI, and stem artifacts in a temp directory. Model-backed
 MusicGen, diffusion, SampleRNN, and custom GGML generator checks should be
 added only after their model paths, executables, outputs, and cleanup rules are
 explicit.
+
+The Hugging Face MusicGen probe is intentionally separate from generation. The
+plain `-SmokeTest` path checks Python package availability for `numpy`, `torch`,
+and `transformers` without loading a model or writing audio. Add `-LoadModel`
+only when model downloads or local cache access are acceptable for that machine.
+Use `-AllowMissingDeps` when automation should capture the JSON report without
+failing on machines that intentionally lack the optional MusicGen stack.
+Validation uses `scripts\test-musicgen-hf-smoke.ps1`, which exercises the JSON
+contract when Python is available but does not make PyTorch or Transformers
+required for this addon.
 
 ## Safe first tasks
 

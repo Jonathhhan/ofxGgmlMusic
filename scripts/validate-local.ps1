@@ -82,6 +82,9 @@ Assert-Path (Join-Path $scriptRoot "generate-external-music.sh") "external gener
 Assert-Path (Join-Path $scriptRoot "generate-musicgen-hf.ps1") "Hugging Face MusicGen generation script"
 Assert-Path (Join-Path $scriptRoot "generate-musicgen-hf.bat") "Hugging Face MusicGen batch script"
 Assert-Path (Join-Path $scriptRoot "generate-musicgen-hf.sh") "Hugging Face MusicGen shell script"
+Assert-Path (Join-Path $scriptRoot "test-musicgen-hf-smoke.ps1") "Hugging Face MusicGen smoke test"
+Assert-Path (Join-Path $scriptRoot "test-musicgen-hf-smoke.bat") "Hugging Face MusicGen smoke Windows wrapper"
+Assert-Path (Join-Path $scriptRoot "test-musicgen-hf-smoke.sh") "Hugging Face MusicGen smoke shell wrapper"
 Assert-Path (Join-Path $scriptRoot "start-acestep-server.ps1") "AceStep server launch script"
 Assert-Path (Join-Path $scriptRoot "start-acestep-server.bat") "AceStep server launch batch script"
 Assert-Path (Join-Path $scriptRoot "start-acestep-server.sh") "AceStep server launch shell script"
@@ -237,6 +240,10 @@ if (!$musicGenDryRun.Contains("External music generation plan") -or
 	!$musicGenDryRun.Contains("facebook/musicgen-small") -or
 	!$musicGenDryRun.Contains("Dry run complete; no files were changed")) {
 	throw "MusicGen HF dry-run output was unexpected:`n$musicGenDryRun"
+}
+& (Join-Path $scriptRoot "test-musicgen-hf-smoke.ps1")
+if ($LASTEXITCODE -ne 0) {
+	throw "MusicGen HF smoke contract failed with exit code $LASTEXITCODE"
 }
 $acestepDryRun = & (Join-Path $scriptRoot "start-acestep-server.ps1") `
 	-ServerExecutable "mock-acestep-server.exe" `

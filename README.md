@@ -233,6 +233,19 @@ scripts\generate-musicgen-hf.bat -Prompt "warm lofi loop with soft keys" -Durati
 scripts\generate-musicgen-hf.bat -DryRun
 ```
 
+Probe an installed MusicGen Python environment without generating audio:
+
+```powershell
+scripts\generate-musicgen-hf.bat -SmokeTest -Json
+scripts\generate-musicgen-hf.bat -SmokeTest -Json -AllowMissingDeps
+scripts\generate-musicgen-hf.bat -SmokeTest -LoadModel -Json
+```
+
+The first command checks Python package readiness only. `-LoadModel` also tries
+to load the configured Hugging Face model and may download model files through
+the local Transformers cache. `-AllowMissingDeps` is useful for automation that
+wants the JSON report without failing when the optional Python stack is absent.
+
 Set `OFXGGML_MUSIC_PYTHON` when the desired Python executable is not first on
 `PATH`. This profile is intentionally optional and does not make PyTorch a
 dependency of the addon.
@@ -251,6 +264,7 @@ scripts\doctor-music.bat
 scripts\run-music-runtime-smoke.bat -Json -SummaryOnly -Clean
 scripts\setup-acestep-server.ps1 -DryRun
 scripts\test-acestep-server-dry-run.bat
+scripts\test-musicgen-hf-smoke.bat
 scripts\validate-local.bat
 ```
 
