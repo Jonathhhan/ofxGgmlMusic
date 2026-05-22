@@ -141,12 +141,16 @@ function New-CmakeArgs {
 		$args += "-DGGML_CPU_ALL_VARIANTS=ON"
 		$args += "-DGGML_BACKEND_DL=ON"
 	}
+	$generatorArgs = @()
 	if (![string]::IsNullOrWhiteSpace($Generator)) {
-		$args = @(
-			"-G",
-			$Generator,
-			$args
-		)
+		$generatorArgs += @("-G", $Generator)
+	}
+	if ((Test-WindowsHost) -and $EnableCuda -and $env:CUDA_PATH -and
+		([string]::IsNullOrWhiteSpace($Generator) -or $Generator -match "Visual Studio")) {
+		$generatorArgs += @("-A", "x64", "-T", "host=x64,cuda=$env:CUDA_PATH")
+	}
+	if ($generatorArgs.Count -gt 0) {
+		$args = @($generatorArgs + $args)
 	}
 	return $args
 }
@@ -173,6 +177,11 @@ function Test-CoreGgmlSourceAvailable {
 	return Test-Path -LiteralPath (Join-Path $includeDir "ggml.h") -PathType Leaf
 }
 
+function Get-CoreGgmlSourcePath {
+	param([string]$CorePath)
+	return Join-Path $CorePath "libs\ggml\.source"
+}
+
 function Test-GgmlSourceHasAceStepOps {
 	param([string]$GgmlSource)
 	$ggmlHeader = Join-Path $GgmlSource "include\ggml.h"
@@ -183,6 +192,14 @@ function Test-GgmlSourceHasAceStepOps {
 	return $headerText -match "ggml_col2im_1d"
 }
 
+function Test-CoreGgmlSourceCompatible {
+	param([string]$CorePath)
+	if (!(Test-CoreGgmlSourceAvailable $CorePath)) {
+		return $false
+	}
+	return Test-GgmlSourceHasAceStepOps (Get-CoreGgmlSourcePath $CorePath)
+}
+
 function Assert-GgmlSourceHasAceStepOps {
 	param(
 		[string]$GgmlSource,
@@ -190,6 +207,130 @@ function Assert-GgmlSourceHasAceStepOps {
 	)
 	if (!(Test-GgmlSourceHasAceStepOps $GgmlSource)) {
 		throw "$Label does not expose the ACE-Step patched ggml_col2im_1d op. Use bundled ACE-Step ggml, or patch that ggml source with the ACE-Step fork ops before passing -UseCoreGgml."
+	}
+}
+
+function Read-CmakeCacheValue {
+	param(
+		[string]$BuildDir,
+		[string]$Name
+	)
+	$cacheFile = Join-Path $BuildDir "CMakeCache.txt"
+	if (!(Test-Path -LiteralPath $cacheFile -PathType Leaf)) {
+		return ""
+	}
+	$pattern = "^{0}:[^=]*=(.*)$" -f [regex]::Escape($Name)
+	foreach ($line in Get-Content -LiteralPath $cacheFile) {
+		$match = [regex]::Match($line, $pattern)
+		if ($match.Success) {
+			return $match.Groups[1].Value.Trim()
+		}
+	}
+	return ""
+}
+
+function Test-CmakeCacheBoolOn {
+	param(
+		[string]$BuildDir,
+		[string]$Name
+	)
+	$value = Read-CmakeCacheValue -BuildDir $BuildDir -Name $Name
+	return $value -match "^(ON|TRUE|1|YES)$"
+}
+
+function Get-InstalledBackendFiles {
+	param(
+		[string]$InstallBin,
+		[string[]]$Patterns
+	)
+	if (!(Test-Path -LiteralPath $InstallBin -PathType Container)) {
+		return @()
+	}
+	$files = @()
+	foreach ($pattern in $Patterns) {
+		$files += @(Get-ChildItem -LiteralPath $InstallBin -File -Filter $pattern -ErrorAction SilentlyContinue)
+	}
+	return @($files | Sort-Object -Property Name -Unique)
+}
+
+function Join-BackendFileNames {
+	param([object[]]$Files)
+	if ($Files.Count -eq 0) {
+		return "none"
+	}
+	return (($Files | ForEach-Object { $_.Name }) -join ", ")
+}
+
+function Get-AceStepBackendReport {
+	param(
+		[string]$BuildDir,
+		[string]$InstallBin
+	)
+	$cudaFiles = Get-InstalledBackendFiles -InstallBin $InstallBin -Patterns @(
+		"ggml-cuda*.dll", "ggml-cuda*.so", "libggml-cuda*.so", "libggml-cuda*.dylib")
+	$vulkanFiles = Get-InstalledBackendFiles -InstallBin $InstallBin -Patterns @(
+		"ggml-vulkan*.dll", "ggml-vulkan*.so", "libggml-vulkan*.so", "libggml-vulkan*.dylib")
+	$metalFiles = Get-InstalledBackendFiles -InstallBin $InstallBin -Patterns @(
+		"ggml-metal*.dll", "ggml-metal*.so", "libggml-metal*.so", "libggml-metal*.dylib")
+	$cpuFiles = Get-InstalledBackendFiles -InstallBin $InstallBin -Patterns @(
+		"ggml-cpu*.dll", "ggml-cpu*.so", "libggml-cpu*.so", "libggml-cpu*.dylib")
+
+	return [pscustomobject]@{
+		CudaConfigured = Test-CmakeCacheBoolOn -BuildDir $BuildDir -Name "GGML_CUDA"
+		VulkanConfigured = Test-CmakeCacheBoolOn -BuildDir $BuildDir -Name "GGML_VULKAN"
+		MetalConfigured = Test-CmakeCacheBoolOn -BuildDir $BuildDir -Name "GGML_METAL"
+		BackendDlConfigured = Test-CmakeCacheBoolOn -BuildDir $BuildDir -Name "GGML_BACKEND_DL"
+		CpuFiles = $cpuFiles
+		CudaFiles = $cudaFiles
+		VulkanFiles = $vulkanFiles
+		MetalFiles = $metalFiles
+	}
+}
+
+function Write-AceStepBackendReport {
+	param([object]$Report)
+	Write-Step "AceStep backend summary"
+	Write-Host ("  CMakeCache: CUDA={0} Vulkan={1} Metal={2} BackendDL={3}" -f `
+		(Convert-ToOnOff $Report.CudaConfigured),
+		(Convert-ToOnOff $Report.VulkanConfigured),
+		(Convert-ToOnOff $Report.MetalConfigured),
+		(Convert-ToOnOff $Report.BackendDlConfigured))
+	Write-Host "  installed CPU backend artifacts: $(Join-BackendFileNames $Report.CpuFiles)"
+	Write-Host "  installed CUDA backend artifacts: $(Join-BackendFileNames $Report.CudaFiles)"
+	Write-Host "  installed Vulkan backend artifacts: $(Join-BackendFileNames $Report.VulkanFiles)"
+	Write-Host "  installed Metal backend artifacts: $(Join-BackendFileNames $Report.MetalFiles)"
+}
+
+function Assert-RequestedBackendInstalled {
+	param(
+		[object]$Report,
+		[bool]$RequireCuda,
+		[bool]$RequireVulkan,
+		[bool]$RequireMetal
+	)
+	if ($RequireCuda) {
+		if (!$Report.CudaConfigured) {
+			throw "CUDA was requested but final CMakeCache.txt reports GGML_CUDA=OFF. Re-run with -Clean -Cuda and inspect the CMake configure log."
+		}
+		if ($Report.CudaFiles.Count -eq 0) {
+			throw "CUDA was requested but no ggml-cuda backend artifact was installed in libs/acestep/bin."
+		}
+	}
+	if ($RequireVulkan) {
+		if (!$Report.VulkanConfigured) {
+			throw "Vulkan was requested but final CMakeCache.txt reports GGML_VULKAN=OFF."
+		}
+		if ($Report.VulkanFiles.Count -eq 0) {
+			throw "Vulkan was requested but no ggml-vulkan backend artifact was installed in libs/acestep/bin."
+		}
+	}
+	if ($RequireMetal) {
+		if (!$Report.MetalConfigured) {
+			throw "Metal was requested but final CMakeCache.txt reports GGML_METAL=OFF."
+		}
+		if ($Report.MetalFiles.Count -eq 0) {
+			throw "Metal was requested but no ggml-metal backend artifact was installed in libs/acestep/bin."
+		}
 	}
 }
 
@@ -225,6 +366,23 @@ function Install-RuntimeDlls {
 	}
 	if ($dlls.Count -gt 0) {
 		Write-Step "Installed $($dlls.Count) runtime DLL(s) to $InstallBin"
+	}
+}
+
+function Clear-InstalledRuntimeArtifacts {
+	param([string]$InstallBin)
+	if (!(Test-Path -LiteralPath $InstallBin -PathType Container)) {
+		return
+	}
+	$patterns = @("ace-server", "ace-server.exe", "ggml*.dll", "ggml*.so", "libggml*.so", "libggml*.dylib")
+	foreach ($pattern in $patterns) {
+		foreach ($file in @(Get-ChildItem -LiteralPath $InstallBin -File -Filter $pattern -ErrorAction SilentlyContinue)) {
+			try {
+				Remove-Item -LiteralPath $file.FullName -Force -ErrorAction Stop
+			} catch {
+				throw "Could not replace installed AceStep runtime artifact '$($file.FullName)'. Stop any running ace-server process and retry. $($_.Exception.Message)"
+			}
+		}
 	}
 }
 
@@ -405,37 +563,61 @@ $enableCuda = $false
 $enableVulkan = $false
 $enableMetal = $false
 $enableBlas = $Blas -or ($env:OFXGGML_ACESTEP_BLAS -and $env:OFXGGML_ACESTEP_BLAS -ne "0")
+$cudaAvailable = Test-CudaAvailable
+$vulkanAvailable = Test-VulkanAvailable
+$metalAvailable = Test-MetalAvailable
 
 if ($CpuOnly) {
 	$enableCuda = $false
 	$enableVulkan = $false
 	$enableMetal = $false
 } elseif ($Auto -or (!$explicitBackend -and !$CpuOnly)) {
-	$enableCuda = Test-CudaAvailable
-	$enableVulkan = Test-VulkanAvailable
-	$enableMetal = Test-MetalAvailable
+	$enableCuda = $cudaAvailable
+	$enableVulkan = $vulkanAvailable
+	$enableMetal = $metalAvailable
 } else {
 	$enableCuda = [bool]$Cuda
 	$enableVulkan = [bool]$Vulkan
 	$enableMetal = [bool]$Metal
 }
 
-if ($Cuda -and !$enableCuda) {
+if (!$DryRun -and $Cuda -and !$cudaAvailable) {
 	throw "CUDA was requested but CUDA toolkit was not found."
 }
-if ($Vulkan -and !$enableVulkan) {
+if (!$DryRun -and $Vulkan -and !$vulkanAvailable) {
 	throw "Vulkan was requested but Vulkan SDK/tools were not found."
 }
-if ($Metal -and !$enableMetal) {
+if (!$DryRun -and $Metal -and !$metalAvailable) {
 	throw "Metal was requested but this host is not macOS or xcrun is unavailable."
 }
 
+$coreGgmlSource = Get-CoreGgmlSourcePath $OfxGgmlCorePath
 $coreGgmlAvailable = Test-CoreGgmlSourceAvailable $OfxGgmlCorePath
-$ggmlMode = if ($UseCoreGgml -and $coreGgmlAvailable) {
+$coreGgmlCompatible = $coreGgmlAvailable -and (Test-GgmlSourceHasAceStepOps $coreGgmlSource)
+$ggmlFallbackReason = ""
+
+if ($UseCoreGgml -and $BundledGgml) {
+	throw "Choose either -UseCoreGgml or -BundledGgml, not both."
+}
+
+$ggmlMode = if ($BundledGgml) {
+	"bundled"
+} elseif ($UseCoreGgml) {
+	if (!$coreGgmlAvailable) {
+		throw "UseCoreGgml was requested but ofxGgmlCore ggml source was not found at $OfxGgmlCorePath"
+	}
+	if (!$coreGgmlCompatible) {
+		throw "UseCoreGgml was requested but ofxGgmlCore ggml source does not expose the ACE-Step patched ggml_col2im_1d op."
+	}
 	"ofxGgmlCore"
-} elseif ($UseCoreGgml -and !$coreGgmlAvailable) {
-	throw "UseCoreGgml was requested but ofxGgmlCore ggml source was not found at $OfxGgmlCorePath"
+} elseif ($coreGgmlCompatible) {
+	"ofxGgmlCore"
 } else {
+	if (!$coreGgmlAvailable) {
+		$ggmlFallbackReason = "ofxGgmlCore ggml source was not found"
+	} else {
+		$ggmlFallbackReason = "ofxGgmlCore ggml source lacks the ACE-Step ggml_col2im_1d op"
+	}
 	"bundled"
 }
 
@@ -443,8 +625,10 @@ $ggmlModeDetail = if ($UseCoreGgml) {
 	"using ofxGgmlCore .source/ggml"
 } elseif ($BundledGgml) {
 	"using bundled ggml in acestep.cpp (-BundledGgml requested)"
+} elseif ($ggmlMode -eq "ofxGgmlCore") {
+	"using compatible ofxGgmlCore .source/ggml"
 } else {
-	"using bundled ggml in acestep.cpp for upstream compatibility"
+	"using bundled ggml in acestep.cpp because $ggmlFallbackReason"
 }
 
 $resolvedGenerator = Get-DefaultGenerator $Generator
@@ -477,6 +661,9 @@ if ($DryRun) {
 	}
 	Write-Host "  ggml: $(if ($ggmlMode -eq "ofxGgmlCore") { "ofxGgmlCore source" } else { "bundled" })"
 	Write-Host "  ggml detail: $ggmlModeDetail"
+	if (![string]::IsNullOrWhiteSpace($ggmlFallbackReason)) {
+		Write-Host "  ggml fallback: $ggmlFallbackReason"
+	}
 	if ($ggmlMode -eq "ofxGgmlCore") {
 		Write-Host "  ofxGgmlCore: $OfxGgmlCorePath"
 	}
@@ -511,10 +698,12 @@ if ($ggmlMode -eq "ofxGgmlCore") {
 }
 
 Write-Step "Configuring acestep.cpp"
+$usedCpuOnlyFallback = $false
 & "cmake" @cmakeArgs
 $configureExitCode = $LASTEXITCODE
 if ($configureExitCode -ne 0 -and $Auto -and !$CpuOnly -and ($enableCuda -or $enableVulkan -or $enableMetal)) {
 	Write-Warning "Optional GPU backend configure failed; retrying AceStep setup as CPU-only. Pass -Cuda, -Vulkan, or -Metal to make that backend strict."
+	$usedCpuOnlyFallback = $true
 	$enableCuda = $false
 	$enableVulkan = $false
 	$enableMetal = $false
@@ -557,9 +746,21 @@ New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
 $installBin = Join-Path $InstallDir "bin"
 New-Item -ItemType Directory -Force -Path $installBin | Out-Null
 $installedServer = Join-Path $installBin ([System.IO.Path]::GetFileName($builtServer))
+Clear-InstalledRuntimeArtifacts -InstallBin $installBin
 Copy-Item -LiteralPath $builtServer -Destination $installedServer -Force
 Write-Step "Installed ace-server to $installedServer"
 Install-RuntimeDlls -BuiltServer $builtServer -InstallBin $installBin
+
+$backendReport = Get-AceStepBackendReport -BuildDir $BuildDir -InstallBin $installBin
+Write-AceStepBackendReport $backendReport
+Assert-RequestedBackendInstalled `
+	-Report $backendReport `
+	-RequireCuda ([bool]$Cuda) `
+	-RequireVulkan ([bool]$Vulkan) `
+	-RequireMetal ([bool]$Metal)
+if ($usedCpuOnlyFallback -or ($Auto -and !$backendReport.CudaConfigured -and !$backendReport.VulkanConfigured -and !$backendReport.MetalConfigured)) {
+	Write-Warning "AceStep setup completed as CPU-only fallback. Use -Clean -Cuda to require CUDA and fail instead of falling back."
+}
 
 Write-Step "Done. To start the server, run:"
 Write-Host "scripts\start-acestep-server.ps1 -ServerExecutable $installedServer -ModelPath <models folder>"

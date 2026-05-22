@@ -44,5 +44,41 @@ if ($summary.ModelBacked -or !$summary.ProceduralBacked) {
 if (!($summary.NextCommands -contains "scripts\run-music-runtime-smoke.bat -Json -SummaryOnly")) {
 	throw "JSON dry-run did not include the runtime smoke command."
 }
+if ($summary.SmokeKind -ne "music-procedural-runtime-smoke") {
+	throw "Unexpected runtime smoke kind: $($summary.SmokeKind)"
+}
+if ($summary.InferenceChecked) {
+	throw "Procedural runtime smoke should not report inference evidence."
+}
+
+Write-Step "Music runtime smoke report contract"
+$scratchDir = Join-Path ([System.IO.Path]::GetTempPath()) "ofxGgmlMusic-runtime-smoke-contract"
+if (Test-Path -LiteralPath $scratchDir) {
+	Remove-Item -LiteralPath $scratchDir -Recurse -Force
+}
+New-Item -ItemType Directory -Path $scratchDir | Out-Null
+$reportPath = Join-Path $scratchDir "music-runtime-smoke.json"
+$runtimeBuildDir = Join-Path $scratchDir "runtime-build"
+try {
+	$smokeOutput = & $script -Json -SummaryOnly -BuildDir $runtimeBuildDir -Clean -OutputPath $reportPath 2>&1 6>&1 | Out-String
+	$runtimeSummary = $smokeOutput | ConvertFrom-Json
+	if (!$runtimeSummary.Passed) {
+		throw "Runtime smoke summary did not pass:`n$smokeOutput"
+	}
+	if (!(Test-Path -LiteralPath $reportPath -PathType Leaf)) {
+		throw "Runtime smoke report was not written: $reportPath"
+	}
+	$report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
+	if (!$report.Summary.Passed -or $report.Summary.SmokeKind -ne "music-procedural-runtime-smoke") {
+		throw "Runtime smoke report summary was malformed."
+	}
+	if ($report.Summary.InferenceChecked) {
+		throw "Runtime smoke report should not claim model-backed inference evidence."
+	}
+} finally {
+	if (Test-Path -LiteralPath $scratchDir) {
+		Remove-Item -LiteralPath $scratchDir -Recurse -Force
+	}
+}
 
 Write-Step "Music runtime smoke contract passed"

@@ -1,8 +1,8 @@
 #pragma once
 
 #include "ofMain.h"
-#include "ofxGgmlMusic.h"
 #include "ofxGgmlMusic/ofxGgmlMusicAceStepBridge.h"
+#include "ofxGgmlMusic/ofxGgmlMusicAudioUtils.h"
 #include "ofxImGui.h"
 
 #include <array>

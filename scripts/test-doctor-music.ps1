@@ -17,6 +17,9 @@ foreach ($expected in @(
 	"music request types",
 	"procedural backend",
 	"external bridge backend",
+	"AceStep ggml source",
+	"AceStep server",
+	"AceStep backend",
 	"music prompt",
 	"artifact hygiene"
 )) {

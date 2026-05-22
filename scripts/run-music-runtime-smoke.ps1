@@ -1,6 +1,8 @@
 param(
 	[string]$Configuration = "Release",
 	[string]$BuildDir = "",
+	[Alias("OutputPath")]
+	[string]$ReportPath = "",
 	[switch]$Clean,
 	[switch]$DryRun,
 	[switch]$Json,
@@ -42,10 +44,13 @@ function New-DryRunSummary {
 		Root = [string]$addonRoot
 		Backend = "procedural-sketch"
 		BuildDir = $BuildDir
+		ReportPath = $ReportPath
 		Ready = $ready
 		ModelBacked = $false
 		ProceduralBacked = $true
 		ExternalBridgeBacked = $false
+		InferenceChecked = $false
+		SmokeKind = "music-procedural-runtime-smoke"
 		TestScript = $testScript
 		DoctorScript = $doctorScript
 		ProceduralScript = $proceduralScript
@@ -55,6 +60,28 @@ function New-DryRunSummary {
 			"scripts\test-external-generation-contract.bat -Clean"
 		)
 	}
+}
+
+function Write-SmokeReport {
+	param(
+		[string]$Path,
+		[object]$Payload
+	)
+
+	if ([string]::IsNullOrWhiteSpace($Path)) {
+		return
+	}
+
+	$target = if ([System.IO.Path]::IsPathRooted($Path)) {
+		$Path
+	} else {
+		Join-Path $addonRoot $Path
+	}
+	$directory = Split-Path -Parent $target
+	if (![string]::IsNullOrWhiteSpace($directory) -and !(Test-Path -LiteralPath $directory -PathType Container)) {
+		New-Item -ItemType Directory -Path $directory -Force | Out-Null
+	}
+	[System.IO.File]::WriteAllText($target, ($Payload | ConvertTo-Json -Depth 8))
 }
 
 function Invoke-SmokeStep {
@@ -100,6 +127,7 @@ $testScript = Join-Path $scriptRoot "test-addon.ps1"
 $doctorScript = Join-Path $scriptRoot "doctor-music.ps1"
 $proceduralScript = Join-Path $scriptRoot "generate-procedural-music.ps1"
 
+$usingDefaultBuildDir = [string]::IsNullOrWhiteSpace($BuildDir)
 if ([string]::IsNullOrWhiteSpace($BuildDir)) {
 	$BuildDir = Join-Path ([System.IO.Path]::GetTempPath()) "ofxGgmlMusic-runtime-smoke"
 }
@@ -126,7 +154,7 @@ if ($DryRun) {
 	return
 }
 
-if ($Clean -and (Test-Path -LiteralPath $BuildDir)) {
+if (($Clean -or $usingDefaultBuildDir) -and (Test-Path -LiteralPath $BuildDir)) {
 	Remove-Item -LiteralPath $BuildDir -Recurse -Force
 }
 New-Item -ItemType Directory -Force -Path $BuildDir | Out-Null
@@ -137,7 +165,7 @@ $testBuildDir = Join-Path $BuildDir "tests"
 $proceduralBuildDir = Join-Path $BuildDir "procedural-build"
 $artifactDir = Join-Path $BuildDir "artifacts"
 New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
-$outputPath = Join-Path $artifactDir "music-runtime-smoke.wav"
+$audioOutputPath = Join-Path $artifactDir "music-runtime-smoke.wav"
 
 $testArgs = @(
 	"-NoProfile",
@@ -172,7 +200,7 @@ $proceduralArgs = @(
 	"-Prompt",
 	"runtime smoke lofi motif",
 	"-Output",
-	$outputPath,
+	$audioOutputPath,
 	"-Duration",
 	"1.0",
 	"-Tempo",
@@ -204,8 +232,8 @@ $artifactCheck = [ordered]@{
 }
 try {
 	$artifacts = @()
-	$artifacts += Test-GeneratedArtifact -Path $outputPath -Label "procedural WAV"
-	$artifacts += Test-GeneratedArtifact -Path ($outputPath + ".json") -Label "procedural manifest"
+	$artifacts += Test-GeneratedArtifact -Path $audioOutputPath -Label "procedural WAV"
+	$artifacts += Test-GeneratedArtifact -Path ($audioOutputPath + ".json") -Label "procedural manifest"
 	$artifacts += Test-GeneratedArtifact -Path (Join-Path $artifactDir "ofxGgmlMusic-history.json") -Label "procedural history"
 	$artifacts += Test-GeneratedArtifact -Path (Join-Path $artifactDir "music-runtime-smoke-melody.mid") -Label "melody MIDI"
 	$artifacts += Test-GeneratedArtifact -Path (Join-Path $artifactDir "music-runtime-smoke-chords.mid") -Label "chord MIDI"
@@ -224,27 +252,34 @@ $elapsedMs = [int]((Get-Date) - $started).TotalMilliseconds
 $summary = [ordered]@{
 	Name = "ofxGgmlMusic runtime smoke"
 	Passed = ($failed.Count -eq 0)
+	SmokeKind = "music-procedural-runtime-smoke"
 	Backend = "procedural-sketch"
 	Configuration = $Configuration
 	BuildDir = $BuildDir
+	ModelPath = ""
 	ModelBacked = $false
 	ProceduralBacked = $true
 	ExternalBridgeBacked = $false
+	InferenceChecked = $false
 	ResultCount = $results.Count
 	FailedCount = $failed.Count
 	ElapsedMs = $elapsedMs
-	OutputPath = $outputPath
+	OutputPath = $audioOutputPath
+	ReportPath = $ReportPath
 	Error = $(if ($failed.Count -eq 0) { "" } else { (($failed | ForEach-Object { $_.Output }) -join "`n") })
 }
+
+$reportPayload = [ordered]@{
+	Summary = $summary
+	Results = $results
+}
+Write-SmokeReport -Path $ReportPath -Payload $reportPayload
 
 if ($Json) {
 	if ($SummaryOnly) {
 		$summary | ConvertTo-Json -Depth 5
 	} else {
-		[ordered]@{
-			Summary = $summary
-			Results = $results
-		} | ConvertTo-Json -Depth 6
+		$reportPayload | ConvertTo-Json -Depth 6
 	}
 } else {
 	foreach ($result in $results) {

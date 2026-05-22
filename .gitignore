@@ -8,6 +8,8 @@ build/
 *.pdb
 *.ilk
 *.log
+.music-runtime-smoke.json
+.musicgen-inference-smoke.json
 *.sln
 *.suo
 *.user

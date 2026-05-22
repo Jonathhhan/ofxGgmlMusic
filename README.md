@@ -122,7 +122,7 @@ To run it, start an AceStep server first. The launcher prefers:
 
 ```powershell
 scripts\setup-acestep-server.ps1 -DryRun
-scripts\setup-acestep-server.ps1 -BundledGgml
+scripts\setup-acestep-server.ps1 -Clean -Cuda
 scripts\start-acestep-server.ps1 -ServerExecutable "C:\path\to\ace-server.exe" -ModelPath "C:\models\..."
 ```
 
@@ -130,13 +130,14 @@ By default the setup script clones the remote default branch of `acestep.cpp`.
 Pass `-Revision <branch-or-tag>` only when you intentionally want to pin an
 upstream branch or tag.
 
-AceStep currently builds against its bundled `ggml` submodule by default because
-upstream ACE-Step uses ggml helpers that are not present in every shared Core
-ggml checkout. Use `-UseCoreGgml` only when you are testing a known-compatible
-Core ggml source with the ACE-Step fork ops such as `ggml_col2im_1d`. Core's
-upstream `ggml 0.12.0` setup intentionally remains backend-neutral and is not
-patched for this VAE-specific fork by default. Use `-Blas` only when a system
-BLAS installation is configured.
+AceStep follows the ecosystem rule: prefer `ofxGgmlCore` ggml when Core exposes
+the ACE-Step fork ops such as `ggml_col2im_1d`, then fall back to the bundled
+`acestep.cpp` ggml only when Core is missing or incompatible. Pass
+`-BundledGgml` only when you intentionally want the upstream bundled source.
+Use `-Clean -Cuda` for NVIDIA GPU builds; explicit `-Cuda` is strict and fails
+if the final CMake cache or installed backend artifacts are CPU-only. Auto setup
+may fall back to CPU-only, but reports that result in the setup summary. Use
+`-Blas` only when a system BLAS installation is configured.
 
 If you keep `ace-server(.exe)` at `ofxGgmlMusic/libs/acestep/bin`, you can just run:
 

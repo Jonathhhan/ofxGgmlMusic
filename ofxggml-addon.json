@@ -2,6 +2,8 @@
   "name": "ofxGgmlMusic",
   "lane": "music",
   "coreBaseline": "v1.0.1",
+  "runtimeSmokeReport": ".music-runtime-smoke.json",
+  "inferenceSmokeReport": ".musicgen-inference-smoke.json",
   "requires": [
     "ofxGgmlCore"
   ],
@@ -17,7 +19,8 @@
     "beat and timing workflows",
     "key/chord workflow boundaries",
     "stem and generation lane planning",
-    "runtime smoke validation entrypoint"
+    "runtime smoke validation entrypoint",
+    "MusicGen HF model-backed inference smoke gate"
   ],
   "platforms": [
     "windows",

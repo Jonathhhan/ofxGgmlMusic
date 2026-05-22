@@ -32,7 +32,12 @@ Assert-Contains $defaultOutput "git clone --recurse-submodules --depth 1" "defau
 Assert-Contains $defaultOutput "mode: Auto" "default dry-run"
 Assert-Contains $defaultOutput "external BLAS: OFF" "default dry-run"
 Assert-Contains $defaultOutput "-DGGML_BLAS=OFF" "default dry-run"
-Assert-Contains $defaultOutput "ggml: bundled" "default dry-run"
+Assert-Contains $defaultOutput "ggml:" "default dry-run"
+if ($defaultOutput.Contains("ggml: bundled")) {
+	Assert-Contains $defaultOutput "ggml fallback:" "default dry-run bundled fallback"
+} else {
+	Assert-Contains $defaultOutput "ggml: ofxGgmlCore source" "default dry-run Core ggml"
+}
 Assert-Contains $defaultOutput "cmake --build" "default dry-run"
 Assert-Contains $defaultOutput "output:" "default dry-run"
 Assert-Contains $defaultOutput "Dry run complete; no files were changed" "default dry-run"
@@ -54,6 +59,18 @@ Assert-Contains $cpuOutput "Vulkan=OFF Metal=OFF" "CPU-only dry-run"
 Assert-Contains $cpuOutput "external BLAS: OFF" "CPU-only dry-run"
 Assert-Contains $cpuOutput "Dry run complete; no files were changed" "CPU-only dry-run"
 
+Write-Step "acestep CUDA dry-run"
+$cudaOutput = & $script -DryRun -Cuda 2>&1 6>&1 | Out-String
+Assert-Contains $cudaOutput "mode: Explicit" "CUDA dry-run"
+Assert-Contains $cudaOutput "CPU=ON CUDA=ON" "CUDA dry-run"
+Assert-Contains $cudaOutput "Vulkan=OFF Metal=OFF" "CUDA dry-run"
+Assert-Contains $cudaOutput "-DGGML_CUDA=ON" "CUDA dry-run"
+Assert-Contains $cudaOutput "-DGGML_BACKEND_DL=ON" "CUDA dry-run"
+Assert-Contains $cudaOutput "Dry run complete; no files were changed" "CUDA dry-run"
+if ($cudaOutput.Contains("auto fallback:")) {
+	throw "explicit CUDA dry-run should not advertise Auto CPU fallback:`n$cudaOutput"
+}
+
 Write-Step "acestep BLAS opt-in dry-run"
 $blasOutput = & $script -DryRun -CpuOnly -Blas 2>&1 6>&1 | Out-String
 Assert-Contains $blasOutput "external BLAS: ON" "BLAS opt-in dry-run"
@@ -74,9 +91,13 @@ Assert-Contains $bundleOutput "Dry run complete; no files were changed" "bundled
 if (Test-Path -LiteralPath $coreRoot -PathType Container) {
 	Write-Step "acestep ofxGgmlCore ggml opt-in dry-run"
 	$coreOutput = & $script -DryRun -UseCoreGgml 2>&1 6>&1 | Out-String
-	Assert-Contains $coreOutput "ggml: ofxGgmlCore source" "ofxGgmlCore ggml dry-run"
-	Assert-Contains $coreOutput "ofxGgmlCore:" "ofxGgmlCore ggml dry-run"
-	Assert-Contains $coreOutput "Dry run complete; no files were changed" "ofxGgmlCore ggml dry-run"
+	if ($coreOutput.Contains("UseCoreGgml was requested but")) {
+		Assert-Contains $coreOutput "ggml_col2im_1d" "ofxGgmlCore ggml dry-run incompatible Core"
+	} else {
+		Assert-Contains $coreOutput "ggml: ofxGgmlCore source" "ofxGgmlCore ggml dry-run"
+		Assert-Contains $coreOutput "ofxGgmlCore:" "ofxGgmlCore ggml dry-run"
+		Assert-Contains $coreOutput "Dry run complete; no files were changed" "ofxGgmlCore ggml dry-run"
+	}
 }
 
 Write-Step "acestep setup dry-run coverage passed"

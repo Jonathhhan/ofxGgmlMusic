@@ -4,7 +4,8 @@ param(
 	[string]$Example = "ofxGgmlMusicAceStepExample",
 	[int]$Jobs = 1,
 	[switch]$Clean,
-	[switch]$RepairOnly
+	[switch]$RepairOnly,
+	[switch]$ResetOfBuildState
 )
 
 $ErrorActionPreference = "Stop"
@@ -137,6 +138,107 @@ function Get-MsBuildParallelArguments {
 		return @("/p:MultiProcessorCompilation=true", "/m:$BuildJobs")
 	}
 	return @("/p:MultiProcessorCompilation=false", "/m:1")
+}
+
+function Get-OfBuildStateDirectory {
+	param(
+		[string]$OfRoot,
+		[string]$Platform,
+		[string]$Configuration
+	)
+	return Join-Path $OfRoot "libs\openFrameworksCompiled\project\vs\obj\$Platform\$Configuration"
+}
+
+function Get-ActiveVisualStudioBuildProcesses {
+	$names = @("MSBuild", "devenv")
+	$processes = @()
+	foreach ($name in $names) {
+		$processes += @(Get-Process -Name $name -ErrorAction SilentlyContinue)
+	}
+	return @($processes | Sort-Object -Property ProcessName, Id)
+}
+
+function Write-OfBuildStatePreflightWarning {
+	param([string]$BuildStateDir)
+	if (!(Test-Path -LiteralPath $BuildStateDir -PathType Container)) {
+		return
+	}
+	$processes = @(Get-ActiveVisualStudioBuildProcesses)
+	if ($processes.Count -eq 0) {
+		return
+	}
+	$summary = ($processes | ForEach-Object { "$($_.ProcessName):$($_.Id)" }) -join ", "
+	Write-Warning "Active Visual Studio/MSBuild processes were found: $summary"
+	Write-Warning "Shared openFrameworks build state may be locked: $BuildStateDir"
+	Write-Warning "If MSBuild reports MSB3491/lastbuildstate access denied, close competing builds or rerun with -ResetOfBuildState."
+}
+
+function Reset-OfBuildState {
+	param([string]$BuildStateDir)
+	if (!(Test-Path -LiteralPath $BuildStateDir -PathType Container)) {
+		Write-Step "No openFrameworks build-state directory to reset: $BuildStateDir"
+		return
+	}
+
+	$resolvedStateDir = (Resolve-Path -LiteralPath $BuildStateDir).Path
+	$targets = @(Get-ChildItem -LiteralPath $resolvedStateDir -Directory -Filter "openfram*.tlog" -ErrorAction SilentlyContinue)
+	if ($targets.Count -eq 0) {
+		Write-Step "No openFrameworks tlog folders matched for reset"
+		return
+	}
+
+	foreach ($target in $targets) {
+		if (!$target.FullName.StartsWith($resolvedStateDir, [System.StringComparison]::OrdinalIgnoreCase)) {
+			throw "Refusing to reset path outside openFrameworks build state: $($target.FullName)"
+		}
+		Write-Step "Resetting openFrameworks build-state folder $($target.Name)"
+		Remove-Item -LiteralPath $target.FullName -Recurse -Force
+	}
+}
+
+function Invoke-MsBuildProject {
+	param(
+		[string]$MsBuild,
+		[string]$Project,
+		[string]$Target,
+		[string]$Configuration,
+		[string]$Platform,
+		[string[]]$ParallelArguments
+	)
+	$arguments = @(
+		$Project,
+		"/t:$Target",
+		"/p:Configuration=$Configuration",
+		"/p:Platform=$Platform",
+		"/p:TrackFileAccess=false"
+	) + $ParallelArguments + @("/nr:false")
+	$output = @(& $MsBuild @arguments 2>&1)
+	$exitCode = $LASTEXITCODE
+	foreach ($line in $output) {
+		Write-Host $line
+	}
+	return [pscustomobject]@{
+		ExitCode = $exitCode
+		Output = ($output | ForEach-Object { [string]$_ }) -join "`n"
+	}
+}
+
+function Test-OfBuildStateLockFailure {
+	param([string]$Output)
+	return $Output -match "MSB3491" -and
+		$Output -match "lastbuildstate" -and
+		$Output -match "openFrameworksCompiled" -and
+		($Output -match "Access.*denied" -or $Output -match "Zugriff.*verweigert")
+}
+
+function Get-OfBuildStateLockFailureMessage {
+	param([string]$BuildStateDir)
+	return @(
+		"MSBuild could not write the shared openFrameworks build state.",
+		"Build-state directory: $BuildStateDir",
+		"Close other Visual Studio/MSBuild builds that use this openFrameworks tree, then retry.",
+		"To reset only ignored openFrameworks tlog folders for this platform/configuration, rerun with -ResetOfBuildState."
+	) -join "`n"
 }
 
 function Ensure-GeneratedVisualStudioProject {
@@ -435,13 +537,100 @@ function Add-SemicolonNodeValue {
 	}
 	$changed = $false
 	foreach ($node in @($Doc.SelectNodes("//msb:$NodeName", $Namespace))) {
-		$parts = New-Object System.Collections.Generic.List[string]
+		$parts = New-Object 'System.Collections.Generic.List[string]'
 		foreach ($part in @($node.InnerText -split ";" | Where-Object { $_ })) {
 			$parts.Add([string]$part)
 		}
 		if (!$parts.Contains($Value)) {
 			$parts.Add($Value)
 			$node.InnerText = ($parts.ToArray() -join ";")
+			$changed = $true
+		}
+	}
+	return $changed
+}
+
+function Remove-SemicolonNodeValues {
+	param(
+		[xml]$Doc,
+		[System.Xml.XmlNamespaceManager]$Namespace,
+		[string]$NodeName,
+		[string[]]$Values
+	)
+	$remove = New-Object "System.Collections.Generic.HashSet[string]" ([StringComparer]::OrdinalIgnoreCase)
+	foreach ($value in @($Values)) {
+		if (![string]::IsNullOrWhiteSpace($value)) {
+			[void]$remove.Add($value)
+		}
+	}
+	if ($remove.Count -eq 0) {
+		return $false
+	}
+
+	$changed = $false
+	foreach ($node in @($Doc.SelectNodes("//msb:$NodeName", $Namespace))) {
+		$parts = New-Object -TypeName 'System.Collections.ArrayList'
+		foreach ($part in @($node.InnerText -split ";" | Where-Object { $_ })) {
+			if (!$remove.Contains([string]$part)) {
+				[void]$parts.Add([string]$part)
+			} else {
+				$changed = $true
+			}
+		}
+		if ($changed) {
+			$node.InnerText = ($parts.ToArray() -join ";")
+		}
+	}
+	return $changed
+}
+
+function Remove-CompilerOptions {
+	param(
+		[xml]$Doc,
+		[System.Xml.XmlNamespaceManager]$Namespace,
+		[string[]]$Options
+	)
+	$remove = New-Object "System.Collections.Generic.HashSet[string]" ([StringComparer]::OrdinalIgnoreCase)
+	foreach ($option in @($Options)) {
+		if (![string]::IsNullOrWhiteSpace($option)) {
+			[void]$remove.Add($option)
+		}
+	}
+	if ($remove.Count -eq 0) {
+		return $false
+	}
+
+	$changed = $false
+	foreach ($node in @($Doc.SelectNodes("//msb:ClCompile/msb:AdditionalOptions", $Namespace))) {
+		$keptOptions = New-Object -TypeName 'System.Collections.ArrayList'
+		foreach ($option in @($node.InnerText -split "\s+" | Where-Object { $_ })) {
+			if (!$remove.Contains([string]$option)) {
+				[void]$keptOptions.Add([string]$option)
+			} else {
+				$changed = $true
+			}
+		}
+		if ($changed) {
+			$node.InnerText = ($keptOptions.ToArray() -join " ")
+		}
+	}
+	return $changed
+}
+
+function Add-CompilerOption {
+	param(
+		[xml]$Doc,
+		[System.Xml.XmlNamespaceManager]$Namespace,
+		[string]$Option
+	)
+	if ([string]::IsNullOrWhiteSpace($Option)) {
+		return $false
+	}
+	$changed = $false
+	foreach ($node in @($Doc.SelectNodes("//msb:ClCompile/msb:AdditionalOptions", $Namespace))) {
+		$options = @($node.InnerText -split "\s+" | Where-Object { $_ })
+		if ($options -notcontains $Option) {
+			$node.InnerText = (($options + $Option) -join " ")
 			$changed = $true
 		}
 	}
@@ -458,6 +647,19 @@ function Test-GeneratedAddonPath {
 	return ($normalized -match '(^|\\)build[^\\]*(\\|$)') -or
 		($normalized -match '(^|\\)libs\\[^\\]+\\\.source(\\|$)') -or
 		($normalized -match '(^|\\)libs\\[^\\]+\\build[^\\]*(\\|$)')
+}
+
+function Test-ProjectPathUnderAddon {
+	param(
+		[string]$Path,
+		[string]$AddonName
+	)
+	if ([string]::IsNullOrWhiteSpace($Path)) {
+		return $false
+	}
+	$normalized = $Path -replace "/", "\"
+	return $normalized -match "(^|\\)$([regex]::Escape($AddonName))(\\|$)" -or
+		$normalized -match "\.\.\\\.\.\\$([regex]::Escape($AddonName))\\"
 }
 
 function Get-ExampleAddonRoots {
@@ -549,6 +751,12 @@ function Repair-VisualStudioProjectFile {
 	$namespace.AddNamespace("msb", "http://schemas.microsoft.com/developer/msbuild/2003")
 	$changed = $false
 	$projectDir = Split-Path -Parent $Path
+	$isAceStepProject = (Split-Path -Leaf $projectDir) -eq "ofxGgmlMusicAceStepExample"
+	$selectedAddonNames = New-Object "System.Collections.Generic.HashSet[string]" ([StringComparer]::OrdinalIgnoreCase)
+	foreach ($root in @($AddonRoots)) {
+		[void]$selectedAddonNames.Add((Split-Path -Leaf $root))
+	}
+	$staleAddonNames = @("ofxGgmlCore") | Where-Object { !$selectedAddonNames.Contains($_) }
 
 	foreach ($tag in @("ClCompile", "ClInclude", "None", "CustomBuild", "CudaCompile", "Filter")) {
 		$seenIncludes = @{}
@@ -557,7 +765,14 @@ function Repair-VisualStudioProjectFile {
 			$extension = [System.IO.Path]::GetExtension($normalizedInclude)
 			$headerCompiledAsSource = $tag -eq "ClCompile" -and $extension -in @(".h", ".hpp")
 			$duplicateInclude = $seenIncludes.ContainsKey($normalizedInclude.ToLowerInvariant())
-			if ((Test-GeneratedAddonPath $node.Include) -or $headerCompiledAsSource -or $duplicateInclude) {
+			$staleAddonItem = $false
+			foreach ($addonName in @($staleAddonNames)) {
+				if (Test-ProjectPathUnderAddon -Path $node.Include -AddonName $addonName) {
+					$staleAddonItem = $true
+					break
+				}
+			}
+			if ((Test-GeneratedAddonPath $node.Include) -or $headerCompiledAsSource -or $duplicateInclude -or $staleAddonItem) {
 				[void]$node.ParentNode.RemoveChild($node)
 				$changed = $true
 			} else {
@@ -579,8 +794,17 @@ function Repair-VisualStudioProjectFile {
 		foreach ($node in @($doc.SelectNodes("//msb:AdditionalIncludeDirectories", $namespace))) {
 			$parts = New-Object System.Collections.Generic.List[string]
 			foreach ($part in @($node.InnerText -split ";" | Where-Object { $_ })) {
-				if (!(Test-GeneratedAddonPath $part) -and !$parts.Contains($part)) {
+				$staleAddonInclude = $false
+				foreach ($addonName in @($staleAddonNames)) {
+					if (Test-ProjectPathUnderAddon -Path $part -AddonName $addonName) {
+						$staleAddonInclude = $true
+						break
+					}
+				}
+				if (!(Test-GeneratedAddonPath $part) -and !$staleAddonInclude -and !$parts.Contains($part)) {
 					$parts.Add([string]$part)
+				} elseif ($staleAddonInclude) {
+					$changed = $true
 				}
 			}
 			foreach ($includeDir in $includeDirs) {
@@ -604,6 +828,28 @@ function Repair-VisualStudioProjectFile {
 					$node.InnerText = (($options + $option) -join " ")
 					$changed = $true
 				}
+			}
+		}
+		if ($isAceStepProject) {
+			if (Remove-CompilerOptions -Doc $doc -Namespace $namespace -Options @("-DOFXIMGUI_GLFW_EVENTS_REPLACE_OF_CALLBACKS=1", "-DOFXIMGUI_GLFW_FIX_MULTICONTEXT_PRIMARY_VP=0", "-DOFXIMGUI_GLFW_FIX_MULTICONTEXT_SECONDARY_VP=1")) {
+				$changed = $true
+			}
+			if (Add-CompilerOption -Doc $doc -Namespace $namespace -Option "-DOFXIMGUI_GLFW_EVENTS_REPLACE_OF_CALLBACKS=0") {
+				$changed = $true
+			}
+		}
+		if ($staleAddonNames -contains "ofxGgmlCore") {
+			if (Remove-CompilerOptions -Doc $doc -Namespace $namespace -Options @("-DGGML_MAX_NAME=128", "-DOFXGGML_WITH_CUDA", "-DOFXIMGUI_GLFW_EVENTS_REPLACE_OF_CALLBACKS=1", "-DOFXIMGUI_GLFW_FIX_MULTICONTEXT_PRIMARY_VP=0", "-DOFXIMGUI_GLFW_FIX_MULTICONTEXT_SECONDARY_VP=1")) {
+				$changed = $true
+			}
+			if (Add-CompilerOption -Doc $doc -Namespace $namespace -Option "-DOFXIMGUI_GLFW_EVENTS_REPLACE_OF_CALLBACKS=0") {
+				$changed = $true
+			}
+			if (Remove-SemicolonNodeValues -Doc $doc -Namespace $namespace -NodeName "AdditionalDependencies" -Values @("ggml.lib", "ggml-base.lib", "ggml-cpu.lib", "ggml-cuda.lib", "cublas.lib", "cudart.lib", "cuda.lib")) {
+				$changed = $true
+			}
+			if (Remove-SemicolonNodeValues -Doc $doc -Namespace $namespace -NodeName "AdditionalLibraryDirectories" -Values @("..\..\ofxGgmlCore\libs\ggml\lib", '$(CUDA_PATH)\lib\x64')) {
+				$changed = $true
 			}
 		}
 
@@ -676,13 +922,44 @@ if (Test-WindowsHost) {
 	$target = if ($Clean) { "Rebuild" } else { "Build" }
 	$buildJobs = Resolve-BuildJobs -RequestedJobs $Jobs
 	$parallelArgs = Get-MsBuildParallelArguments -BuildJobs $buildJobs
+	$ofBuildStateDir = Get-OfBuildStateDirectory -OfRoot $ofRoot.Path -Platform $Platform -Configuration $Configuration
+	Write-OfBuildStatePreflightWarning -BuildStateDir $ofBuildStateDir
 	Write-Step "Building $Example $Configuration $Platform with MSBuild ($buildJobs jobs)"
 	$lockName = "Local\ofxGgml-msbuild-" + (Get-StableNameFragment $ofRoot.Path)
 	Invoke-WithNamedMutex -Name $lockName -Command {
-		& $msbuild $project /t:$target /p:Configuration=$Configuration /p:Platform=$Platform /p:TrackFileAccess=false @parallelArgs /nr:false
-		if ($LASTEXITCODE -ne 0) {
-			throw "MSBuild $Example failed with exit code $LASTEXITCODE"
+		$result = Invoke-MsBuildProject `
+			-MsBuild $msbuild `
+			-Project $project `
+			-Target $target `
+			-Configuration $Configuration `
+			-Platform $Platform `
+			-ParallelArguments $parallelArgs
+		if ($result.ExitCode -eq 0) {
+			return
 		}
+		if (Test-OfBuildStateLockFailure -Output $result.Output) {
+			if (!$ResetOfBuildState) {
+				throw (Get-OfBuildStateLockFailureMessage -BuildStateDir $ofBuildStateDir)
+			}
+			Reset-OfBuildState -BuildStateDir $ofBuildStateDir
+			Write-Step "Retrying $Example after resetting openFrameworks build state"
+			$retryResult = Invoke-MsBuildProject `
+				-MsBuild $msbuild `
+				-Project $project `
+				-Target $target `
+				-Configuration $Configuration `
+				-Platform $Platform `
+				-ParallelArguments $parallelArgs
+			if ($retryResult.ExitCode -eq 0) {
+				return
+			}
+			if (Test-OfBuildStateLockFailure -Output $retryResult.Output) {
+				Write-Warning "MSBuild still reports the shared openFrameworks build state is locked after -ResetOfBuildState."
+				throw (Get-OfBuildStateLockFailureMessage -BuildStateDir $ofBuildStateDir)
+			}
+			throw "MSBuild $Example failed after resetting openFrameworks build state with exit code $($retryResult.ExitCode)"
+		}
+		throw "MSBuild $Example failed with exit code $($result.ExitCode)"
 	}
 	return
 }

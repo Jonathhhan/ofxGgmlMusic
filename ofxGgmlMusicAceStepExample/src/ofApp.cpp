@@ -255,9 +255,11 @@ namespace {
 }
 
 void ofApp::setup() {
+	// Initialize the OF logger before the first example log call on this VS/OF tree.
+	ofLogToConsole();
 	ofSetWindowTitle("ofxGgmlMusic AceStep example");
 	ofSetFrameRate(60);
-	gui.setup();
+	gui.setup(nullptr, false);
 
 	const std::string initialServerUrl = getEnvOrEmpty("OFXGGML_ACESTEP_SERVER_URL");
 	copyToBuffer(
@@ -616,8 +618,9 @@ void ofApp::draw() {
 		requestGeneration();
 	}
 	ImGui::SameLine();
-	if (ImGui::Button(player.isPlaying() ? "Stop" : "Play")) {
-		if (player.isPlaying()) {
+	const bool playing = player.isPlaying();
+	if (ImGui::Button(playing ? "Stop" : "Play")) {
+		if (playing) {
 			player.stop();
 		} else if (!lastGenerateResult.outputPath.empty()) {
 			player.play();
@@ -654,6 +657,7 @@ void ofApp::draw() {
 
 	ImGui::End();
 	gui.end();
+	gui.draw();
 }
 
 void ofApp::drawWaveform(float x, float y, float width, float height) {
