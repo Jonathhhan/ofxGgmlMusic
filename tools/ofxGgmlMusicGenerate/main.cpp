@@ -24,7 +24,10 @@ namespace {
 			<< "  --list-stems       List canonical stem export names\n"
 			<< "  --list-keys        List supported key tonics and modes\n"
 			<< "  --preset NAME      Preset: ambient, lofi, pulse\n"
+			<< "  --negative-prompt TEXT\n"
+			<< "                     Layer exclusions, for example drums or bass\n"
 			<< "  --style TEXT       Style tag, for example ambient\n"
+			<< "  --guidance VALUE   Procedural intensity, 3.0 is neutral\n"
 			<< "  --tempo BPM        Tempo in beats per minute\n"
 			<< "  --duration SEC     Duration in seconds\n"
 			<< "  --seed N           Deterministic seed\n"
@@ -290,7 +293,9 @@ namespace {
 			std::cout << "{\n";
 			std::cout << "  \"preset\": " << quoteJson(presetName) << ",\n";
 			std::cout << "  \"prompt\": " << quoteJson(request.prompt) << ",\n";
+			std::cout << "  \"negativePrompt\": " << quoteJson(request.negativePrompt) << ",\n";
 			std::cout << "  \"style\": " << quoteJson(request.style) << ",\n";
+			std::cout << "  \"guidance\": " << request.settings.guidance << ",\n";
 			std::cout << "  \"durationSeconds\": " << request.settings.durationSeconds << ",\n";
 			std::cout << "  \"tempoBpm\": " << request.tempo.bpm << ",\n";
 			std::cout << "  \"key\": " << quoteJson(request.key.tonic) << ",\n";
@@ -308,7 +313,9 @@ namespace {
 
 		std::cout << "preset: " << presetName << "\n";
 		std::cout << "prompt: " << request.prompt << "\n";
+		std::cout << "negative prompt: " << request.negativePrompt << "\n";
 		std::cout << "style: " << request.style << "\n";
+		std::cout << "guidance: " << request.settings.guidance << "\n";
 		std::cout << "duration: " << request.settings.durationSeconds << "\n";
 		std::cout << "tempo: " << request.tempo.bpm << "\n";
 		std::cout << "key: " << request.key.tonic << "\n";
@@ -513,10 +520,21 @@ int main(int argc, char ** argv) {
 			continue;
 		} else if (arg == "--prompt" && readValue(i, argc, argv, value)) {
 			request.prompt = value;
+		} else if (arg == "--negative-prompt" && readValue(i, argc, argv, value)) {
+			request.negativePrompt = value;
 		} else if (arg == "--output" && readValue(i, argc, argv, value)) {
 			request.outputPath = value;
 		} else if (arg == "--style" && readValue(i, argc, argv, value)) {
 			request.style = value;
+		} else if (arg == "--guidance" && readValue(i, argc, argv, value)) {
+			if (!parseFloat(value, request.settings.guidance)) {
+				std::cerr << "--guidance requires a numeric value.\n";
+				return 2;
+			}
+			if (request.settings.guidance < 0.0f) {
+				std::cerr << "--guidance must be zero or greater.\n";
+				return 2;
+			}
 		} else if (arg == "--tempo" && readValue(i, argc, argv, value)) {
 			if (!parseFloat(value, request.tempo.bpm)) {
 				std::cerr << "--tempo requires a numeric BPM value.\n";

@@ -36,6 +36,8 @@ void ofApp::keyPressed(int key) {
 		rebuildRequest();
 	} else if (key == 'l' || key == 'L') {
 		loadExistingRender();
+	} else if (key == 'd' || key == 'D') {
+		logRequest();
 	} else if (key == ' ') {
 		if (player.isPlaying()) {
 			player.stop();
@@ -75,6 +77,11 @@ void ofApp::cyclePreset() {
 
 void ofApp::syncControlsFromRequest() {
 	std::snprintf(promptBuffer.data(), promptBuffer.size(), "%s", request.prompt.c_str());
+	std::snprintf(
+		negativePromptBuffer.data(),
+		negativePromptBuffer.size(),
+		"%s",
+		request.negativePrompt.c_str());
 	std::snprintf(styleBuffer.data(), styleBuffer.size(), "%s", request.style.c_str());
 	tempo = request.tempo.bpm > 0.0f ? request.tempo.bpm : tempo;
 	duration = static_cast<float>(request.settings.durationSeconds);
@@ -102,6 +109,7 @@ void ofApp::syncControlsFromRequest() {
 
 void ofApp::rebuildRequest() {
 	request.prompt = promptBuffer.data();
+	request.negativePrompt = negativePromptBuffer.data();
 	request.style = styleBuffer.data();
 	request.outputPath = getOutputPath();
 	request.settings.backend = ofxGgmlMusicGenerationBackendFamily::External;
@@ -224,6 +232,7 @@ std::string ofApp::getRequestSummary() const {
 	}
 	summary << "\n";
 	summary << "Prompt chars: " << std::string(promptBuffer.data()).size();
+	summary << "  Negative chars: " << std::string(negativePromptBuffer.data()).size();
 	summary << "  Style: " << styleBuffer.data() << "\n";
 	const auto keyTonic =
 		(!keyTonics.empty() && tonicIndex >= 0 && tonicIndex < static_cast<int>(keyTonics.size()))
@@ -359,6 +368,11 @@ void ofApp::loadWaveform() {
 	}
 }
 
+void ofApp::logRequest() const {
+	ofLogNotice("ofxGgmlMusicGenerationExample") << ofxGgmlMusicUtils::describe(request);
+	ofLogNotice("ofxGgmlMusicGenerationExample") << getRequestSummary();
+}
+
 void ofApp::draw() {
 	ofBackground(18);
 
@@ -389,6 +403,11 @@ void ofApp::draw() {
 		ImGui::EndCombo();
 	}
 	changed |= ImGui::InputTextMultiline("Prompt", promptBuffer.data(), promptBuffer.size(), ImVec2(-1.0f, 84.0f));
+	changed |= ImGui::InputTextMultiline(
+		"Negative prompt",
+		negativePromptBuffer.data(),
+		negativePromptBuffer.size(),
+		ImVec2(-1.0f, 44.0f));
 	changed |= ImGui::InputText("Style", styleBuffer.data(), styleBuffer.size());
 	changed |= ImGui::SliderFloat("Tempo", &tempo, 48.0f, 180.0f, "%.0f bpm");
 	changed |= ImGui::SliderFloat("Duration", &duration, 1.0f, 30.0f, "%.1f s");
@@ -462,6 +481,10 @@ void ofApp::draw() {
 		loadExistingRender();
 	}
 	ImGui::SameLine();
+	if (ImGui::Button("Log request")) {
+		logRequest();
+	}
+	ImGui::SameLine();
 	if (ImGui::Button(player.isPlaying() ? "Stop" : "Play")) {
 		if (player.isPlaying()) {
 			player.stop();
@@ -479,6 +502,7 @@ void ofApp::draw() {
 		ImGui::TextUnformatted("P: next preset");
 		ImGui::TextUnformatted("N: new seed");
 		ImGui::TextUnformatted("L: reload recent output");
+		ImGui::TextUnformatted("D: log request");
 		ImGui::TextUnformatted("Space: play/stop");
 		ImGui::TreePop();
 	}

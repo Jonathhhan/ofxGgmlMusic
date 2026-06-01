@@ -86,6 +86,7 @@ Useful controls:
 - `P`: cycle prompt preset
 - `H`: keyboard shortcut for health
 - `G`: keyboard shortcut for generation
+- `D`: log request
 - `Space`: toggles playback
 
 Generated audio remains local under `bin/data/generated/acestep` and is not

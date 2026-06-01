@@ -36,6 +36,7 @@ private:
 	void loadGeneratedAudio(const std::string & path);
 	void refreshGeneratedOutputChoices();
 	void selectGeneratedOutput(int index);
+	void logRequest() const;
 	void drawWaveform(float x, float y, float width, float height);
 	std::string getOutputDirectory() const;
 	std::string getRequestSummary() const;

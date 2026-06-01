@@ -371,6 +371,8 @@ void ofApp::keyPressed(int key) {
 		requestHealth();
 	} else if (key == 'g' || key == 'G') {
 		requestGeneration();
+	} else if (key == 'd' || key == 'D') {
+		logRequest();
 	} else if (key == ' ') {
 		if (player.isPlaying()) {
 			player.stop();
@@ -437,6 +439,15 @@ std::string ofApp::getResultSummary() const {
 		summary << "(not loaded)";
 	}
 	return summary.str();
+}
+
+void ofApp::logRequest() const {
+	const auto request = buildRequest();
+	ofLogNotice("ofxGgmlMusicAceStepExample") << "AceStep request";
+	ofLogNotice("ofxGgmlMusicAceStepExample") << getRequestSummary();
+	ofLogNotice("ofxGgmlMusicAceStepExample")
+		<< ofxGgmlMusicAceStepBridge::summarizeRequestJson(
+			ofxGgmlMusicAceStepBridge::buildRequestJson(request));
 }
 
 ofxGgmlMusicAceStepRequest ofApp::buildRequest() const {
@@ -820,6 +831,10 @@ void ofApp::draw() {
 		requestGeneration();
 	}
 	ImGui::SameLine();
+	if (ImGui::Button("Log request")) {
+		logRequest();
+	}
+	ImGui::SameLine();
 	const bool playing = player.isPlaying();
 	if (ImGui::Button(playing ? "Stop" : "Play")) {
 		if (playing) {
@@ -840,6 +855,7 @@ void ofApp::draw() {
 		ImGui::TextUnformatted("P: next prompt preset");
 		ImGui::TextUnformatted("H: health check");
 		ImGui::TextUnformatted("G: generate");
+		ImGui::TextUnformatted("D: log request");
 		ImGui::TextUnformatted("Space: play/stop");
 		ImGui::TreePop();
 	}

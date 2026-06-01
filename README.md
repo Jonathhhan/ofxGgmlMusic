@@ -56,8 +56,10 @@ Generation backends should implement `ofxGgmlMusicGenerationBackend`; the addon
 ships an unavailable stub so examples can fail clearly before a diffusion,
 transformer, SampleRNN, or external bridge runtime is installed. It also ships a
 small `procedural-sketch` backend that writes deterministic prompt-conditioned
-WAV files. That backend is model-free and exists to make the generation workflow
-testable before a real model bridge is selected. Shared WAV helpers live in
+WAV files with style/negative-prompt-sensitive progressions, chord-anchored
+melody, chord-root bass, pulse, pad texture, section-aware layer energy, and
+smoothed loop boundaries. That backend is model-free and exists to make the
+generation workflow testable before a real model bridge is selected. Shared WAV helpers live in
 `ofxGgmlMusicAudioUtils` so examples and future backends can write and inspect
 simple PCM16 files through one path. Generation results also carry a manifest
 path; backends can write a `.wav.json` sidecar with prompt, backend, seed, tempo,
@@ -94,14 +96,17 @@ Its preview duration, current request summary, logging button, and task cycling
 shortcut make the analysis request shape easy to inspect.
 `ofxGgmlMusicGenerationExample` is a root-level prompt-to-music sketch that
 writes a WAV file with the built-in `procedural-sketch` backend and draws a
-waveform preview after generation. It also writes a `.wav.json` manifest next to
-the audio file, writes editable melody, chord, and combined arrangement `.mid`
-files, can export shared melody, bass, pulse, and mix stems, overlays sections
-plus beat/chord timing on the waveform, and shows playback position while audio
-is playing. Use `Current request` to inspect the render shape, `Last result` to
-inspect rendered timing and artifact metadata, `P` to cycle presets, `New seed`
-to audition deterministic variations quickly, and `Reload` or `L` to pull the
-latest history entry back into the preview. Each Generate press writes a
+waveform preview after generation. It includes prompt and negative-prompt fields
+so procedural layers can be encouraged or damped before rendering. It also writes
+a `.wav.json` manifest next to the audio file, writes editable melody, chord, and
+combined arrangement `.mid` files, can export shared melody, bass, pulse, and mix stems,
+overlays sections plus beat/chord timing on the waveform, and shows playback
+position while audio is playing. The arrangement MIDI includes melody,
+chords, bass, and pulse tracks for quick remixing. Use `Current request` to inspect the render shape, `Last result` to
+inspect rendered timing and artifact metadata, `P` to cycle presets, `D` to log
+the request summary, `New seed` to audition deterministic variations quickly,
+and `Reload` or `L` to pull the latest history entry back into the preview.
+Each Generate press writes a
 timestamped WAV so the history index can track multiple renders. The generation
 example reloads recent renders from that index on startup when available,
 falling back to the standard render manifest. Generate
@@ -177,7 +182,8 @@ scripts\generate-procedural-music.bat -Preset lofi -Output C:\temp\music.wav -Lo
 
 The helper builds `tools/ofxGgmlMusicGenerate`, writes the WAV, writes the
 `.wav.json` manifest, writes editable melody/chord/arrangement `.mid` files, and
-writes requested stem WAVs next to the mix. Built-in presets are `ambient`,
+writes requested stem WAVs next to the mix. The arrangement MIDI carries melody,
+chords, bass, and pulse tracks. Built-in presets are `ambient`,
 `lofi`, and `pulse`; list them from the CLI with:
 
 ```powershell
@@ -202,8 +208,8 @@ List supported key tonics and modes with:
 tools\ofxGgmlMusicGenerate\build\ofxGgmlMusicGenerate.exe --list-keys
 ```
 
-Explicit prompt, tempo, key, duration, seed, and stem flags override the preset
-defaults. Use
+Explicit prompt, negative prompt, guidance, tempo, key, duration, seed, and
+stem flags override the preset defaults. Use
 `ofxGgmlMusicUtils::loadGenerationManifest()` to load the sidecar back into an
 `ofxGgmlMusicGenerationResult`; the CLI also supports
 `--inspect C:\temp\music.wav.json` and

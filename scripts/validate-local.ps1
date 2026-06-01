@@ -290,7 +290,9 @@ $cliOutput = Join-Path $scratchDir "procedural.wav"
 & (Join-Path $scriptRoot "generate-procedural-music.ps1") `
 	-Preset lofi `
 	-Prompt "loopable validation motif" `
+	-NegativePrompt "drums" `
 	-Output $cliOutput `
+	-Guidance 4.5 `
 	-Duration 1.0 `
 	-Tempo 100 `
 	-Key D `
@@ -303,6 +305,8 @@ if ($LASTEXITCODE -ne 0) {
 }
 Assert-Path $cliOutput "procedural generation CLI wav"
 Assert-Path ($cliOutput + ".json") "procedural generation CLI manifest"
+Assert-FileContains ($cliOutput + ".json") '"negativePrompt": "drums"' "procedural generation CLI negative prompt manifest"
+Assert-FileContains ($cliOutput + ".json") '"guidance": 4.5' "procedural generation CLI guidance manifest"
 $historyPath = Join-Path $scratchDir "ofxGgmlMusic-history.json"
 Assert-Path $historyPath "procedural generation CLI history"
 Assert-Path (Join-Path $scratchDir "procedural-melody.mid") "procedural generation CLI melody midi"
@@ -354,6 +358,10 @@ if ($LASTEXITCODE -eq 0) {
 & $cliExe --preset ambient --prompt "invalid tempo" --output (Join-Path $scratchDir "invalid-tempo.wav") --tempo not-a-number
 if ($LASTEXITCODE -eq 0) {
 	throw "Procedural generation CLI accepted an invalid tempo"
+}
+& $cliExe --preset ambient --prompt "invalid guidance" --output (Join-Path $scratchDir "invalid-guidance.wav") --guidance not-a-number
+if ($LASTEXITCODE -eq 0) {
+	throw "Procedural generation CLI accepted an invalid guidance"
 }
 & $cliExe --preset ambient --prompt "zero tempo" --output (Join-Path $scratchDir "zero-tempo.wav") --tempo 0
 if ($LASTEXITCODE -eq 0) {

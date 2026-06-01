@@ -1,8 +1,10 @@
 param(
 	[string]$Prompt = "",
+	[string]$NegativePrompt = "",
 	[string]$Preset = "ambient",
 	[string]$Output = "",
 	[string]$Style = "ambient",
+	[double]$Guidance = 3.0,
 	[double]$Tempo = 92.0,
 	[double]$Duration = 8.0,
 	[int]$Seed = 42,
@@ -119,6 +121,7 @@ $args = @(
 	"--preset", $Preset,
 	"--output", $Output,
 	"--style", $Style,
+	"--guidance", ([string]$Guidance),
 	"--tempo", ([string]$Tempo),
 	"--duration", ([string]$Duration),
 	"--seed", ([string]$Seed),
@@ -127,6 +130,9 @@ $args = @(
 )
 if (![string]::IsNullOrWhiteSpace($Prompt)) {
 	$args += @("--prompt", $Prompt)
+}
+if (![string]::IsNullOrWhiteSpace($NegativePrompt)) {
+	$args += @("--negative-prompt", $NegativePrompt)
 }
 if ($Loop) {
 	$args += "--loop"

@@ -26,6 +26,7 @@ private:
 	void loadRenderManifest(const std::string & manifestPath);
 	void refreshGenerationHistory();
 	void loadWaveform();
+	void logRequest() const;
 	void drawWaveform(float x, float y, float width, float height);
 	std::string getOutputDirectory() const;
 	std::string getOutputPath() const;
@@ -44,6 +45,7 @@ private:
 	ofxGgmlMusicAudioBuffer waveform;
 	ofSoundPlayer player;
 	std::array<char, 512> promptBuffer{};
+	std::array<char, 256> negativePromptBuffer{};
 	std::array<char, 64> styleBuffer{};
 	std::vector<std::string> presetNames;
 	std::vector<std::string> stemNames;

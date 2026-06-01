@@ -1,8 +1,10 @@
 #include "ofxGgmlMusic.h"
 
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <string>
 
 namespace {
@@ -14,6 +16,17 @@ namespace {
 		std::string bytes(text.size(), '\0');
 		input.read(bytes.data(), static_cast<std::streamsize>(bytes.size()));
 		return bytes == text;
+	}
+
+	bool fileContains(const std::filesystem::path & path, const std::string & text) {
+		std::ifstream input(path, std::ios::binary);
+		if (!input) {
+			return false;
+		}
+		const std::string bytes(
+			(std::istreambuf_iterator<char>(input)),
+			std::istreambuf_iterator<char>());
+		return bytes.find(text) != std::string::npos;
 	}
 }
 
@@ -388,12 +401,35 @@ int main() {
 		!generatedBuffer ||
 		generatedBuffer.getDurationSeconds() <= 0.0 ||
 		generatedBuffer.getPeakAbs() <= 0.0f ||
+		generatedBuffer.getPeakAbs() > 0.93f ||
 		!fileStartsWith(proceduralResult.midiPath, "MThd") ||
 		!fileStartsWith(proceduralResult.chordMidiPath, "MThd") ||
-		!fileStartsWith(proceduralResult.arrangementMidiPath, "MThd")) {
+		!fileStartsWith(proceduralResult.arrangementMidiPath, "MThd") ||
+		!fileContains(proceduralResult.arrangementMidiPath, "bass") ||
+		!fileContains(proceduralResult.arrangementMidiPath, "pulse")) {
 		std::cerr << "procedural generation failed to write a wav file\n";
 		return 1;
 	}
+	if (generation.settings.loop &&
+		!generatedBuffer.samples.empty() &&
+		std::abs(generatedBuffer.samples.front() - generatedBuffer.samples.back()) > 0.002f) {
+		std::cerr << "procedural generation loop boundary was not smoothed\n";
+		return 1;
+	}
+	if (proceduralResult.chords.size() < 2 ||
+		proceduralResult.chords[0].label != "D" ||
+		proceduralResult.chords[1].label != "A") {
+		std::cerr << "procedural generation did not expose the expected chord pattern\n";
+		return 1;
+	}
+	if (proceduralResult.sections.size() < 2 ||
+		proceduralResult.sections[0].name != "loop-a" ||
+		proceduralResult.sections[1].name != "loop-b") {
+		std::cerr << "procedural generation did not expose the expected loop sections\n";
+		return 1;
+	}
+	float bassStemPeak = 0.0f;
+	float pulseStemPeak = 0.0f;
 	for (const auto & stem : proceduralResult.stems) {
 		ofxGgmlMusicAudioBuffer stemBuffer;
 		if (stem.path.empty() ||
@@ -405,6 +441,17 @@ int main() {
 			std::cerr << "procedural generation failed to write readable stems\n";
 			return 1;
 		}
+		if (stem.name == "bass") {
+			bassStemPeak = stemBuffer.getPeakAbs();
+		} else if (stem.name == "pulse") {
+			pulseStemPeak = stemBuffer.getPeakAbs();
+		}
+	}
+	if (bassStemPeak <= 0.0f ||
+		pulseStemPeak <= 0.0f ||
+		pulseStemPeak >= bassStemPeak) {
+		std::cerr << "procedural generation negative prompt did not damp the pulse stem\n";
+		return 1;
 	}
 	if (!fileStartsWith(proceduralResult.manifestPath, "{")) {
 		std::cerr << "procedural generation failed to write a manifest file\n";

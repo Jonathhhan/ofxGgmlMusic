@@ -473,6 +473,7 @@ namespace ofxGgmlMusicUtils {
 		json << "  \"prompt\": " << quoteJson(request.prompt) << ",\n";
 		json << "  \"negativePrompt\": " << quoteJson(request.negativePrompt) << ",\n";
 		json << "  \"style\": " << quoteJson(request.style) << ",\n";
+		json << "  \"guidance\": " << request.settings.guidance << ",\n";
 		json << "  \"referenceAudioPath\": " << quoteJson(request.referenceAudioPath) << ",\n";
 		json << "  \"outputPath\": " << quoteJson(result.outputPath) << ",\n";
 		json << "  \"manifestPath\": " << quoteJson(result.manifestPath) << ",\n";

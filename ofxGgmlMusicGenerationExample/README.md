@@ -3,9 +3,9 @@
 Root-level prompt-to-music sketch example for `ofxGgmlMusic`.
 
 This example uses the built-in `procedural-sketch` backend. It is deterministic,
-model-free, and intended as a workflow proof: edit a prompt, tempo, key, style,
-duration, and seed, then generate a small WAV file into `bin/data/outputs`.
-The preset menu uses the shared generation preset list.
+model-free, and intended as a workflow proof: edit a prompt, negative prompt,
+tempo, key, style, duration, and seed, then generate a small WAV file into
+`bin/data/outputs`. The preset menu uses the shared generation preset list.
 The example loads the rendered WAV back into a waveform preview and writes a
 `.wav.json` manifest next to the audio file. The preview overlays generated
 arrangement sections behind the waveform plus beat/downbeat markers and chord
@@ -16,7 +16,8 @@ or generating audio, expand `Last result` to inspect output duration, format,
 timing, sections, and stems. Optional shared stem exports, including melody,
 bass, pulse, and mix, are written next to the mix.
 Editable melody, chord, and combined arrangement `.mid` files are written beside
-the WAV. Each Generate
+the WAV. The negative prompt can damp procedural layers such as drums, bass,
+lead, or texture. Each Generate
 press writes a timestamped WAV instead of overwriting the previous render. On
 startup, the example reloads the previous history entry or standard output
 manifest if it exists; use `Reload` to refresh it manually. The `Recent` menu
@@ -33,4 +34,5 @@ Useful shortcuts:
 - `P`: cycle preset
 - `N`: assign a new seed
 - `L`: reload recent output
+- `D`: log request
 - `Space`: toggle playback
