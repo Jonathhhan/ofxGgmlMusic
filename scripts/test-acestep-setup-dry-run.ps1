@@ -90,7 +90,12 @@ Assert-Contains $bundleOutput "Dry run complete; no files were changed" "bundled
 
 if (Test-Path -LiteralPath $coreRoot -PathType Container) {
 	Write-Step "acestep ofxGgmlCore ggml opt-in dry-run"
-	$coreOutput = & $script -DryRun -UseCoreGgml 2>&1 6>&1 | Out-String
+	$coreOutput = ""
+	try {
+		$coreOutput = & $script -DryRun -UseCoreGgml 2>&1 6>&1 | Out-String
+	} catch {
+		$coreOutput = $_ | Out-String
+	}
 	if ($coreOutput.Contains("UseCoreGgml was requested but")) {
 		Assert-Contains $coreOutput "ggml_col2im_1d" "ofxGgmlCore ggml dry-run incompatible Core"
 	} else {

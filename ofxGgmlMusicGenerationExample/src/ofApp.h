@@ -20,6 +20,7 @@ private:
 	void rebuildRequest();
 	void runGeneration();
 	void applyPreset(int index);
+	void cyclePreset();
 	void syncControlsFromRequest();
 	void loadExistingRender();
 	void loadRenderManifest(const std::string & manifestPath);
@@ -32,6 +33,9 @@ private:
 	std::string getManifestPath() const;
 	std::string getHistoryPath() const;
 	std::string getPlayablePath() const;
+	std::string getRequestSummary() const;
+	std::string getResultSummary() const;
+	void assignRandomSeed();
 
 	ofxImGui::Gui gui;
 	std::unique_ptr<ofxGgmlMusicGenerationBackend> backend;

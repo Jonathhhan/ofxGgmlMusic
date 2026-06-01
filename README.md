@@ -86,18 +86,27 @@ For music-lane planning and backend boundaries, see
 
 ## Example
 
-`ofxGgmlMusicAnalysisExample` is a root-level audio analysis request smoke test.
+`ofxGgmlMusicAnalysisExample` is a root-level audio analysis request builder.
+It lets you edit the audio path, task, prompt, and tags, then draws a
+deterministic preview result timeline so tempo, beat, key, chord, embedding,
+and stem result shapes are visible before a trained analysis backend is wired in.
+Its preview duration, current request summary, logging button, and task cycling
+shortcut make the analysis request shape easy to inspect.
 `ofxGgmlMusicGenerationExample` is a root-level prompt-to-music sketch that
 writes a WAV file with the built-in `procedural-sketch` backend and draws a
 waveform preview after generation. It also writes a `.wav.json` manifest next to
 the audio file, writes editable melody, chord, and combined arrangement `.mid`
-files, can export shared melody, bass, pulse, and mix stems, and overlays
-sections plus beat/chord timing on the waveform. Each Generate press writes a
+files, can export shared melody, bass, pulse, and mix stems, overlays sections
+plus beat/chord timing on the waveform, and shows playback position while audio
+is playing. Use `Current request` to inspect the render shape, `Last result` to
+inspect rendered timing and artifact metadata, `P` to cycle presets, `New seed`
+to audition deterministic variations quickly, and `Reload` or `L` to pull the
+latest history entry back into the preview. Each Generate press writes a
 timestamped WAV so the history index can track multiple renders. The generation
 example reloads recent renders from that index on startup when available,
-falling back to the standard render manifest. Generate these examples with the
-openFrameworks projectGenerator using addons `ofxGgmlMusic`, `ofxGgmlCore`, and
-`ofxImGui`.
+falling back to the standard render manifest. Generate
+these examples with the openFrameworks projectGenerator using addons
+`ofxGgmlMusic`, `ofxGgmlCore`, and `ofxImGui`.
 
 On Windows, if an existing generated Visual Studio project reports missing
 addon headers such as `ofxGgmlMusic.h` or `ofxImGui.h`, repair the generated
@@ -113,6 +122,9 @@ from the legacy GUI lane. It connects to an AceStep-compatible server, checks
 `/synth`, writes the returned audio into `bin/data/generated/acestep`, and plays
 the generated track back with a waveform preview for WAV output. The heavy
 server, models, and generated audio remain local artifacts outside git.
+The GUI includes prompt presets, quick seed variation, batch-output preview
+selection, current-request and last-result inspection, and a playback cursor
+over the waveform.
 
 To run it, start an AceStep server first. The launcher prefers:
 

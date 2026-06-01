@@ -10,6 +10,7 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include <vector>
 
 class ofApp : public ofBaseApp {
 public:
@@ -23,6 +24,8 @@ private:
 	void requestServerStart();
 	void requestHealth();
 	void requestGeneration();
+	void applyPromptPreset(int index);
+	void cyclePromptPreset();
 	void runServerStartWorker(
 		std::string serverUrl,
 		std::string serverExecutable,
@@ -31,8 +34,12 @@ private:
 	void runGenerationWorker(ofxGgmlMusicAceStepRequest request, std::string serverUrl);
 	void collectWorkerResult();
 	void loadGeneratedAudio(const std::string & path);
+	void refreshGeneratedOutputChoices();
+	void selectGeneratedOutput(int index);
 	void drawWaveform(float x, float y, float width, float height);
 	std::string getOutputDirectory() const;
+	std::string getRequestSummary() const;
+	std::string getResultSummary() const;
 	ofxGgmlMusicAceStepRequest buildRequest() const;
 
 	ofxImGui::Gui gui;
@@ -41,6 +48,10 @@ private:
 	ofxGgmlMusicAceStepHealthResult lastHealthResult;
 	ofxGgmlMusicAudioBuffer waveform;
 	ofSoundPlayer player;
+	std::vector<std::string> generatedOutputChoices;
+	std::vector<std::string> promptPresetNames;
+	int generatedOutputIndex = 0;
+	int promptPresetIndex = 0;
 
 	std::array<char, 256> serverUrlBuffer{};
 	std::array<char, 512> serverExecutableBuffer{};

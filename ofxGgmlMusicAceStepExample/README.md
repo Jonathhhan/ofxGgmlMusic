@@ -39,6 +39,14 @@ The example starts the server automatically on launch. You can also fill
 it looks for `ace-server(.exe)` under `ofxGgmlMusic\libs\acestep\bin`, looks
 for models under `ofxGgmlMusicAceStepExample\bin\data\models`, and uses
 `http://127.0.0.1:8085`.
+Use `Prompt preset` to load a starting caption, negative prompt, key, duration,
+tempo, and LM settings for a common request shape. Use `New seed` to quickly
+audition a different deterministic request seed. When `Batch` is greater than
+one, the `Generated output` menu switches the waveform and playback preview
+between returned files. The waveform also shows the playback cursor while audio
+is playing. Expand `Current request` to inspect the request shape before sending
+it to the local server, and expand `Last result` to inspect the selected output,
+returned file count, elapsed time, and loaded waveform.
 
 You can also start the server from a terminal:
 
@@ -70,8 +78,12 @@ Optional environment variables:
 Useful controls:
 
 - `Health`: checks `/health`
+- `Prompt preset`: loads a caption/key/timing starting point
 - `Generate`: runs `/lm` and `/synth`
 - `Play`: plays the generated output
+- `Generated output`: previews one returned batch item
+- `S`: keyboard shortcut for server start
+- `P`: cycle prompt preset
 - `H`: keyboard shortcut for health
 - `G`: keyboard shortcut for generation
 - `Space`: toggles playback

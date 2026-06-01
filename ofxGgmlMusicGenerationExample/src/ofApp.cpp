@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdio>
 #include <iterator>
+#include <sstream>
 
 void ofApp::setup() {
 	ofSetWindowTitle("ofxGgmlMusic generation example");
@@ -28,14 +29,24 @@ void ofApp::update() {
 void ofApp::keyPressed(int key) {
 	if (key == 'r' || key == 'R') {
 		runGeneration();
-	}
-	if (key == ' ') {
+	} else if (key == 'p' || key == 'P') {
+		cyclePreset();
+	} else if (key == 'n' || key == 'N') {
+		assignRandomSeed();
+		rebuildRequest();
+	} else if (key == 'l' || key == 'L') {
+		loadExistingRender();
+	} else if (key == ' ') {
 		if (player.isPlaying()) {
 			player.stop();
 		} else if (ofFile::doesFileExist(getPlayablePath(), false)) {
 			player.play();
 		}
 	}
+}
+
+void ofApp::assignRandomSeed() {
+	seed = static_cast<int>(ofRandom(0.0f, 1000000.0f));
 }
 
 void ofApp::applyPreset(int index) {
@@ -52,6 +63,14 @@ void ofApp::applyPreset(int index) {
 	request = presetRequest;
 	syncControlsFromRequest();
 	rebuildRequest();
+}
+
+void ofApp::cyclePreset() {
+	if (presetNames.empty()) {
+		return;
+	}
+	presetIndex = (presetIndex + 1) % static_cast<int>(presetNames.size());
+	applyPreset(presetIndex);
 }
 
 void ofApp::syncControlsFromRequest() {
@@ -193,6 +212,87 @@ std::string ofApp::getPlayablePath() const {
 	return request.outputPath;
 }
 
+std::string ofApp::getRequestSummary() const {
+	std::ostringstream summary;
+	summary << "Preset: ";
+	if (!presetNames.empty() &&
+		presetIndex >= 0 &&
+		presetIndex < static_cast<int>(presetNames.size())) {
+		summary << presetNames[presetIndex];
+	} else {
+		summary << "custom";
+	}
+	summary << "\n";
+	summary << "Prompt chars: " << std::string(promptBuffer.data()).size();
+	summary << "  Style: " << styleBuffer.data() << "\n";
+	const auto keyTonic =
+		(!keyTonics.empty() && tonicIndex >= 0 && tonicIndex < static_cast<int>(keyTonics.size()))
+			? keyTonics[tonicIndex]
+			: std::string("C");
+	const auto keyMode =
+		(!keyModes.empty() && modeIndex >= 0 && modeIndex < static_cast<int>(keyModes.size()))
+			? keyModes[modeIndex]
+			: std::string("major");
+	summary << "Tempo: " << ofToString(tempo, 0) << " bpm";
+	summary << "  Key: " << keyTonic << " " << keyMode;
+	summary << "  Duration: " << ofToString(duration, 1) << " s\n";
+	summary << "Seed: " << seed;
+	summary << "  Loop: " << (loop ? "yes" : "no");
+	summary << "  Auto-play: " << (autoPlay ? "yes" : "no") << "\n";
+	summary << "Target stems:";
+	bool anyStem = false;
+	for (std::size_t i = 0; i < stemNames.size() && i < stemEnabled.size(); ++i) {
+		if (stemEnabled[i]) {
+			summary << " " << stemNames[i];
+			anyStem = true;
+		}
+	}
+	if (!anyStem) {
+		summary << " none";
+	}
+	summary << "\nOutput: " << request.outputPath;
+	return summary.str();
+}
+
+std::string ofApp::getResultSummary() const {
+	if (!lastResult && lastResult.outputPath.empty()) {
+		return "No generation result loaded yet.";
+	}
+	std::ostringstream summary;
+	summary << "Output: " << lastResult.outputPath << "\n";
+	if (!lastResult.manifestPath.empty()) {
+		summary << "Manifest: " << lastResult.manifestPath << "\n";
+	}
+	summary << "Duration: " << ofToString(lastResult.durationSeconds, 2) << " s";
+	if (lastResult.sampleRate > 0) {
+		summary << "  Sample rate: " << lastResult.sampleRate << " Hz";
+	}
+	if (lastResult.channels > 0) {
+		summary << "  Channels: " << lastResult.channels;
+	}
+	summary << "\n";
+	summary << "Peak: " << ofToString(lastResult.peakAbs, 2);
+	summary << "  Seed: " << lastResult.seed << "\n";
+	summary << "Tempo: ";
+	if (ofxGgmlMusicUtils::hasTempo(lastResult)) {
+		summary << ofToString(lastResult.tempo.bpm, 0) << " bpm";
+	} else {
+		summary << "(none)";
+	}
+	summary << "  Key: ";
+	if (ofxGgmlMusicUtils::hasKey(lastResult)) {
+		summary << ofxGgmlMusicUtils::formatKey(lastResult.key);
+	} else {
+		summary << "(none)";
+	}
+	summary << "\n";
+	summary << "Beats: " << lastResult.beats.size();
+	summary << "  Chords: " << lastResult.chords.size();
+	summary << "  Sections: " << lastResult.sections.size();
+	summary << "  Stems: " << lastResult.stems.size();
+	return summary.str();
+}
+
 void ofApp::loadRenderManifest(const std::string & manifestPath) {
 	std::string error;
 	ofxGgmlMusicGenerationResult loaded;
@@ -293,6 +393,11 @@ void ofApp::draw() {
 	changed |= ImGui::SliderFloat("Tempo", &tempo, 48.0f, 180.0f, "%.0f bpm");
 	changed |= ImGui::SliderFloat("Duration", &duration, 1.0f, 30.0f, "%.1f s");
 	changed |= ImGui::InputInt("Seed", &seed);
+	ImGui::SameLine();
+	if (ImGui::Button("New seed")) {
+		assignRandomSeed();
+		changed = true;
+	}
 	if (!keyTonics.empty() && tonicIndex >= static_cast<int>(keyTonics.size())) {
 		tonicIndex = 0;
 	}
@@ -369,10 +474,28 @@ void ofApp::draw() {
 	ImGui::Text("Backend: %s", backend ? backend->getBackendName().c_str() : "(none)");
 	ImGui::Text("Status: %s", status.c_str());
 	ImGui::TextWrapped("%s", detail.c_str());
+	if (ImGui::TreeNode("Shortcuts")) {
+		ImGui::TextUnformatted("R: generate");
+		ImGui::TextUnformatted("P: next preset");
+		ImGui::TextUnformatted("N: new seed");
+		ImGui::TextUnformatted("L: reload recent output");
+		ImGui::TextUnformatted("Space: play/stop");
+		ImGui::TreePop();
+	}
+	if (ImGui::TreeNode("Current request")) {
+		const auto summary = getRequestSummary();
+		ImGui::TextWrapped("%s", summary.c_str());
+		ImGui::TreePop();
+	}
 	ImGui::TextWrapped("%s", ofxGgmlMusicUtils::describe(request).c_str());
 	ImGui::TextWrapped("Output: %s", request.outputPath.c_str());
 	if (!lastResult.manifestPath.empty()) {
 		ImGui::TextWrapped("Manifest: %s", lastResult.manifestPath.c_str());
+	}
+	if (ImGui::TreeNode("Last result")) {
+		const auto summary = getResultSummary();
+		ImGui::TextWrapped("%s", summary.c_str());
+		ImGui::TreePop();
 	}
 	if (!lastResult.midiPath.empty()) {
 		ImGui::TextWrapped("MIDI: %s", lastResult.midiPath.c_str());
@@ -421,6 +544,7 @@ void ofApp::draw() {
 
 	ImGui::End();
 	gui.end();
+	gui.draw();
 }
 
 void ofApp::drawWaveform(float x, float y, float width, float height) {
@@ -439,6 +563,19 @@ void ofApp::drawWaveform(float x, float y, float width, float height) {
 
 	const float midY = y + 18.0f + height * 0.5f;
 	const float plotY = y + 18.0f;
+	if (lastResult.durationSeconds > 0.0) {
+		for (std::size_t i = 0; i < lastResult.sections.size(); ++i) {
+			const auto & section = lastResult.sections[i];
+			const float px = x + static_cast<float>(section.startSeconds / lastResult.durationSeconds) * width;
+			const float sectionWidth =
+				std::max(1.0f, static_cast<float>(section.durationSeconds / lastResult.durationSeconds) * width);
+			ofSetColor(i % 2 == 0 ? ofColor(55, 65, 78, 120) : ofColor(45, 52, 64, 120));
+			ofDrawRectangle(px, plotY, sectionWidth, height);
+			ofSetColor(210);
+			ofDrawBitmapString(section.name, px + 4.0f, plotY + height - 8.0f);
+		}
+	}
+
 	ofSetColor(105, 205, 185);
 	const int columns = std::max(1, static_cast<int>(width));
 	const auto samplesPerColumn = std::max<std::size_t>(1, waveform.samples.size() / static_cast<std::size_t>(columns));
@@ -455,15 +592,6 @@ void ofApp::drawWaveform(float x, float y, float width, float height) {
 	}
 
 	if (lastResult.durationSeconds > 0.0) {
-		for (std::size_t i = 0; i < lastResult.sections.size(); ++i) {
-			const auto & section = lastResult.sections[i];
-			const float px = x + static_cast<float>(section.startSeconds / lastResult.durationSeconds) * width;
-			const float sectionWidth = static_cast<float>(section.durationSeconds / lastResult.durationSeconds) * width;
-			ofSetColor(i % 2 == 0 ? ofColor(55, 65, 78, 120) : ofColor(45, 52, 64, 120));
-			ofDrawRectangle(px, plotY, sectionWidth, height);
-			ofSetColor(210);
-			ofDrawBitmapString(section.name, px + 4.0f, plotY + height - 8.0f);
-		}
 		for (const auto & beat : lastResult.beats) {
 			const float px = x + static_cast<float>(beat.timeSeconds / lastResult.durationSeconds) * width;
 			ofSetColor(beat.downbeat ? ofColor(245, 176, 65) : ofColor(130));
@@ -473,6 +601,12 @@ void ofApp::drawWaveform(float x, float y, float width, float height) {
 			const float px = x + static_cast<float>(chord.timeSeconds / lastResult.durationSeconds) * width;
 			ofSetColor(245, 176, 65);
 			ofDrawBitmapString(chord.label, px + 4.0f, plotY + 16.0f);
+		}
+		if (player.isPlaying()) {
+			const float px = x + player.getPosition() * width;
+			ofSetColor(230, 90, 84);
+			ofDrawLine(px, plotY, px, plotY + height);
+			ofDrawTriangle(px, plotY - 2.0f, px - 5.0f, plotY - 10.0f, px + 5.0f, plotY - 10.0f);
 		}
 	}
 

@@ -14,6 +14,76 @@ namespace {
 		"Start the AceStep server with scripts\\start-acestep-server.ps1 "
 		"or set OFXGGML_ACESTEP_SERVER_URL to the running AceStep-compatible server.";
 
+	struct PromptPreset {
+		std::string name;
+		std::string caption;
+		std::string negativePrompt;
+		std::string keyscale;
+		std::string timeSignature;
+		float durationSeconds = 30.0f;
+		int bpm = 0;
+		float lmTemperature = 0.85f;
+		float lmCfgScale = 2.0f;
+		float lmTopP = 0.9f;
+		int lmTopK = 0;
+		bool instrumentalOnly = true;
+		bool useCotCaption = true;
+	};
+
+	const std::vector<PromptPreset> & getPromptPresets() {
+		static const std::vector<PromptPreset> presets = {
+			{
+				"Cinematic Pulse",
+				"cinematic electronic instrumental, warm analog pads, plucked arpeggios, "
+				"subtle pulse, hopeful nocturnal mood, polished stereo mix",
+				"distorted vocals, harsh clipping, noisy mix",
+				"C minor",
+				"4",
+				30.0f,
+				96,
+				0.85f,
+				2.0f,
+				0.9f,
+				0,
+				true,
+				true
+			},
+			{
+				"Lo-fi Keys",
+				"warm lo-fi keys, mellow bass, brushed percussion, tape texture, "
+				"late-night study loop, intimate and relaxed",
+				"harsh cymbals, distorted bass, busy lead vocal",
+				"D minor",
+				"4",
+				24.0f,
+				76,
+				0.75f,
+				1.8f,
+				0.88f,
+				0,
+				true,
+				true
+			},
+			{
+				"Club Hook",
+				"bright dance-pop instrumental hook, punchy drums, sidechain synth bass, "
+				"wide chorus energy, clean radio mix",
+				"muddy kick, clipped master, spoken intro",
+				"A minor",
+				"4",
+				32.0f,
+				124,
+				0.95f,
+				2.4f,
+				0.92f,
+				64,
+				true,
+				true
+			}
+		};
+		return presets;
+	}
+
 	void copyToBuffer(std::array<char, 2048> & buffer, const std::string & value) {
 		std::snprintf(buffer.data(), buffer.size(), "%s", value.c_str());
 	}
@@ -267,14 +337,12 @@ void ofApp::setup() {
 		initialServerUrl.empty() ? std::string("http://127.0.0.1:8085") : initialServerUrl);
 	copyToBuffer(serverExecutableBuffer, resolveDefaultServerExecutable());
 	copyToBuffer(modelPathBuffer, resolveDefaultModelPath());
-	copyToBuffer(captionBuffer,
-		"cinematic electronic instrumental, warm analog pads, plucked arpeggios, "
-		"subtle pulse, hopeful nocturnal mood, polished stereo mix");
 	copyToBuffer(lyricsBuffer, "[Instrumental]");
-	copyToBuffer(negativePromptBuffer, "distorted vocals, harsh clipping, noisy mix");
-	copyToBuffer(keyscaleBuffer, "C minor");
-	copyToBuffer(timeSignatureBuffer, "4");
 	copyToBuffer(outputPrefixBuffer, "ofxGgmlMusicAceStep");
+	for (const auto & preset : getPromptPresets()) {
+		promptPresetNames.push_back(preset.name);
+	}
+	applyPromptPreset(0);
 
 	status = "ready";
 	detail = "Server: " + std::string(serverUrlBuffer.data()) + ". " + startServerHint;
@@ -295,7 +363,11 @@ void ofApp::update() {
 }
 
 void ofApp::keyPressed(int key) {
-	if (key == 'h' || key == 'H') {
+	if (key == 's' || key == 'S') {
+		requestServerStart();
+	} else if (key == 'p' || key == 'P') {
+		cyclePromptPreset();
+	} else if (key == 'h' || key == 'H') {
 		requestHealth();
 	} else if (key == 'g' || key == 'G') {
 		requestGeneration();
@@ -312,6 +384,59 @@ std::string ofApp::getOutputDirectory() const {
 	const auto outputDir = ofToDataPath("generated/acestep", true);
 	ofDirectory::createDirectory(outputDir, false, true);
 	return outputDir;
+}
+
+std::string ofApp::getRequestSummary() const {
+	std::ostringstream summary;
+	summary << "Server: " << ofxGgmlMusicAceStepBridge::normalizeServerUrl(serverUrlBuffer.data()) << "\n";
+	summary << "Preset: ";
+	if (!promptPresetNames.empty() &&
+		promptPresetIndex >= 0 &&
+		promptPresetIndex < static_cast<int>(promptPresetNames.size())) {
+		summary << promptPresetNames[promptPresetIndex];
+	} else {
+		summary << "custom";
+	}
+	summary << "\n";
+	summary << "Caption chars: " << std::string(captionBuffer.data()).size();
+	summary << "  Lyrics chars: " << std::string(lyricsBuffer.data()).size() << "\n";
+	summary << "Key: " << keyscaleBuffer.data();
+	summary << "  Time: " << timeSignatureBuffer.data();
+	summary << "  Duration: " << ofToString(durationSeconds, 1) << " s";
+	summary << "  BPM: " << (bpm > 0 ? ofToString(bpm) : std::string("auto")) << "\n";
+	summary << "Seed: " << (seed >= 0 ? ofToString(seed) : std::string("random"));
+	summary << "  Batch: " << batchSize;
+	summary << "  WAV: " << (wavOutput ? "yes" : "no");
+	summary << "  Auto-play: " << (autoPlay ? "yes" : "no") << "\n";
+	summary << "LM: temperature " << ofToString(lmTemperature, 2);
+	summary << ", cfg " << ofToString(lmCfgScale, 2);
+	summary << ", top-p " << ofToString(lmTopP, 2);
+	summary << ", top-k " << lmTopK << "\n";
+	summary << "Output prefix: " << outputPrefixBuffer.data();
+	return summary.str();
+}
+
+std::string ofApp::getResultSummary() const {
+	if (!lastGenerateResult && lastGenerateResult.outputPath.empty()) {
+		return "No AceStep generation result loaded yet.";
+	}
+	std::ostringstream summary;
+	summary << "Server: " << lastGenerateResult.usedServerUrl << "\n";
+	summary << "Selected output: " << lastGenerateResult.outputPath << "\n";
+	summary << "Returned files: " << lastGenerateResult.outputPaths.size();
+	if (lastGenerateResult.elapsedMs > 0.0f) {
+		summary << "  Elapsed: " << ofToString(lastGenerateResult.elapsedMs, 1) << " ms";
+	}
+	summary << "\n";
+	summary << "Waveform: ";
+	if (waveform) {
+		summary << ofToString(waveform.getDurationSeconds(), 2) << " s";
+		summary << "  " << waveform.sampleRate << " Hz";
+		summary << "  peak " << ofToString(waveform.getPeakAbs(), 2);
+	} else {
+		summary << "(not loaded)";
+	}
+	return summary.str();
 }
 
 ofxGgmlMusicAceStepRequest ofApp::buildRequest() const {
@@ -335,6 +460,36 @@ ofxGgmlMusicAceStepRequest ofApp::buildRequest() const {
 	request.outputDir = getOutputDirectory();
 	request.outputPrefix = outputPrefixBuffer.data();
 	return request;
+}
+
+void ofApp::applyPromptPreset(int index) {
+	const auto & presets = getPromptPresets();
+	if (index < 0 || index >= static_cast<int>(presets.size())) {
+		return;
+	}
+	const auto & preset = presets[static_cast<std::size_t>(index)];
+	promptPresetIndex = index;
+	copyToBuffer(captionBuffer, preset.caption);
+	copyToBuffer(negativePromptBuffer, preset.negativePrompt);
+	copyToBuffer(keyscaleBuffer, preset.keyscale);
+	copyToBuffer(timeSignatureBuffer, preset.timeSignature);
+	durationSeconds = preset.durationSeconds;
+	bpm = preset.bpm;
+	lmTemperature = preset.lmTemperature;
+	lmCfgScale = preset.lmCfgScale;
+	lmTopP = preset.lmTopP;
+	lmTopK = preset.lmTopK;
+	instrumentalOnly = preset.instrumentalOnly;
+	useCotCaption = preset.useCotCaption;
+	detail = "Loaded prompt preset: " + preset.name;
+}
+
+void ofApp::cyclePromptPreset() {
+	if (promptPresetNames.empty()) {
+		return;
+	}
+	const int nextIndex = (promptPresetIndex + 1) % static_cast<int>(promptPresetNames.size());
+	applyPromptPreset(nextIndex);
 }
 
 void ofApp::requestServerStart() {
@@ -517,6 +672,7 @@ void ofApp::collectWorkerResult() {
 
 	if (hasGenerate) {
 		lastGenerateResult = generated;
+		refreshGeneratedOutputChoices();
 		if (generated) {
 			status = "generation complete";
 			if (generated.outputPaths.size() > 1) {
@@ -533,6 +689,30 @@ void ofApp::collectWorkerResult() {
 			ofLogWarning("ofxGgmlMusicAceStepExample") << detail;
 		}
 	}
+}
+
+void ofApp::refreshGeneratedOutputChoices() {
+	generatedOutputChoices = lastGenerateResult.outputPaths;
+	if (generatedOutputChoices.empty() && !lastGenerateResult.outputPath.empty()) {
+		generatedOutputChoices.push_back(lastGenerateResult.outputPath);
+	}
+	generatedOutputIndex = 0;
+	for (int i = 0; i < static_cast<int>(generatedOutputChoices.size()); ++i) {
+		if (generatedOutputChoices[i] == lastGenerateResult.outputPath) {
+			generatedOutputIndex = i;
+			break;
+		}
+	}
+}
+
+void ofApp::selectGeneratedOutput(int index) {
+	if (index < 0 || index >= static_cast<int>(generatedOutputChoices.size())) {
+		return;
+	}
+	generatedOutputIndex = index;
+	lastGenerateResult.outputPath = generatedOutputChoices[generatedOutputIndex];
+	detail = "Previewing " + lastGenerateResult.outputPath;
+	loadGeneratedAudio(lastGenerateResult.outputPath);
 }
 
 void ofApp::loadGeneratedAudio(const std::string & path) {
@@ -566,6 +746,24 @@ void ofApp::draw() {
 	ImGui::InputText("Server", serverUrlBuffer.data(), serverUrlBuffer.size());
 	ImGui::InputText("Server exe", serverExecutableBuffer.data(), serverExecutableBuffer.size());
 	ImGui::InputText("Model path", modelPathBuffer.data(), modelPathBuffer.size());
+	if (!promptPresetNames.empty()) {
+		if (promptPresetIndex < 0 || promptPresetIndex >= static_cast<int>(promptPresetNames.size())) {
+			promptPresetIndex = 0;
+		}
+		const auto presetLabel = promptPresetNames[promptPresetIndex].c_str();
+		if (ImGui::BeginCombo("Prompt preset", presetLabel)) {
+			for (int i = 0; i < static_cast<int>(promptPresetNames.size()); ++i) {
+				const bool selected = i == promptPresetIndex;
+				if (ImGui::Selectable(promptPresetNames[i].c_str(), selected)) {
+					applyPromptPreset(i);
+				}
+				if (selected) {
+					ImGui::SetItemDefaultFocus();
+				}
+			}
+			ImGui::EndCombo();
+		}
+	}
 	const float promptFieldWidth = ImGui::CalcItemWidth();
 	if (ImGui::InputTextMultiline(
 			"Caption",
@@ -589,6 +787,10 @@ void ofApp::draw() {
 	ImGui::InputInt("BPM", &bpm);
 	bpm = std::max(0, bpm);
 	ImGui::InputInt("Seed", &seed);
+	ImGui::SameLine();
+	if (ImGui::Button("New seed")) {
+		seed = static_cast<int>(ofRandom(0.0f, 1000000.0f));
+	}
 	ImGui::SliderInt("Batch", &batchSize, 1, 9);
 	ImGui::SliderFloat("LM temperature", &lmTemperature, 0.0f, 2.0f, "%.2f");
 	ImGui::SliderFloat("LM cfg", &lmCfgScale, 0.0f, 8.0f, "%.2f");
@@ -633,11 +835,49 @@ void ofApp::draw() {
 	ImGui::Separator();
 	ImGui::Text("Status: %s", status.c_str());
 	ImGui::TextWrapped("%s", detail.c_str());
+	if (ImGui::TreeNode("Shortcuts")) {
+		ImGui::TextUnformatted("S: start server");
+		ImGui::TextUnformatted("P: next prompt preset");
+		ImGui::TextUnformatted("H: health check");
+		ImGui::TextUnformatted("G: generate");
+		ImGui::TextUnformatted("Space: play/stop");
+		ImGui::TreePop();
+	}
+	if (ImGui::TreeNode("Current request")) {
+		const auto summary = getRequestSummary();
+		ImGui::TextWrapped("%s", summary.c_str());
+		ImGui::TreePop();
+	}
 	if (!lastHealthResult.usedServerUrl.empty()) {
 		ImGui::TextWrapped("Health URL: %s", lastHealthResult.usedServerUrl.c_str());
 	}
 	if (!lastGenerateResult.outputPath.empty()) {
 		ImGui::TextWrapped("Audio: %s", lastGenerateResult.outputPath.c_str());
+	}
+	if (ImGui::TreeNode("Last result")) {
+		const auto summary = getResultSummary();
+		ImGui::TextWrapped("%s", summary.c_str());
+		ImGui::TreePop();
+	}
+	if (!generatedOutputChoices.empty()) {
+		if (generatedOutputIndex < 0 ||
+			generatedOutputIndex >= static_cast<int>(generatedOutputChoices.size())) {
+			generatedOutputIndex = 0;
+		}
+		const auto outputLabel = ofFilePath::getFileName(generatedOutputChoices[generatedOutputIndex]);
+		if (ImGui::BeginCombo("Generated output", outputLabel.c_str())) {
+			for (int i = 0; i < static_cast<int>(generatedOutputChoices.size()); ++i) {
+				const bool selected = i == generatedOutputIndex;
+				const auto label = ofToString(i + 1) + ": " + ofFilePath::getFileName(generatedOutputChoices[i]);
+				if (ImGui::Selectable(label.c_str(), selected)) {
+					selectGeneratedOutput(i);
+				}
+				if (selected) {
+					ImGui::SetItemDefaultFocus();
+				}
+			}
+			ImGui::EndCombo();
+		}
 	}
 	if (lastGenerateResult.elapsedMs > 0.0f) {
 		ImGui::Text("Elapsed: %.1f ms", lastGenerateResult.elapsedMs);
@@ -689,6 +929,13 @@ void ofApp::drawWaveform(float x, float y, float width, float height) {
 		const float px = x + static_cast<float>(column);
 		const float py = peak * height * 0.46f;
 		ofDrawLine(px, midY - py, px, midY + py);
+	}
+	if (player.isPlaying()) {
+		const float plotY = y + 18.0f;
+		const float px = x + player.getPosition() * width;
+		ofSetColor(230, 90, 84);
+		ofDrawLine(px, plotY, px, plotY + height);
+		ofDrawTriangle(px, plotY - 2.0f, px - 5.0f, plotY - 10.0f, px + 5.0f, plotY - 10.0f);
 	}
 
 	ofSetColor(210);
