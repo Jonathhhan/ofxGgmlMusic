@@ -6,9 +6,27 @@
 #include <iterator>
 #include <sstream>
 
+namespace {
+	int clampIndex(int index, std::size_t size) {
+		if (size == 0) {
+			return 0;
+		}
+		if (index < 0 || index >= static_cast<int>(size)) {
+			return 0;
+		}
+		return index;
+	}
+
+	template <std::size_t Size>
+	std::string readTextBuffer(const std::array<char, Size> & buffer) {
+		const auto end = std::find(buffer.begin(), buffer.end(), '\0');
+		return std::string(buffer.begin(), end);
+	}
+}
+
 void ofApp::setup() {
 	ofSetWindowTitle("ofxGgmlMusic generation example");
-	gui.setup();
+	gui.setup(nullptr, false);
 	presetNames = ofxGgmlMusicUtils::getGenerationPresetNames();
 	stemNames = ofxGgmlMusicUtils::getGenerationStemNames();
 	keyTonics = ofxGgmlMusicUtils::getGenerationKeyTonics();
@@ -76,6 +94,8 @@ void ofApp::cyclePreset() {
 }
 
 void ofApp::syncControlsFromRequest() {
+	tonicIndex = clampIndex(tonicIndex, keyTonics.size());
+	modeIndex = clampIndex(modeIndex, keyModes.size());
 	std::snprintf(promptBuffer.data(), promptBuffer.size(), "%s", request.prompt.c_str());
 	std::snprintf(
 		negativePromptBuffer.data(),
@@ -108,9 +128,9 @@ void ofApp::syncControlsFromRequest() {
 }
 
 void ofApp::rebuildRequest() {
-	request.prompt = promptBuffer.data();
-	request.negativePrompt = negativePromptBuffer.data();
-	request.style = styleBuffer.data();
+	request.prompt = readTextBuffer(promptBuffer);
+	request.negativePrompt = readTextBuffer(negativePromptBuffer);
+	request.style = readTextBuffer(styleBuffer);
 	request.outputPath = getOutputPath();
 	request.settings.backend = ofxGgmlMusicGenerationBackendFamily::External;
 	request.settings.durationSeconds = duration;
@@ -118,12 +138,8 @@ void ofApp::rebuildRequest() {
 	request.settings.loop = loop;
 	request.tempo.bpm = tempo;
 	request.tempo.confidence = 1.0f;
-	if (!keyTonics.empty() && tonicIndex >= static_cast<int>(keyTonics.size())) {
-		tonicIndex = 0;
-	}
-	if (!keyModes.empty() && modeIndex >= static_cast<int>(keyModes.size())) {
-		modeIndex = 0;
-	}
+	tonicIndex = clampIndex(tonicIndex, keyTonics.size());
+	modeIndex = clampIndex(modeIndex, keyModes.size());
 	request.key.tonic = keyTonics.empty() ? "C" : keyTonics[tonicIndex];
 	request.key.mode = keyModes.empty() ? "major" : keyModes[modeIndex];
 	request.key.confidence = 1.0f;
@@ -231,9 +247,9 @@ std::string ofApp::getRequestSummary() const {
 		summary << "custom";
 	}
 	summary << "\n";
-	summary << "Prompt chars: " << std::string(promptBuffer.data()).size();
-	summary << "  Negative chars: " << std::string(negativePromptBuffer.data()).size();
-	summary << "  Style: " << styleBuffer.data() << "\n";
+	summary << "Prompt chars: " << readTextBuffer(promptBuffer).size();
+	summary << "  Negative chars: " << readTextBuffer(negativePromptBuffer).size();
+	summary << "  Style: " << readTextBuffer(styleBuffer) << "\n";
 	const auto keyTonic =
 		(!keyTonics.empty() && tonicIndex >= 0 && tonicIndex < static_cast<int>(keyTonics.size()))
 			? keyTonics[tonicIndex]
@@ -341,14 +357,13 @@ void ofApp::refreshGenerationHistory() {
 		ofLogWarning("ofxGgmlMusicGenerationExample") << error;
 		return;
 	}
-	if (historyIndex >= static_cast<int>(historyManifestPaths.size())) {
-		historyIndex = 0;
-	}
+	historyIndex = clampIndex(historyIndex, historyManifestPaths.size());
 }
 
 void ofApp::loadExistingRender() {
 	refreshGenerationHistory();
 	if (!historyManifestPaths.empty()) {
+		historyIndex = clampIndex(historyIndex, historyManifestPaths.size());
 		loadRenderManifest(historyManifestPaths[historyIndex]);
 		return;
 	}
@@ -384,9 +399,7 @@ void ofApp::draw() {
 	ImGui::Begin("ofxGgmlMusic Generation");
 
 	bool changed = false;
-	if (!presetNames.empty() && presetIndex >= static_cast<int>(presetNames.size())) {
-		presetIndex = 0;
-	}
+	presetIndex = clampIndex(presetIndex, presetNames.size());
 	const auto presetLabel = presetNames.empty() ? "(none)" : presetNames[presetIndex].c_str();
 	if (ImGui::BeginCombo("Preset", presetLabel)) {
 		for (int i = 0; i < static_cast<int>(presetNames.size()); ++i) {
@@ -417,9 +430,7 @@ void ofApp::draw() {
 		assignRandomSeed();
 		changed = true;
 	}
-	if (!keyTonics.empty() && tonicIndex >= static_cast<int>(keyTonics.size())) {
-		tonicIndex = 0;
-	}
+	tonicIndex = clampIndex(tonicIndex, keyTonics.size());
 	const auto tonicLabel = keyTonics.empty() ? "(none)" : keyTonics[tonicIndex].c_str();
 	if (ImGui::BeginCombo("Tonic", tonicLabel)) {
 		for (int i = 0; i < static_cast<int>(keyTonics.size()); ++i) {
@@ -434,9 +445,7 @@ void ofApp::draw() {
 		}
 		ImGui::EndCombo();
 	}
-	if (!keyModes.empty() && modeIndex >= static_cast<int>(keyModes.size())) {
-		modeIndex = 0;
-	}
+	modeIndex = clampIndex(modeIndex, keyModes.size());
 	const auto modeLabel = keyModes.empty() ? "(none)" : keyModes[modeIndex].c_str();
 	if (ImGui::BeginCombo("Mode", modeLabel)) {
 		for (int i = 0; i < static_cast<int>(keyModes.size()); ++i) {
@@ -531,6 +540,7 @@ void ofApp::draw() {
 		ImGui::TextWrapped("Arrangement MIDI: %s", lastResult.arrangementMidiPath.c_str());
 	}
 	if (!historyManifestPaths.empty()) {
+		historyIndex = clampIndex(historyIndex, historyManifestPaths.size());
 		const auto recentLabel = ofFilePath::getFileName(historyManifestPaths[historyIndex]);
 		if (ImGui::BeginCombo("Recent", recentLabel.c_str())) {
 			for (int i = 0; i < static_cast<int>(historyManifestPaths.size()); ++i) {
