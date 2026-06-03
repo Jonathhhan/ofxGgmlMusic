@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.2 - 2026-06-03
+
 - Added `ofxGgmlMusicExternalGenerationBackend` as the first explicit bridge
   boundary for local model-backed music generator executables.
 - Added an external generation contract test that proves the bridge can launch

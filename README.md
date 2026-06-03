@@ -11,7 +11,7 @@ stay focused.
 
 Family map: https://jonathhhan.github.io/ofxGgmlCore/
 
-Current addon API version: `1.0.1`.
+Current addon API version: `1.0.2`.
 
 ## Features
 

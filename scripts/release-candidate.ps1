@@ -44,7 +44,9 @@ function Get-GitLines {
 
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $addonRoot = Split-Path -Parent $scriptRoot
-$releaseNotes = Join-Path $addonRoot "docs\releases\v1.0.1.md"
+$releaseVersion = "1.0.2"
+$releaseTag = "v$releaseVersion"
+$releaseNotes = Join-Path $addonRoot "docs\releases\$releaseTag.md"
 
 Push-Location $addonRoot
 try {
@@ -53,10 +55,11 @@ try {
 	Assert-Path (Join-Path $addonRoot "docs\RELEASE_CHECKLIST.md") "release checklist"
 	Assert-Path (Join-Path $addonRoot "docs\RELEASE_POLICY.md") "release policy"
 	Assert-Path (Join-Path $addonRoot "docs\RELEASE_NOTES_TEMPLATE.md") "release notes template"
-	Assert-Path $releaseNotes "v1.0.1 release notes"
-	Assert-FileContains (Join-Path $addonRoot "CHANGELOG.md") "## 1\.0\.1" "changelog"
-	Assert-FileContains $releaseNotes "OFXGGML_MUSIC_VERSION_STRING.*1\.0\.1" "v1.0.1 release notes"
-	Assert-FileContains $releaseNotes "does not include a model-backed MusicGen" "v1.0.1 release notes"
+	Assert-Path $releaseNotes "$releaseTag release notes"
+	Assert-FileContains (Join-Path $addonRoot "CHANGELOG.md") "## $($releaseVersion -replace '\.', '\.')" "changelog"
+	Assert-FileContains (Join-Path $addonRoot "src\ofxGgmlMusicVersion.h") "OFXGGML_MUSIC_VERSION_STRING.*$($releaseVersion -replace '\.', '\.')" "version header"
+	Assert-FileContains $releaseNotes "OFXGGML_MUSIC_VERSION_STRING.*$($releaseVersion -replace '\.', '\.')" "$releaseTag release notes"
+	Assert-FileContains $releaseNotes "optional Python runner profile" "$releaseTag release notes"
 
 	Write-Step "Checking staged changes"
 	$staged = Get-GitLines @("diff", "--cached", "--name-only")

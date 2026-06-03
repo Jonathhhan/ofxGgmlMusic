@@ -33,9 +33,9 @@ namespace {
 int main() {
 	if (OFXGGML_MUSIC_VERSION_MAJOR != 1 ||
 		OFXGGML_MUSIC_VERSION_MINOR != 0 ||
-		OFXGGML_MUSIC_VERSION_PATCH != 1 ||
-		std::string(OFXGGML_MUSIC_VERSION_STRING) != "1.0.1" ||
-		std::string(ofxGgmlMusicGetVersionString()) != "1.0.1") {
+		OFXGGML_MUSIC_VERSION_PATCH != 2 ||
+		std::string(OFXGGML_MUSIC_VERSION_STRING) != "1.0.2" ||
+		std::string(ofxGgmlMusicGetVersionString()) != "1.0.2") {
 		std::cerr << "unexpected music addon version metadata\n";
 		return 1;
 	}
