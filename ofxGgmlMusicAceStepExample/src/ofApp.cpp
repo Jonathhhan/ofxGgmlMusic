@@ -17,6 +17,7 @@ namespace {
 	struct PromptPreset {
 		std::string name;
 		std::string caption;
+		std::string lyrics;
 		std::string negativePrompt;
 		std::string keyscale;
 		std::string timeSignature;
@@ -36,6 +37,7 @@ namespace {
 				"Cinematic Pulse",
 				"cinematic electronic instrumental, warm analog pads, plucked arpeggios, "
 				"subtle pulse, hopeful nocturnal mood, polished stereo mix",
+				"[Instrumental]",
 				"distorted vocals, harsh clipping, noisy mix",
 				"C minor",
 				"4",
@@ -49,37 +51,330 @@ namespace {
 				true
 			},
 			{
-				"Lo-fi Keys",
-				"warm lo-fi keys, mellow bass, brushed percussion, tape texture, "
-				"late-night study loop, intimate and relaxed",
-				"harsh cymbals, distorted bass, busy lead vocal",
-				"D minor",
+				"Berlin Motorik",
+				"krautrock motorik groove, locked 4/4 drums, muted bass guitar, "
+				"phased organ drones, tape delay guitar, hypnotic forward motion",
+				"[Instrumental]",
+				"arena rock solo, EDM riser, glossy pop vocal",
+				"E minor",
 				"4",
-				24.0f,
-				76,
-				0.75f,
-				1.8f,
+				42.0f,
+				128,
 				0.88f,
+				2.2f,
+				0.9f,
+				32,
+				true,
+				true
+			},
+			{
+				"Avant Jazz Cells",
+				"avant-garde jazz quartet, fractured upright bass ostinato, brushed snare, "
+				"prepared piano clusters, muted trumpet fragments, spacious room tone",
+				"[Instrumental]",
+				"smooth jazz, fusion shred, quantized club beat",
+				"Bb minor",
+				"5",
+				36.0f,
+				92,
+				1.05f,
+				2.6f,
+				0.93f,
+				48,
+				true,
+				true
+			},
+			{
+				"Dub Techno Fog",
+				"deep dub techno, sub kick, soft chord stabs, filtered noise wash, "
+				"long tape delays, minimal evolving groove, smoky warehouse space",
+				"[Instrumental]",
+				"bright supersaw, busy lead melody, rock drums",
+				"F minor",
+				"4",
+				48.0f,
+				124,
+				0.82f,
+				2.0f,
+				0.88f,
+				24,
+				true,
+				true
+			},
+			{
+				"Microscopic Ambient",
+				"microscopic ambient electronica, granular piano dust, sine tone halos, "
+				"subtle field recordings, slow spectral bloom, weightless and intimate",
+				"[Instrumental]",
+				"driving drums, pop chorus, aggressive bass",
+				"C major",
+				"4",
+				60.0f,
+				0,
+				0.72f,
+				1.7f,
+				0.86f,
 				0,
 				true,
 				true
 			},
 			{
-				"Club Hook",
-				"bright dance-pop instrumental hook, punchy drums, sidechain synth bass, "
-				"wide chorus energy, clean radio mix",
-				"muddy kick, clipped master, spoken intro",
+				"Broken Beat Lab",
+				"experimental broken beat, off-grid rim clicks, rubbery synth bass, "
+				"glitch edits, warm Rhodes chords, left-field club pressure",
+				"[Instrumental]",
+				"straight rock groove, orchestral brass, lead vocal",
+				"G minor",
+				"4",
+				34.0f,
+				138,
+				0.95f,
+				2.3f,
+				0.91f,
+				64,
+				true,
+				true
+			},
+			{
+				"Freeform Modular",
+				"avant-garde modular synth study, pulsing low oscillators, unstable clocks, "
+				"ring-modulated bells, feedback swells, abstract but musical contour",
+				"[Instrumental]",
+				"commercial EDM drop, pop vocal hook, acoustic strumming",
+				"Db minor",
+				"7",
+				38.0f,
+				108,
+				1.15f,
+				2.8f,
+				0.95f,
+				96,
+				true,
+				true
+			},
+			{
+				"ECM Afterimage",
+				"Nordic chamber jazz, lyrical piano, brushed drums, bowed bass, "
+				"soft trumpet melody, icy reverb, restrained emotional arc",
+				"[Instrumental]",
+				"funk slap bass, distorted guitar, club kick",
+				"D minor",
+				"4",
+				44.0f,
+				68,
+				0.78f,
+				1.9f,
+				0.88f,
+				16,
+				true,
+				true
+			},
+			{
+				"Minimal Techno Wire",
+				"minimal techno tool, tight kick, metallic hats, one-note acid pulse, "
+				"micro-edited percussion, dry and efficient late-night mix",
+				"[Instrumental]",
+				"lush pads, guitar solo, cinematic strings",
 				"A minor",
 				"4",
 				32.0f,
-				124,
-				0.95f,
+				132,
+				0.78f,
+				2.1f,
+				0.86f,
+				32,
+				true,
+				true
+			},
+			{
+				"Kosmische Drift",
+				"kosmische ambient krautrock, slow sequencer pattern, airy Mellotron choir, "
+				"clean bass pulses, shimmering guitar harmonics, cosmic travelogue mood",
+				"[Instrumental]",
+				"hard rock drums, diva vocal, trap hi hats",
+				"A major",
+				"4",
+				58.0f,
+				104,
+				0.84f,
+				2.0f,
+				0.9f,
+				32,
+				true,
+				true
+			},
+			{
+				"Industrial Nocturne",
+				"dark experimental electronica, distant factory percussion, bowed metal, "
+				"sub drones, degraded cassette piano, tense nocturnal atmosphere",
+				"[Instrumental]",
+				"happy ukulele, bright pop claps, clean radio vocal",
+				"F# minor",
+				"4",
+				40.0f,
+				88,
+				0.92f,
 				2.4f,
+				0.91f,
+				48,
+				true,
+				true
+			},
+			{
+				"Liquid Detroit",
+				"melodic Detroit techno, soulful minor seventh chords, rolling 909 groove, "
+				"warm analog bass, glassy lead motif, optimistic night-drive feeling",
+				"[Instrumental]",
+				"distorted hardcore kick, rock guitar, busy vocal",
+				"C minor",
+				"4",
+				42.0f,
+				126,
+				0.86f,
+				2.2f,
+				0.9f,
+				48,
+				true,
+				true
+			},
+			{
+				"Post-Rock Nebula",
+				"ambient post-rock electronica, tremolo guitar clouds, soft electronic drums, "
+				"pulsing synth bass, slow crescendo, cinematic but intimate",
+				"[Instrumental]",
+				"metal breakdown, EDM snare build, lead vocal",
+				"E major",
+				"6",
+				52.0f,
+				82,
+				0.8f,
+				1.9f,
+				0.88f,
+				16,
+				true,
+				true
+			},
+			{
+				"Fourth World Dub",
+				"fourth world ambient dub, hand percussion, marimba-like FM tones, "
+				"deep bass echoes, flute phrases, humid nocturnal space",
+				"[Instrumental]",
+				"stadium drums, distorted lead guitar, glossy EDM synth",
+				"G minor",
+				"4",
+				46.0f,
+				94,
+				0.9f,
+				2.1f,
+				0.91f,
+				32,
+				true,
+				true
+			},
+			{
+				"No Wave Disco",
+				"arty no wave disco, angular guitar scratches, dry funk bass, "
+				"primitive drum machine, saxophone stabs, tense downtown energy",
+				"[Instrumental]",
+				"smooth lounge, big trance pads, clean pop vocal",
+				"B minor",
+				"4",
+				34.0f,
+				116,
+				1.0f,
+				2.5f,
 				0.92f,
 				64,
 				true,
 				true
-			}
+			},
+			{
+				"Submerged Aria",
+				"avant ambient vocal texture, breathy wordless voice, glass harmonics, "
+				"submerged piano, slow electronic swells, dreamlike and abstract",
+				"[verse]\n"
+				"Under glass I hear the tide\n"
+				"Every room becomes a sky",
+				"belting, obvious pop chorus, harsh clipping",
+				"Ab major",
+				"4",
+				44.0f,
+				64,
+				0.92f,
+				2.2f,
+				0.9f,
+				32,
+				false,
+				true
+			},
+			{
+				"Futurist Bossa",
+				"future bossa electronica, syncopated nylon guitar, soft modular bass, "
+				"brushed percussion, crystalline pads, elegant asymmetric groove",
+				"[Instrumental]",
+				"arena snare, distorted synth lead, trap bass",
+				"D major",
+				"4",
+				38.0f,
+				112,
+				0.82f,
+				2.0f,
+				0.89f,
+				24,
+				true,
+				true
+			},
+			{
+				"Glitch Hymnal",
+				"experimental electronica hymn, chopped choir grains, organ drones, "
+				"clicking percussion, warm tape saturation, sacred but synthetic",
+				"[Instrumental]",
+				"rock power chords, EDM riser, bright pop drums",
+				"Eb minor",
+				"4",
+				48.0f,
+				72,
+				0.94f,
+				2.3f,
+				0.91f,
+				64,
+				true,
+				true
+			},
+			{
+				"Afro-Kraut Circuit",
+				"afro-krautrock jam, motorik drums, interlocking guitar ostinatos, "
+				"rubbery synth bass, hand percussion, long trance-like build",
+				"[Instrumental]",
+				"arena chorus, heavy metal solo, glossy synthwave",
+				"E minor",
+				"4",
+				54.0f,
+				118,
+				0.9f,
+				2.2f,
+				0.91f,
+				48,
+				true,
+				true
+			},
+			{
+				"Spectral Garage",
+				"left-field UK garage, shuffled drums, spectral vocal chops, sub bass, "
+				"icy pads, syncopated organ stab, intimate underground mix",
+				"[Instrumental]",
+				"four-on-floor techno only, rock drums, acoustic folk guitar",
+				"F minor",
+				"4",
+				30.0f,
+				136,
+				0.9f,
+				2.35f,
+				0.92f,
+				64,
+				true,
+				true
+			},
 		};
 		return presets;
 	}
@@ -91,6 +386,45 @@ namespace {
 	template <std::size_t N>
 	void copyToBuffer(std::array<char, N> & buffer, const std::string & value) {
 		std::snprintf(buffer.data(), buffer.size(), "%s", value.c_str());
+	}
+
+	template <std::size_t N>
+	std::string readTextBuffer(const std::array<char, N> & buffer) {
+		const auto end = std::find(buffer.begin(), buffer.end(), '\0');
+		return std::string(buffer.begin(), end);
+	}
+
+	std::string trimText(const std::string & text) {
+		const auto begin = std::find_if_not(
+			text.begin(),
+			text.end(),
+			[](unsigned char ch) { return std::isspace(ch) != 0; });
+		const auto end = std::find_if_not(
+			text.rbegin(),
+			text.rend(),
+			[](unsigned char ch) { return std::isspace(ch) != 0; }).base();
+		if (begin >= end) {
+			return {};
+		}
+		return std::string(begin, end);
+	}
+
+	std::string lowerText(std::string text) {
+		std::transform(
+			text.begin(),
+			text.end(),
+			text.begin(),
+			[](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+		return text;
+	}
+
+	bool isInstrumentalLyrics(const std::string & text) {
+		const auto normalized = lowerText(trimText(text));
+		return normalized == "[instrumental]" || normalized == "instrumental";
+	}
+
+	bool isEditingTextField() {
+		return ImGui::GetCurrentContext() != nullptr && ImGui::GetIO().WantTextInput;
 	}
 
 	template <std::size_t N>
@@ -337,7 +671,6 @@ void ofApp::setup() {
 		initialServerUrl.empty() ? std::string("http://127.0.0.1:8085") : initialServerUrl);
 	copyToBuffer(serverExecutableBuffer, resolveDefaultServerExecutable());
 	copyToBuffer(modelPathBuffer, resolveDefaultModelPath());
-	copyToBuffer(lyricsBuffer, "[Instrumental]");
 	copyToBuffer(outputPrefixBuffer, "ofxGgmlMusicAceStep");
 	for (const auto & preset : getPromptPresets()) {
 		promptPresetNames.push_back(preset.name);
@@ -363,6 +696,9 @@ void ofApp::update() {
 }
 
 void ofApp::keyPressed(int key) {
+	if (isEditingTextField()) {
+		return;
+	}
 	if (key == 's' || key == 'S') {
 		requestServerStart();
 	} else if (key == 'p' || key == 'P') {
@@ -400,10 +736,10 @@ std::string ofApp::getRequestSummary() const {
 		summary << "custom";
 	}
 	summary << "\n";
-	summary << "Caption chars: " << std::string(captionBuffer.data()).size();
-	summary << "  Lyrics chars: " << std::string(lyricsBuffer.data()).size() << "\n";
-	summary << "Key: " << keyscaleBuffer.data();
-	summary << "  Time: " << timeSignatureBuffer.data();
+	summary << "Caption chars: " << readTextBuffer(captionBuffer).size();
+	summary << "  Lyrics chars: " << readTextBuffer(lyricsBuffer).size() << "\n";
+	summary << "Key: " << readTextBuffer(keyscaleBuffer);
+	summary << "  Time: " << readTextBuffer(timeSignatureBuffer);
 	summary << "  Duration: " << ofToString(durationSeconds, 1) << " s";
 	summary << "  BPM: " << (bpm > 0 ? ofToString(bpm) : std::string("auto")) << "\n";
 	summary << "Seed: " << (seed >= 0 ? ofToString(seed) : std::string("random"));
@@ -414,7 +750,7 @@ std::string ofApp::getRequestSummary() const {
 	summary << ", cfg " << ofToString(lmCfgScale, 2);
 	summary << ", top-p " << ofToString(lmTopP, 2);
 	summary << ", top-k " << lmTopK << "\n";
-	summary << "Output prefix: " << outputPrefixBuffer.data();
+	summary << "Output prefix: " << readTextBuffer(outputPrefixBuffer);
 	return summary.str();
 }
 
@@ -452,11 +788,11 @@ void ofApp::logRequest() const {
 
 ofxGgmlMusicAceStepRequest ofApp::buildRequest() const {
 	ofxGgmlMusicAceStepRequest request;
-	request.caption = captionBuffer.data();
-	request.lyrics = lyricsBuffer.data();
-	request.negativePrompt = negativePromptBuffer.data();
-	request.keyscale = keyscaleBuffer.data();
-	request.timeSignature = timeSignatureBuffer.data();
+	request.caption = readTextBuffer(captionBuffer);
+	request.lyrics = readTextBuffer(lyricsBuffer);
+	request.negativePrompt = readTextBuffer(negativePromptBuffer);
+	request.keyscale = readTextBuffer(keyscaleBuffer);
+	request.timeSignature = readTextBuffer(timeSignatureBuffer);
 	request.durationSeconds = durationSeconds;
 	request.bpm = bpm;
 	request.seed = seed;
@@ -469,7 +805,12 @@ ofxGgmlMusicAceStepRequest ofApp::buildRequest() const {
 	request.useCotCaption = useCotCaption;
 	request.wavOutput = wavOutput;
 	request.outputDir = getOutputDirectory();
-	request.outputPrefix = outputPrefixBuffer.data();
+	request.outputPrefix = readTextBuffer(outputPrefixBuffer);
+	if (request.instrumentalOnly) {
+		request.lyrics = "[Instrumental]";
+	} else if (isInstrumentalLyrics(request.lyrics)) {
+		request.lyrics.clear();
+	}
 	return request;
 }
 
@@ -481,6 +822,7 @@ void ofApp::applyPromptPreset(int index) {
 	const auto & preset = presets[static_cast<std::size_t>(index)];
 	promptPresetIndex = index;
 	copyToBuffer(captionBuffer, preset.caption);
+	copyToBuffer(lyricsBuffer, preset.lyrics);
 	copyToBuffer(negativePromptBuffer, preset.negativePrompt);
 	copyToBuffer(keyscaleBuffer, preset.keyscale);
 	copyToBuffer(timeSignatureBuffer, preset.timeSignature);
@@ -783,13 +1125,11 @@ void ofApp::draw() {
 			ImVec2(promptFieldWidth, 112.0f))) {
 		wrapTextBuffer(captionBuffer, promptFieldWidth);
 	}
-	if (ImGui::InputTextMultiline(
-			"Lyrics",
-			lyricsBuffer.data(),
-			lyricsBuffer.size(),
-			ImVec2(promptFieldWidth, 80.0f))) {
-		wrapTextBuffer(lyricsBuffer, promptFieldWidth);
-	}
+	ImGui::InputTextMultiline(
+		"Lyrics",
+		lyricsBuffer.data(),
+		lyricsBuffer.size(),
+		ImVec2(promptFieldWidth, 80.0f));
 	ImGui::InputText("Negative", negativePromptBuffer.data(), negativePromptBuffer.size());
 	ImGui::InputText("Keyscale", keyscaleBuffer.data(), keyscaleBuffer.size());
 	ImGui::InputText("Time signature", timeSignatureBuffer.data(), timeSignatureBuffer.size());
@@ -808,7 +1148,13 @@ void ofApp::draw() {
 	ImGui::SliderFloat("LM top p", &lmTopP, 0.0f, 1.0f, "%.2f");
 	ImGui::InputInt("LM top k", &lmTopK);
 	lmTopK = std::max(0, lmTopK);
-	ImGui::Checkbox("Instrumental", &instrumentalOnly);
+	if (ImGui::Checkbox("Instrumental", &instrumentalOnly)) {
+		if (instrumentalOnly) {
+			copyToBuffer(lyricsBuffer, "[Instrumental]");
+		} else if (isInstrumentalLyrics(readTextBuffer(lyricsBuffer))) {
+			copyToBuffer(lyricsBuffer, "");
+		}
+	}
 	ImGui::SameLine();
 	ImGui::Checkbox("Use CoT caption", &useCotCaption);
 	ImGui::SameLine();

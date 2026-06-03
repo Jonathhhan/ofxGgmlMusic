@@ -34,12 +34,29 @@ namespace {
 		return std::string(begin, end);
 	}
 
+	std::string lowerCopy(std::string text) {
+		std::transform(
+			text.begin(),
+			text.end(),
+			text.begin(),
+			[](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+		return text;
+	}
+
+	bool isInstrumentalLyrics(const std::string & text) {
+		const auto normalized = lowerCopy(trimCopy(text));
+		return normalized == "[instrumental]" || normalized == "instrumental";
+	}
+
 	std::string safeLyrics(const ofxGgmlMusicAceStepRequest & request) {
-		const std::string lyrics = trimCopy(request.lyrics);
-		if (!lyrics.empty()) {
-			return lyrics;
+		if (request.instrumentalOnly) {
+			return "[Instrumental]";
 		}
-		return request.instrumentalOnly ? std::string("[Instrumental]") : std::string();
+		const std::string lyrics = trimCopy(request.lyrics);
+		if (isInstrumentalLyrics(lyrics)) {
+			return {};
+		}
+		return lyrics;
 	}
 
 	std::string sanitizeFileStem(const std::string & text) {

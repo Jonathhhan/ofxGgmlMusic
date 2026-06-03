@@ -22,6 +22,10 @@ namespace {
 		const auto end = std::find(buffer.begin(), buffer.end(), '\0');
 		return std::string(buffer.begin(), end);
 	}
+
+	bool isEditingTextField() {
+		return ImGui::GetCurrentContext() != nullptr && ImGui::GetIO().WantTextInput;
+	}
 }
 
 void ofApp::setup() {
@@ -45,6 +49,9 @@ void ofApp::update() {
 }
 
 void ofApp::keyPressed(int key) {
+	if (isEditingTextField()) {
+		return;
+	}
 	if (key == 'r' || key == 'R') {
 		runGeneration();
 	} else if (key == 'p' || key == 'P') {
@@ -460,7 +467,8 @@ void ofApp::draw() {
 		}
 		ImGui::EndCombo();
 	}
-	changed |= ImGui::Checkbox("Loop", &loop);
+	const bool loopChanged = ImGui::Checkbox("Loop", &loop);
+	changed |= loopChanged;
 	ImGui::SameLine();
 	changed |= ImGui::Checkbox("Auto-play", &autoPlay);
 	if (stemEnabled.size() != stemNames.size()) {
@@ -479,7 +487,9 @@ void ofApp::draw() {
 	}
 	if (changed) {
 		rebuildRequest();
-		player.setLoop(loop);
+		if (loopChanged) {
+			player.setLoop(loop);
+		}
 	}
 
 	if (ImGui::Button("Generate")) {
