@@ -427,6 +427,56 @@ namespace {
 		return ImGui::GetCurrentContext() != nullptr && ImGui::GetIO().WantTextInput;
 	}
 
+	bool isGuiCapturingMouse() {
+		return ImGui::GetCurrentContext() != nullptr && ImGui::GetIO().WantCaptureMouse;
+	}
+
+	void drawPlaybackCursor(float x, float y, float width, float height, float position) {
+		const float plotY = y + 18.0f;
+		const float cursorX = x + std::clamp(position, 0.0f, 1.0f) * width;
+		const float markerY = std::max(4.0f, plotY - 10.0f);
+
+		ofSetLineWidth(5.0f);
+		ofSetColor(0, 0, 0, 210);
+		ofDrawLine(cursorX, plotY, cursorX, plotY + height);
+		ofDrawTriangle(cursorX, markerY - 2.0f, cursorX - 7.0f, markerY - 12.0f, cursorX + 7.0f, markerY - 12.0f);
+
+		ofSetLineWidth(2.0f);
+		ofSetColor(255, 244, 120);
+		ofDrawLine(cursorX, plotY, cursorX, plotY + height);
+		ofDrawTriangle(cursorX, markerY, cursorX - 5.0f, markerY - 8.0f, cursorX + 5.0f, markerY - 8.0f);
+		ofSetLineWidth(1.0f);
+	}
+
+	void updatePlaybackScrub(
+		ofSoundPlayer & player,
+		bool & scrubbing,
+		float x,
+		float y,
+		float width,
+		float height) {
+		if (!player.isLoaded()) {
+			scrubbing = false;
+			return;
+		}
+
+		const float plotY = y + 18.0f;
+		const bool pressed = ofGetMousePressed(OF_MOUSE_BUTTON_LEFT);
+		const float mouseX = static_cast<float>(ofGetMouseX());
+		const float mouseY = static_cast<float>(ofGetMouseY());
+		const bool inside =
+			mouseX >= x && mouseX <= x + width &&
+			mouseY >= plotY && mouseY <= plotY + height;
+
+		if (pressed && (inside || scrubbing) && (scrubbing || !isGuiCapturingMouse())) {
+			scrubbing = true;
+			const float position = std::clamp((mouseX - x) / std::max(1.0f, width), 0.0f, 1.0f);
+			player.setPosition(position);
+		} else if (!pressed) {
+			scrubbing = false;
+		}
+	}
+
 	template <std::size_t N>
 	void wrapTextBuffer(std::array<char, N> & buffer, float fieldWidth) {
 		const float characterWidth = std::max(1.0f, ImGui::CalcTextSize("M").x);
@@ -1269,10 +1319,14 @@ void ofApp::drawWaveform(float x, float y, float width, float height) {
 	ofNoFill();
 	ofDrawRectangle(x, y + 18.0f, width, height);
 	ofFill();
+	updatePlaybackScrub(player, waveformScrubbing, x, y, width, height);
 
 	if (!waveform) {
 		ofSetColor(170);
 		ofDrawBitmapString("Generate WAV audio to preview waveform", x + 16.0f, y + 48.0f);
+		if (player.isPlaying() || waveformScrubbing) {
+			drawPlaybackCursor(x, y, width, height, player.getPosition());
+		}
 		return;
 	}
 
@@ -1292,12 +1346,8 @@ void ofApp::drawWaveform(float x, float y, float width, float height) {
 		const float py = peak * height * 0.46f;
 		ofDrawLine(px, midY - py, px, midY + py);
 	}
-	if (player.isPlaying()) {
-		const float plotY = y + 18.0f;
-		const float px = x + player.getPosition() * width;
-		ofSetColor(230, 90, 84);
-		ofDrawLine(px, plotY, px, plotY + height);
-		ofDrawTriangle(px, plotY - 2.0f, px - 5.0f, plotY - 10.0f, px + 5.0f, plotY - 10.0f);
+	if (player.isPlaying() || waveformScrubbing) {
+		drawPlaybackCursor(x, y, width, height, player.getPosition());
 	}
 
 	ofSetColor(210);

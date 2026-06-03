@@ -10,6 +10,9 @@
   Transformers MusicGen runner profile.
 - Allowed external model values to be model ids instead of only existing files
   when `requireModelPathExists` is disabled.
+- Added draggable waveform scrubbing to the generation and AceStep examples.
+- Made procedural backend sample narrowing explicit so example builds stay
+  warning-clean on MSVC.
 
 ## 1.0.1 - 2026-05-12
 

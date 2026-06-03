@@ -75,6 +75,7 @@ private:
 	bool useCotCaption = true;
 	bool wavOutput = true;
 	bool autoPlay = true;
+	bool waveformScrubbing = false;
 
 	std::thread workerThread;
 	std::mutex workerMutex;

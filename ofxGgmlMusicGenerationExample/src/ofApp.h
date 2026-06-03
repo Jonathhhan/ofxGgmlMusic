@@ -66,4 +66,5 @@ private:
 	int modeIndex = 0;
 	bool loop = true;
 	bool autoPlay = true;
+	bool waveformScrubbing = false;
 };

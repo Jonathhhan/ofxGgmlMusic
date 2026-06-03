@@ -101,7 +101,7 @@ so procedural layers can be encouraged or damped before rendering. It also write
 a `.wav.json` manifest next to the audio file, writes editable melody, chord, and
 combined arrangement `.mid` files, can export shared melody, bass, pulse, and mix stems,
 overlays sections plus beat/chord timing on the waveform, and shows playback
-position while audio is playing. The arrangement MIDI includes melody,
+position while audio is playing or while dragging the waveform. The arrangement MIDI includes melody,
 chords, bass, and pulse tracks for quick remixing. Use `Current request` to inspect the render shape, `Last result` to
 inspect rendered timing and artifact metadata, `P` to cycle presets, `D` to log
 the request summary, `New seed` to audition deterministic variations quickly,
@@ -129,7 +129,7 @@ the generated track back with a waveform preview for WAV output. The heavy
 server, models, and generated audio remain local artifacts outside git.
 The GUI includes prompt presets, quick seed variation, batch-output preview
 selection, current-request and last-result inspection, and a playback cursor
-over the waveform.
+over the draggable waveform.
 
 To run it, start an AceStep server first. The launcher prefers:
 

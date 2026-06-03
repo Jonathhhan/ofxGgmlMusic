@@ -17,6 +17,10 @@ namespace {
 	constexpr double pi = 3.14159265358979323846;
 	constexpr int sampleRate = 44100;
 
+	float sampleFloat(double value) {
+		return static_cast<float>(value);
+	}
+
 	struct RenderedSketch {
 		std::vector<float> mix;
 		std::vector<float> melody;
@@ -597,33 +601,33 @@ namespace {
 			const double harmonyHz = midiToHz(scale[harmonyIndex] - 12);
 			const double bassHz = midiToHz(chordRoot - 24);
 			const float env = envelope(phaseInNote);
-			const float melody = std::sin(2.0 * pi * melodyHz * time) * env * profile.melodyGain;
-			const float overtone = std::sin(2.0 * pi * melodyHz * 2.0 * time) * env * 0.07f;
-			const float harmony = std::sin(2.0 * pi * harmonyHz * time) * env * profile.harmonyGain;
-			const float bassFundamental = std::sin(2.0 * pi * bassHz * time) * profile.bassGain;
+			const float melody = sampleFloat(std::sin(2.0 * pi * melodyHz * time) * env * profile.melodyGain);
+			const float overtone = sampleFloat(std::sin(2.0 * pi * melodyHz * 2.0 * time) * env * 0.07f);
+			const float harmony = sampleFloat(std::sin(2.0 * pi * harmonyHz * time) * env * profile.harmonyGain);
+			const float bassFundamental = sampleFloat(std::sin(2.0 * pi * bassHz * time) * profile.bassGain);
 			const float bassHarmonic =
-				std::sin(2.0 * pi * bassHz * 2.0 * time) * profile.bassGain * static_cast<float>(profile.bassWarmth);
+				sampleFloat(std::sin(2.0 * pi * bassHz * 2.0 * time) * profile.bassGain * profile.bassWarmth);
 			const double barStart = std::floor(time / barSeconds) * barSeconds;
 			const double phaseInBar = (time - barStart) / barSeconds;
 			float pad = 0.0f;
 			const int third = chordMinor ? 3 : 4;
-			pad += std::sin(2.0 * pi * midiToHz(chordRoot - 12) * time) * profile.padGain / 3.0f;
-			pad += std::sin(2.0 * pi * midiToHz(chordRoot - 12 + third) * time) * profile.padGain / 3.0f;
-			pad += std::sin(2.0 * pi * midiToHz(chordRoot - 5) * time) * profile.padGain / 3.0f;
+			pad += sampleFloat(std::sin(2.0 * pi * midiToHz(chordRoot - 12) * time) * profile.padGain / 3.0);
+			pad += sampleFloat(std::sin(2.0 * pi * midiToHz(chordRoot - 12 + third) * time) * profile.padGain / 3.0);
+			pad += sampleFloat(std::sin(2.0 * pi * midiToHz(chordRoot - 5) * time) * profile.padGain / 3.0);
 			pad *= barEnvelope(phaseInBar);
 			const double beatPosition = time / beatSeconds;
 			const double phaseInBeat = beatPosition - std::floor(beatPosition);
 			const int beatIndex = static_cast<int>(beatPosition);
 			const float pulseAccent = beatIndex % 4 == 0 ? 1.0f : 0.64f;
 			const float pulseBody =
-				std::sin(2.0 * pi * profile.pulseToneHz * time) *
-				std::exp(-phaseInBeat * profile.pulseDecay) *
-				profile.pulseGain *
-				pulseAccent;
+				sampleFloat(std::sin(2.0 * pi * profile.pulseToneHz * time) *
+					std::exp(-phaseInBeat * profile.pulseDecay) *
+					profile.pulseGain *
+					pulseAccent);
 			const float texture =
-				std::sin(2.0 * pi * 17.3 * time + static_cast<double>(seed % 31)) *
-				std::sin(2.0 * pi * 0.23 * time) *
-				profile.textureGain;
+				sampleFloat(std::sin(2.0 * pi * 17.3 * time + static_cast<double>(seed % 31)) *
+					std::sin(2.0 * pi * 0.23 * time) *
+					profile.textureGain);
 			const auto layerGains = makeLayerGains(request, duration, time);
 			float fade = 1.0f;
 			if (!request.settings.loop) {
