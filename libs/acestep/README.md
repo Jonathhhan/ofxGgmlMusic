@@ -7,12 +7,15 @@ Build the server with the addon helper script:
 
 ```powershell
 ..\scripts\setup-acestep-server.ps1 -DryRun
+..\..\ofxGgmlCore\scripts\setup-ggml.ps1 -AceStepOps -Clean -Cuda
 ..\scripts\setup-acestep-server.ps1 -Clean -Cuda
 ```
 
 That script prefers shared ggml sources from `ofxGgmlCore/libs/ggml/.source`
-when Core exposes the ACE-Step ops such as `ggml_col2im_1d`, then falls back to
-the repository-local bundled ggml sources only when required. Pass
+when Core exposes the ACE-Step ops such as `ggml_col2im_1d`. Use Core's
+`setup-ggml.ps1 -AceStepOps` mode to make Core the shared ACE-Step-compatible
+ggml provider, then ACE-Step falls back to the repository-local bundled ggml
+sources only when required. Pass
 `-BundledGgml` only when you intentionally want the bundled ACE-Step ggml.
 Explicit `-Cuda` is strict: setup fails if the final CMake cache or installed
 backend artifacts are CPU-only.

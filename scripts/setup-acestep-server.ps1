@@ -595,6 +595,7 @@ $coreGgmlSource = Get-CoreGgmlSourcePath $OfxGgmlCorePath
 $coreGgmlAvailable = Test-CoreGgmlSourceAvailable $OfxGgmlCorePath
 $coreGgmlCompatible = $coreGgmlAvailable -and (Test-GgmlSourceHasAceStepOps $coreGgmlSource)
 $ggmlFallbackReason = ""
+$coreGgmlAceStepSetupHint = "Run ofxGgmlCore\scripts\setup-ggml.ps1 -AceStepOps first to make Core the shared ACE-Step-compatible ggml provider."
 
 if ($UseCoreGgml -and $BundledGgml) {
 	throw "Choose either -UseCoreGgml or -BundledGgml, not both."
@@ -607,7 +608,7 @@ $ggmlMode = if ($BundledGgml) {
 		throw "UseCoreGgml was requested but ofxGgmlCore ggml source was not found at $OfxGgmlCorePath"
 	}
 	if (!$coreGgmlCompatible) {
-		throw "UseCoreGgml was requested but ofxGgmlCore ggml source does not expose the ACE-Step patched ggml_col2im_1d op."
+		throw "UseCoreGgml was requested but ofxGgmlCore ggml source does not expose the ACE-Step patched ggml_col2im_1d op. $coreGgmlAceStepSetupHint"
 	}
 	"ofxGgmlCore"
 } elseif ($coreGgmlCompatible) {
@@ -616,7 +617,7 @@ $ggmlMode = if ($BundledGgml) {
 	if (!$coreGgmlAvailable) {
 		$ggmlFallbackReason = "ofxGgmlCore ggml source was not found"
 	} else {
-		$ggmlFallbackReason = "ofxGgmlCore ggml source lacks the ACE-Step ggml_col2im_1d op"
+		$ggmlFallbackReason = "ofxGgmlCore ggml source lacks the ACE-Step ggml_col2im_1d op. $coreGgmlAceStepSetupHint"
 	}
 	"bundled"
 }

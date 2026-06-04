@@ -35,6 +35,7 @@ Assert-Contains $defaultOutput "-DGGML_BLAS=OFF" "default dry-run"
 Assert-Contains $defaultOutput "ggml:" "default dry-run"
 if ($defaultOutput.Contains("ggml: bundled")) {
 	Assert-Contains $defaultOutput "ggml fallback:" "default dry-run bundled fallback"
+	Assert-Contains $defaultOutput "setup-ggml.ps1 -AceStepOps" "default dry-run bundled fallback"
 } else {
 	Assert-Contains $defaultOutput "ggml: ofxGgmlCore source" "default dry-run Core ggml"
 }
@@ -98,6 +99,7 @@ if (Test-Path -LiteralPath $coreRoot -PathType Container) {
 	}
 	if ($coreOutput.Contains("UseCoreGgml was requested but")) {
 		Assert-Contains $coreOutput "ggml_col2im_1d" "ofxGgmlCore ggml dry-run incompatible Core"
+		Assert-Contains $coreOutput "setup-ggml.ps1 -AceStepOps" "ofxGgmlCore ggml dry-run incompatible Core"
 	} else {
 		Assert-Contains $coreOutput "ggml: ofxGgmlCore source" "ofxGgmlCore ggml dry-run"
 		Assert-Contains $coreOutput "ofxGgmlCore:" "ofxGgmlCore ggml dry-run"
