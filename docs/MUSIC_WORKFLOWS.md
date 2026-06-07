@@ -98,6 +98,8 @@ Use `scripts\write-generation-workflow-report.*` when a handoff or release note
 needs one artifact that contains both the no-side-effect plan and the current
 readiness snapshot. It can write JSON to `-ReportPath`, emit JSON to stdout, or
 fail under `-Strict` when readiness warnings are not acceptable.
+The discoverable report path and plan/readiness/report script entrypoints are
+also recorded in `ofxggml-addon.json` for ecosystem tooling.
 
 `scripts\run-music-runtime-smoke.*` is intentionally model-free but generation
 backed. It validates helper tests and doctor readiness, then runs the

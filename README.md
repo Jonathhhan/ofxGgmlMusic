@@ -85,6 +85,8 @@ default file-existence check.
 
 For music-lane planning and backend boundaries, see
 [docs/MUSIC_WORKFLOWS.md](docs/MUSIC_WORKFLOWS.md).
+The addon manifest also advertises the generated workflow report path and the
+plan/readiness/report scripts for ecosystem tooling in `ofxggml-addon.json`.
 
 ## Example
 

@@ -4,6 +4,12 @@
   "coreBaseline": "v1.0.1",
   "runtimeSmokeReport": ".music-runtime-smoke.json",
   "inferenceSmokeReport": ".musicgen-inference-smoke.json",
+  "generationWorkflowReport": ".generation-workflow-report.json",
+  "generationWorkflowScripts": {
+    "plan": "scripts/plan-generation-workflow.bat",
+    "readiness": "scripts/check-generation-readiness.bat",
+    "report": "scripts/write-generation-workflow-report.bat"
+  },
   "requires": [
     "ofxGgmlCore"
   ],
@@ -20,7 +26,9 @@
     "key/chord workflow boundaries",
     "stem and generation lane planning",
     "runtime smoke validation entrypoint",
-    "MusicGen HF model-backed inference smoke gate"
+    "MusicGen HF model-backed inference smoke gate",
+    "MusicGen and ACE-Step workflow planning",
+    "MusicGen and ACE-Step readiness reporting"
   ],
   "platforms": [
     "windows",

@@ -41,6 +41,7 @@ $addonsRoot = Split-Path -Parent $addonRoot
 
 Write-Step "Checking addon skeleton"
 Assert-Path (Join-Path $addonRoot "addon_config.mk") "addon config"
+Assert-Path (Join-Path $addonRoot "ofxggml-addon.json") "addon manifest"
 Assert-Path (Join-Path $addonRoot "README.md") "README"
 Assert-FileContains (Join-Path $addonRoot "README.md") "melody, bass, pulse, and mix stems" "README shared stem list"
 Assert-Path (Join-Path $addonRoot "docs\MUSIC_WORKFLOWS.md") "music workflow docs"
@@ -132,6 +133,21 @@ Assert-Path (Join-Path $scriptRoot "test-example-project-repair.ps1") "Music exa
 Assert-FileContains (Join-Path $scriptRoot "build-music-example.ps1") "ofxGgmlMusicAceStepExample" "Music example build script default"
 Assert-FileContains (Join-Path $scriptRoot "build-music-example.ps1") "Repair-VisualStudioProjectFile" "Music generated project repair"
 Assert-FileContains (Join-Path $addonRoot "addon_config.mk") "libs/\*/\.source/%" "addon source cache exclusion"
+
+Write-Step "Checking addon manifest"
+$addonManifest = Get-Content -LiteralPath (Join-Path $addonRoot "ofxggml-addon.json") -Raw | ConvertFrom-Json
+if ($addonManifest.generationWorkflowReport -ne ".generation-workflow-report.json") {
+	throw "Addon manifest did not advertise the generation workflow report path."
+}
+if ($addonManifest.generationWorkflowScripts.plan -ne "scripts/plan-generation-workflow.bat" -or
+	$addonManifest.generationWorkflowScripts.readiness -ne "scripts/check-generation-readiness.bat" -or
+	$addonManifest.generationWorkflowScripts.report -ne "scripts/write-generation-workflow-report.bat") {
+	throw "Addon manifest did not advertise the expected generation workflow scripts."
+}
+if (!(@($addonManifest.features) -contains "MusicGen and ACE-Step workflow planning") -or
+	!(@($addonManifest.features) -contains "MusicGen and ACE-Step readiness reporting")) {
+	throw "Addon manifest did not advertise the generation workflow features."
+}
 
 Write-Step "Checking dependency layout"
 Assert-Path (Join-Path $addonsRoot "ofxGgmlCore") "sibling ofxGgmlCore addon" -Directory

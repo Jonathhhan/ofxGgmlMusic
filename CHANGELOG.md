@@ -8,6 +8,8 @@
   and ACE-Step server health.
 - Added a combined generation workflow report writer for planning/readiness
   handoff and release evidence.
+- Advertised generation workflow report and script entrypoints through the
+  addon manifest for ecosystem tooling.
 - Preserved MusicGen HF tempo, key, mode, and negative-prompt metadata in the
   generated manifest while keeping the runner optional.
 
