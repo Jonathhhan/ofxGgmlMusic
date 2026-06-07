@@ -10,6 +10,9 @@
   handoff and release evidence.
 - Advertised generation workflow report and script entrypoints through the
   addon manifest for ecosystem tooling.
+- Added `-UseManifestReportPath` so the workflow report writer can use the
+  addon manifest's report path without repeating it at the command line.
+- Included reproducible next commands in generation workflow report summaries.
 - Preserved MusicGen HF tempo, key, mode, and negative-prompt metadata in the
   generated manifest while keeping the runner optional.
 

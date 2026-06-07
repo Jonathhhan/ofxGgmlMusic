@@ -17,6 +17,7 @@ param(
 	[string]$ModelPath = $(if ($env:OFXGGML_ACESTEP_MODEL_PATH) { $env:OFXGGML_ACESTEP_MODEL_PATH } else { "" }),
 	[Alias("OutputPath")]
 	[string]$ReportPath = "",
+	[switch]$UseManifestReportPath,
 	[switch]$LoadModel,
 	[switch]$Json,
 	[switch]$SummaryOnly,
@@ -62,6 +63,19 @@ function Get-PowerShellExecutable {
 	throw "Could not find pwsh or powershell."
 }
 
+function Get-ManifestReportPath {
+	$manifestPath = Join-Path $addonRoot "ofxggml-addon.json"
+	if (!(Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
+		throw "Addon manifest was not found: $manifestPath"
+	}
+	$manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+	$path = [string]$manifest.generationWorkflowReport
+	if ([string]::IsNullOrWhiteSpace($path)) {
+		throw "Addon manifest does not define generationWorkflowReport."
+	}
+	return $path
+}
+
 function Write-Report {
 	param(
 		[string]$Path,
@@ -91,6 +105,7 @@ function Write-ReportText {
 	Write-Host "  PlanCount: $($Summary.PlanCount)"
 	Write-Host "  ReadinessWarnings: $($Summary.ReadinessWarnings)"
 	Write-Host "  ReportPath: $($Summary.ReportPath)"
+	Write-Host "  ManifestReportPath: $($Summary.ManifestReportPath)"
 	foreach ($plan in @($Plan.plans)) {
 		Write-Host "  Plan: $($plan.name) [$($plan.backend)]"
 	}
@@ -108,10 +123,27 @@ function Write-ReportText {
 	}
 }
 
+function New-NextCommands {
+	param([string]$ManifestReportPath)
+	return @(
+		"scripts\plan-generation-workflow.bat -Backend $Backend",
+		"scripts\check-generation-readiness.bat -Backend $Backend",
+		"scripts\write-generation-workflow-report.bat -Backend $Backend -UseManifestReportPath",
+		"scripts\write-generation-workflow-report.bat -Backend $Backend -Json -SummaryOnly",
+		"scripts\generate-musicgen-hf.bat -SmokeTest -Json -AllowMissingDeps",
+		"scripts\start-acestep-server.bat -DryRun",
+		"scripts\test-external-generation-contract.bat -Clean"
+	)
+}
+
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $addonRoot = Resolve-Path (Join-Path $scriptRoot "..")
 $planScript = Join-Path $scriptRoot "plan-generation-workflow.ps1"
 $readinessScript = Join-Path $scriptRoot "check-generation-readiness.ps1"
+$effectiveReportPath = $ReportPath
+if ($UseManifestReportPath -and [string]::IsNullOrWhiteSpace($effectiveReportPath)) {
+	$effectiveReportPath = Get-ManifestReportPath
+}
 
 $planArgs = @(
 	"-Backend", $Backend,
@@ -161,25 +193,29 @@ $plan = Invoke-JsonScript -ScriptPath $planScript -ScriptArguments $planArgs -La
 $readiness = Invoke-JsonScript -ScriptPath $readinessScript -ScriptArguments $readinessArgs -Label "generation readiness"
 $elapsedMs = [int]((Get-Date) - $started).TotalMilliseconds
 $warnings = [int]$readiness.Warnings
+$manifestReportPath = Get-ManifestReportPath
 $summary = [ordered]@{
 	Name = "ofxGgmlMusic generation workflow report"
 	Root = $addonRoot.Path
 	Backend = $Backend
 	Model = $Model
 	ServerUrl = $ServerUrl
+	ManifestReportPath = $manifestReportPath
 	PlanCount = @($plan.plans).Count
 	ReadinessWarnings = $warnings
 	Passed = ($warnings -eq 0)
 	LoadModel = [bool]$LoadModel
-	ReportPath = $ReportPath
+	ReportPath = $effectiveReportPath
+	UsedManifestReportPath = [bool]($UseManifestReportPath -and [string]::IsNullOrWhiteSpace($ReportPath))
 	ElapsedMs = $elapsedMs
+	NextCommands = New-NextCommands $manifestReportPath
 }
 $payload = [ordered]@{
 	Summary = $summary
 	Plan = $plan
 	Readiness = $readiness
 }
-Write-Report -Path $ReportPath -Payload $payload
+Write-Report -Path $effectiveReportPath -Payload $payload
 
 if ($Json) {
 	if ($SummaryOnly) {

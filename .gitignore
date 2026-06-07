@@ -10,6 +10,7 @@ build/
 *.log
 .music-runtime-smoke.json
 .musicgen-inference-smoke.json
+.generation-workflow-report.json
 *.sln
 *.suo
 *.user

@@ -97,7 +97,11 @@ warnings.
 Use `scripts\write-generation-workflow-report.*` when a handoff or release note
 needs one artifact that contains both the no-side-effect plan and the current
 readiness snapshot. It can write JSON to `-ReportPath`, emit JSON to stdout, or
-fail under `-Strict` when readiness warnings are not acceptable.
+write to the manifest-advertised `.generation-workflow-report.json` path with
+`-UseManifestReportPath`. It can also fail under `-Strict` when readiness
+warnings are not acceptable. Report summaries include reproducible next
+commands so ecosystem tooling can continue with planning, readiness, model-load
+smoke, ACE-Step dry-run, or external bridge validation.
 The discoverable report path and plan/readiness/report script entrypoints are
 also recorded in `ofxggml-addon.json` for ecosystem tooling.
 

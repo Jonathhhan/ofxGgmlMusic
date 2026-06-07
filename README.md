@@ -268,10 +268,12 @@ without a running ACE-Step server. Add `-Strict` when automation should fail on
 warnings.
 
 To capture a combined planning and readiness snapshot for handoff or release
-evidence:
+evidence. The JSON summary includes reproducible next commands and the
+manifest-advertised report path:
 
 ```powershell
 scripts\write-generation-workflow-report.bat -Backend all -ReportPath generation-workflow-report.json
+scripts\write-generation-workflow-report.bat -UseManifestReportPath
 scripts\write-generation-workflow-report.bat -Backend MusicGenHf -Json -SummaryOnly
 ```
 
