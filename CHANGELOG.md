@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Added a MusicGen/ACE-Step workflow planner for no-side-effect readiness,
+  launch, generation, artifact, and environment command discovery.
+- Added a soft generation readiness checker for optional MusicGen Python deps
+  and ACE-Step server health.
+- Added a combined generation workflow report writer for planning/readiness
+  handoff and release evidence.
+- Preserved MusicGen HF tempo, key, mode, and negative-prompt metadata in the
+  generated manifest while keeping the runner optional.
+
 ## 1.0.2 - 2026-06-03
 
 - Added `ofxGgmlMusicExternalGenerationBackend` as the first explicit bridge

@@ -241,6 +241,38 @@ scripts\generate-external-music.bat -Executable C:\tools\music-generator.bat -Mo
 scripts\generate-external-music.bat -DryRun
 ```
 
+When choosing between the optional MusicGen and ACE-Step workflows, start with
+the model-free planner. It prints the relevant readiness, setup, start, and
+generation commands without building, downloading, starting a server, or writing
+audio:
+
+```powershell
+scripts\plan-generation-workflow.bat
+scripts\plan-generation-workflow.bat -Backend MusicGenHf -Tempo 92 -Key C -Mode major -Json
+scripts\plan-generation-workflow.bat -Backend AceStep -ServerExecutable C:\tools\ace-server.exe -ModelPath C:\models\acestep
+```
+
+After planning, run the readiness checker to probe optional MusicGen Python
+dependencies and ACE-Step `/health` status without writing audio:
+
+```powershell
+scripts\check-generation-readiness.bat
+scripts\check-generation-readiness.bat -Backend MusicGenHf -Json
+scripts\check-generation-readiness.bat -Backend AceStep -ServerUrl http://127.0.0.1:8085
+```
+
+Readiness warnings are expected on machines without the optional Python stack or
+without a running ACE-Step server. Add `-Strict` when automation should fail on
+warnings.
+
+To capture a combined planning and readiness snapshot for handoff or release
+evidence:
+
+```powershell
+scripts\write-generation-workflow-report.bat -Backend all -ReportPath generation-workflow-report.json
+scripts\write-generation-workflow-report.bat -Backend MusicGenHf -Json -SummaryOnly
+```
+
 The first concrete opt-in runner profile targets Hugging Face Transformers
 MusicGen. It uses a small Python wrapper around `MusicgenForConditionalGeneration`
 and writes the standard `.wav.json` manifest so the C++ backend can read the
@@ -249,6 +281,7 @@ result. Install a local Python environment with `torch`, `transformers`, and
 
 ```powershell
 scripts\generate-musicgen-hf.bat -Prompt "warm lofi loop with soft keys" -Duration 8 -Output C:\temp\musicgen.wav
+scripts\generate-musicgen-hf.bat -Prompt "warm lofi loop with soft keys" -NegativePrompt "muddy drums" -Tempo 92 -Key C -Mode major -Output C:\temp\musicgen.wav
 scripts\generate-musicgen-hf.bat -DryRun
 ```
 
@@ -266,8 +299,10 @@ the local Transformers cache. `-AllowMissingDeps` is useful for automation that
 wants the JSON report without failing when the optional Python stack is absent.
 
 Set `OFXGGML_MUSIC_PYTHON` when the desired Python executable is not first on
-`PATH`. This profile is intentionally optional and does not make PyTorch a
-dependency of the addon.
+`PATH`. `-Tempo`, `-Key`, `-Mode`, and `-NegativePrompt` are recorded in the
+standard manifest for downstream tools even though the Hugging Face MusicGen
+model consumes only the positive text prompt. This profile is intentionally
+optional and does not make PyTorch a dependency of the addon.
 
 ## Dependencies
 
@@ -282,6 +317,9 @@ dependency of the addon.
 scripts\doctor-music.bat
 scripts\run-music-runtime-smoke.bat -Json -SummaryOnly -Clean
 scripts\setup-acestep-server.ps1 -DryRun
+scripts\plan-generation-workflow.bat
+scripts\check-generation-readiness.bat
+scripts\write-generation-workflow-report.bat
 scripts\test-acestep-server-dry-run.bat
 scripts\test-musicgen-hf-smoke.bat
 scripts\validate-local.bat

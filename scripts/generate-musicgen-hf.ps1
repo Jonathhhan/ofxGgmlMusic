@@ -2,9 +2,15 @@ param(
 	[string]$Prompt = "loopable electronic texture with warm chords",
 	[string]$Output = "",
 	[string]$Model = "facebook/musicgen-small",
+	[string]$NegativePrompt = "",
 	[double]$Duration = 8.0,
+	[double]$Tempo = 0.0,
+	[string]$Key = "",
+	[string]$Mode = "",
 	[int]$Seed = 42,
 	[double]$Guidance = 3.0,
+	[int]$MaxNewTokens = 0,
+	[string]$Device = "auto",
 	[string]$BuildDir = "",
 	[switch]$Json,
 	[switch]$Clean,
@@ -38,7 +44,9 @@ if ($SmokeTest) {
 	$runnerArgs = @(
 		"--smoke-test",
 		"--model",
-		$Model
+		$Model,
+		"--device",
+		$Device
 	)
 	if ($Json) {
 		$runnerArgs += "--json"
@@ -66,7 +74,28 @@ $args = @{
 	Duration = $Duration
 	Seed = $Seed
 	BuildDir = $BuildDir
-	ExtraArgument = @("--guidance", ([string]$Guidance))
+	ExtraArgument = @(
+		"--guidance", ([string]$Guidance),
+		"--device", $Device
+	)
+}
+if (![string]::IsNullOrWhiteSpace($NegativePrompt)) {
+	$args.ExtraArgument += @("--negative-prompt", $NegativePrompt)
+}
+if ($Tempo -gt 0.0) {
+	$args.Tempo = $Tempo
+	$args.ExtraArgument += @("--tempo", ([string]$Tempo))
+}
+if (![string]::IsNullOrWhiteSpace($Key)) {
+	$args.Key = $Key
+	$args.ExtraArgument += @("--key", $Key)
+}
+if (![string]::IsNullOrWhiteSpace($Mode)) {
+	$args.Mode = $Mode
+	$args.ExtraArgument += @("--mode", $Mode)
+}
+if ($MaxNewTokens -gt 0) {
+	$args.ExtraArgument += @("--max-new-tokens", ([string]$MaxNewTokens))
 }
 if ($Json) {
 	$args.Json = $true

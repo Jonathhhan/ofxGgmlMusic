@@ -40,7 +40,7 @@ def _write_manifest(args, sample_rate, duration_seconds, peak_abs):
         "backend": "huggingface-musicgen",
         "backendFamily": "transformer",
         "prompt": args.prompt,
-        "negativePrompt": "",
+        "negativePrompt": args.negative_prompt,
         "style": "musicgen",
         "referenceAudioPath": "",
         "outputPath": str(output_path),
@@ -54,8 +54,12 @@ def _write_manifest(args, sample_rate, duration_seconds, peak_abs):
         "sampleRate": int(sample_rate),
         "channels": 1,
         "peakAbs": peak_abs,
-        "tempo": { "bpm": 0, "confidence": 0 },
-        "key": { "tonic": "", "mode": "", "confidence": 0 },
+        "tempo": { "bpm": args.tempo, "confidence": 1 if args.tempo > 0 else 0 },
+        "key": {
+            "tonic": args.key,
+            "mode": args.mode,
+            "confidence": 1 if args.key or args.mode else 0
+        },
         "beats": [],
         "chords": [],
         "sections": [
@@ -171,7 +175,11 @@ def main():
     parser.add_argument("--prompt")
     parser.add_argument("--output")
     parser.add_argument("--model", default="facebook/musicgen-small")
+    parser.add_argument("--negative-prompt", default="")
     parser.add_argument("--duration", type=float, default=8.0)
+    parser.add_argument("--tempo", type=float, default=0.0)
+    parser.add_argument("--key", default="")
+    parser.add_argument("--mode", default="")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--guidance", type=float, default=3.0)
     parser.add_argument("--max-new-tokens", type=int, default=0)

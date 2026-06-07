@@ -110,8 +110,15 @@ if ($DryRun) {
 	Write-Host "  allow model id: $(if ($AllowModelId) { 'ON' } else { 'OFF' })"
 	Write-Host "  prompt: $Prompt"
 	Write-Host "  output: $Output"
+	Write-Host "  style: $Style"
 	Write-Host "  duration: $Duration"
+	Write-Host "  tempo: $Tempo"
+	Write-Host "  key: $Key"
+	Write-Host "  mode: $Mode"
 	Write-Host "  seed: $Seed"
+	if ($ExtraArgument.Count -gt 0) {
+		Write-Host "  extra arguments: $($ExtraArgument -join ' ')"
+	}
 	Write-Step "Dry run complete; no files were changed"
 	return
 }

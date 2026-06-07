@@ -82,6 +82,18 @@ Assert-Path (Join-Path $scriptRoot "generate-external-music.sh") "external gener
 Assert-Path (Join-Path $scriptRoot "generate-musicgen-hf.ps1") "Hugging Face MusicGen generation script"
 Assert-Path (Join-Path $scriptRoot "generate-musicgen-hf.bat") "Hugging Face MusicGen batch script"
 Assert-Path (Join-Path $scriptRoot "generate-musicgen-hf.sh") "Hugging Face MusicGen shell script"
+Assert-Path (Join-Path $scriptRoot "plan-generation-workflow.ps1") "generation workflow plan script"
+Assert-Path (Join-Path $scriptRoot "plan-generation-workflow.bat") "generation workflow plan batch script"
+Assert-Path (Join-Path $scriptRoot "plan-generation-workflow.sh") "generation workflow plan shell script"
+Assert-Path (Join-Path $scriptRoot "test-generation-workflow-plan.ps1") "generation workflow plan test"
+Assert-Path (Join-Path $scriptRoot "check-generation-readiness.ps1") "generation readiness script"
+Assert-Path (Join-Path $scriptRoot "check-generation-readiness.bat") "generation readiness batch script"
+Assert-Path (Join-Path $scriptRoot "check-generation-readiness.sh") "generation readiness shell script"
+Assert-Path (Join-Path $scriptRoot "test-generation-readiness.ps1") "generation readiness test"
+Assert-Path (Join-Path $scriptRoot "write-generation-workflow-report.ps1") "generation workflow report script"
+Assert-Path (Join-Path $scriptRoot "write-generation-workflow-report.bat") "generation workflow report batch script"
+Assert-Path (Join-Path $scriptRoot "write-generation-workflow-report.sh") "generation workflow report shell script"
+Assert-Path (Join-Path $scriptRoot "test-generation-workflow-report.ps1") "generation workflow report test"
 Assert-Path (Join-Path $scriptRoot "test-musicgen-hf-smoke.ps1") "Hugging Face MusicGen smoke test"
 Assert-Path (Join-Path $scriptRoot "test-musicgen-hf-smoke.bat") "Hugging Face MusicGen smoke Windows wrapper"
 Assert-Path (Join-Path $scriptRoot "test-musicgen-hf-smoke.sh") "Hugging Face MusicGen smoke shell wrapper"
@@ -227,6 +239,24 @@ if ($LASTEXITCODE -ne 0) {
 	throw "External generation contract dry run failed with exit code $LASTEXITCODE"
 }
 
+Write-Step "Checking generation workflow plan"
+& (Join-Path $scriptRoot "test-generation-workflow-plan.ps1")
+if ($LASTEXITCODE -ne 0) {
+	throw "Generation workflow plan contract failed with exit code $LASTEXITCODE"
+}
+
+Write-Step "Checking generation readiness"
+& (Join-Path $scriptRoot "test-generation-readiness.ps1")
+if ($LASTEXITCODE -ne 0) {
+	throw "Generation readiness contract failed with exit code $LASTEXITCODE"
+}
+
+Write-Step "Checking generation workflow report"
+& (Join-Path $scriptRoot "test-generation-workflow-report.ps1")
+if ($LASTEXITCODE -ne 0) {
+	throw "Generation workflow report contract failed with exit code $LASTEXITCODE"
+}
+
 Write-Step "Checking external generation script dry runs"
 $externalDryRun = & (Join-Path $scriptRoot "generate-external-music.ps1") `
 	-Executable "mock-generator.exe" `
@@ -238,9 +268,20 @@ if (!$externalDryRun.Contains("External music generation plan") -or
 	!$externalDryRun.Contains("Dry run complete; no files were changed")) {
 	throw "External generation dry-run output was unexpected:`n$externalDryRun"
 }
-$musicGenDryRun = & (Join-Path $scriptRoot "generate-musicgen-hf.ps1") -DryRun 2>&1 6>&1 | Out-String
+$musicGenDryRun = & (Join-Path $scriptRoot "generate-musicgen-hf.ps1") `
+	-DryRun `
+	-NegativePrompt "muddy drums" `
+	-Tempo 92 `
+	-Key C `
+	-Mode major `
+	-MaxNewTokens 32 2>&1 6>&1 | Out-String
 if (!$musicGenDryRun.Contains("External music generation plan") -or
 	!$musicGenDryRun.Contains("facebook/musicgen-small") -or
+	!$musicGenDryRun.Contains("--negative-prompt muddy drums") -or
+	!$musicGenDryRun.Contains("--tempo 92") -or
+	!$musicGenDryRun.Contains("--key C") -or
+	!$musicGenDryRun.Contains("--mode major") -or
+	!$musicGenDryRun.Contains("--max-new-tokens 32") -or
 	!$musicGenDryRun.Contains("Dry run complete; no files were changed")) {
 	throw "MusicGen HF dry-run output was unexpected:`n$musicGenDryRun"
 }
