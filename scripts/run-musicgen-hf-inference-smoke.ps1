@@ -47,12 +47,16 @@ function Invoke-Step {
 
 	$output = @()
 	$exitCode = 0
+	$previousErrorActionPreference = $ErrorActionPreference
 	try {
+		$ErrorActionPreference = "Continue"
 		$output = & $powerShell @Arguments 2>&1 | ForEach-Object { "$_" }
 		$exitCode = $LASTEXITCODE
 	} catch {
 		$output += "$_"
 		$exitCode = 1
+	} finally {
+		$ErrorActionPreference = $previousErrorActionPreference
 	}
 
 	[ordered]@{

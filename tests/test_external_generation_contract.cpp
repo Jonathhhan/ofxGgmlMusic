@@ -37,6 +37,18 @@ int main(int argc, char ** argv) {
 		return 2;
 	}
 
+	std::filesystem::path executablePath = generatorPath;
+#if defined(_WIN32)
+	const auto wrapperDir = std::filesystem::temp_directory_path() / "ofxGgmlMusic external contract";
+	std::filesystem::create_directories(wrapperDir);
+	const auto wrapperPath = wrapperDir / "run generator.cmd";
+	{
+		std::ofstream wrapper(wrapperPath, std::ios::binary);
+		wrapper << "@echo off\r\n\"" << generatorPath.string() << "\" %*\r\n";
+	}
+	executablePath = wrapperPath;
+#endif
+
 	const auto outputPath =
 		std::filesystem::temp_directory_path() / "ofxGgmlMusic-external-contract.wav";
 	removeIfPresent(outputPath.string());
@@ -53,7 +65,7 @@ int main(int argc, char ** argv) {
 	request.key.tonic = "C";
 	request.key.mode = "major";
 	request.targetStems = { "melody", "bass" };
-	request.external.executablePath = generatorPath.string();
+	request.external.executablePath = executablePath.string();
 	request.external.modelPath = "mock-musicgen-model-id";
 	request.external.requireModelPathExists = false;
 	request.external.modelFlag.clear();
@@ -123,8 +135,8 @@ int main(int argc, char ** argv) {
 	bool hasExecutableReference = false;
 	bool hasModelReference = false;
 	for (const auto & reference : result.references) {
-		if (reference.find(generatorPath.filename().string()) != std::string::npos ||
-			reference.find(generatorPath.string()) != std::string::npos) {
+		if (reference.find(executablePath.filename().string()) != std::string::npos ||
+			reference.find(executablePath.string()) != std::string::npos) {
 			hasExecutableReference = true;
 		}
 		if (reference.find("mock-musicgen-model-id") != std::string::npos) {
@@ -151,5 +163,10 @@ int main(int argc, char ** argv) {
 	removeIfPresent(result.manifestPath);
 	removeIfPresent(result.historyPath);
 	removeIfPresent(result.outputPath);
+#if defined(_WIN32)
+	removeIfPresent(executablePath.string());
+	std::error_code wrapperCleanupError;
+	std::filesystem::remove(executablePath.parent_path(), wrapperCleanupError);
+#endif
 	return 0;
 }

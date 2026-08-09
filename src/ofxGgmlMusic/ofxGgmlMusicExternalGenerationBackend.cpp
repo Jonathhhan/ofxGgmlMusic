@@ -2,6 +2,8 @@
 
 #include "ofxGgmlMusicUtils.h"
 
+#include <algorithm>
+#include <cwctype>
 #include <filesystem>
 #include <sstream>
 #include <vector>
@@ -142,10 +144,25 @@ namespace {
 		const std::vector<std::string> & arguments,
 		const std::string & workingDirectory) {
 		const std::wstring executable = widenUtf8(executablePath);
-		std::wstring commandLine = quoteWindowsArgument(executable);
+		std::wstring childCommandLine = quoteWindowsArgument(executable);
 		for (const auto & argument : arguments) {
-			commandLine += L" ";
-			commandLine += quoteWindowsArgument(widenUtf8(argument));
+			childCommandLine += L" ";
+			childCommandLine += quoteWindowsArgument(widenUtf8(argument));
+		}
+
+		auto extension = std::filesystem::path(executablePath).extension().wstring();
+		std::transform(extension.begin(), extension.end(), extension.begin(), [](wchar_t value) {
+			return static_cast<wchar_t>(std::towlower(value));
+		});
+		std::wstring application = executable;
+		std::wstring commandLine = childCommandLine;
+		if (extension == L".bat" || extension == L".cmd") {
+			wchar_t comSpec[MAX_PATH] = {};
+			const DWORD comSpecLength = GetEnvironmentVariableW(L"ComSpec", comSpec, MAX_PATH);
+			application = (comSpecLength > 0 && comSpecLength < MAX_PATH)
+				? std::wstring(comSpec, comSpecLength)
+				: std::wstring(L"cmd.exe");
+			commandLine = quoteWindowsArgument(application) + L" /d /s /c \"" + childCommandLine + L"\"";
 		}
 		std::vector<wchar_t> mutableCommandLine(commandLine.begin(), commandLine.end());
 		mutableCommandLine.push_back(L'\0');
@@ -159,7 +176,7 @@ namespace {
 			: workingDirectoryWide.c_str();
 
 		if (!CreateProcessW(
-				executable.c_str(),
+				application.c_str(),
 				mutableCommandLine.data(),
 				nullptr,
 				nullptr,
