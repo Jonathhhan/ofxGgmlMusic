@@ -12,7 +12,6 @@ $text = $output -join "`n"
 foreach ($expected in @(
 	"ofxGgmlMusic doctor",
 	"ofxGgmlCore sibling",
-	"analysis example",
 	"generation example source",
 	"music request types",
 	"procedural backend",

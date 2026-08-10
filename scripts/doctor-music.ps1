@@ -273,11 +273,6 @@ $checks += Test-PathCheck `
 	-Directory
 
 $checks += Test-PathCheck `
-	-Path (Join-Path $addonRoot "ofxGgmlMusicAnalysisExample\addons.make") `
-	-Name "analysis example" `
-	-MissingDetail "ofxGgmlMusicAnalysisExample skeleton is missing"
-
-$checks += Test-PathCheck `
 	-Path (Join-Path $addonRoot "ofxGgmlMusicGenerationExample\src\ofApp.cpp") `
 	-Name "generation example source" `
 	-MissingDetail "generation example source is missing"
@@ -336,9 +331,6 @@ $artifactWarnings = @()
 foreach ($relative in @(
 	"build",
 	".vs",
-	"ofxGgmlMusicAnalysisExample\bin",
-	"ofxGgmlMusicAnalysisExample\obj",
-	"ofxGgmlMusicAnalysisExample\.vs",
 	"ofxGgmlMusicGenerationExample\bin",
 	"ofxGgmlMusicGenerationExample\obj",
 	"ofxGgmlMusicGenerationExample\.vs",

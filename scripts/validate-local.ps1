@@ -154,14 +154,6 @@ Assert-Path (Join-Path $addonsRoot "ofxGgmlCore") "sibling ofxGgmlCore addon" -D
 Assert-Path (Join-Path $addonsRoot "ofxImGui") "sibling ofxImGui addon for examples" -Directory
 
 Write-Step "Checking example layout"
-$exampleRoot = Join-Path $addonRoot "ofxGgmlMusicAnalysisExample"
-Assert-Path $exampleRoot "root-level smoke example" -Directory
-Assert-Path (Join-Path $exampleRoot "addons.make") "smoke example addons.make"
-Assert-FileContains (Join-Path $exampleRoot "addons.make") "(?m)^ofxImGui\s*$" "smoke example addons.make"
-Assert-Path (Join-Path $exampleRoot "src\main.cpp") "smoke example main.cpp"
-Assert-Path (Join-Path $exampleRoot "src\ofApp.h") "smoke example ofApp.h"
-Assert-Path (Join-Path $exampleRoot "src\ofApp.cpp") "smoke example ofApp.cpp"
-
 $generationExampleRoot = Join-Path $addonRoot "ofxGgmlMusicGenerationExample"
 Assert-Path $generationExampleRoot "root-level generation example" -Directory
 Assert-Path (Join-Path $generationExampleRoot "addons.make") "generation example addons.make"
@@ -206,9 +198,6 @@ Write-Step "Checking generated artifact hygiene"
 $forbidden = @(
 	"build",
 	".vs",
-	"ofxGgmlMusicAnalysisExample\bin",
-	"ofxGgmlMusicAnalysisExample\obj",
-	"ofxGgmlMusicAnalysisExample\.vs",
 	"ofxGgmlMusicGenerationExample\bin",
 	"ofxGgmlMusicGenerationExample\obj",
 	"ofxGgmlMusicGenerationExample\.vs",

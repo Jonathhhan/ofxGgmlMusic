@@ -24,7 +24,7 @@ Current addon API version: `1.0.2`.
 ## First Milestone
 
 - define small music-specific request/result types
-- keep one root-level smoke example
+- keep one canonical model-backed example plus an explicitly model-free offline example
 - keep generated models, media, builds, and IDE files out of git
 - validate the addon with local headless tests
 
@@ -90,12 +90,6 @@ plan/readiness/report scripts for ecosystem tooling in `ofxggml-addon.json`.
 
 ## Example
 
-`ofxGgmlMusicAnalysisExample` is a root-level audio analysis request builder.
-It lets you edit the audio path, task, prompt, and tags, then draws a
-deterministic preview result timeline so tempo, beat, key, chord, embedding,
-and stem result shapes are visible before a trained analysis backend is wired in.
-Its preview duration, current request summary, logging button, and task cycling
-shortcut make the analysis request shape easy to inspect.
 `ofxGgmlMusicGenerationExample` is a root-level prompt-to-music sketch that
 writes a WAV file with the built-in `procedural-sketch` backend and draws a
 waveform preview after generation. It includes prompt and negative-prompt fields
@@ -112,8 +106,15 @@ Each Generate press writes a
 timestamped WAV so the history index can track multiple renders. The generation
 example reloads recent renders from that index on startup when available,
 falling back to the standard render manifest. Generate
-these examples with the openFrameworks projectGenerator using addons
+the examples with the openFrameworks projectGenerator using addons
 `ofxGgmlMusic`, `ofxGgmlCore`, and `ofxImGui`.
+
+`ofxGgmlMusicGenerationExample` is deliberately an offline deterministic tool,
+not an ACE-Step fallback and not evidence of model inference. Its stems, editable
+MIDI, render history, and arrangement metadata remain useful without a model.
+Analysis request/result types remain covered by the public API and headless tests;
+the former mock-only analysis preview was removed because it did not execute a
+trained analysis backend.
 
 On Windows, if an existing generated Visual Studio project reports missing
 addon headers such as `ofxGgmlMusic.h` or `ofxImGui.h`, repair the generated

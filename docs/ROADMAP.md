@@ -3,7 +3,8 @@
 ## Current Milestone
 
 - Seed the companion addon skeleton.
-- Keep `ofxGgmlMusicAnalysisExample` as the first root-level smoke example.
+- Keep `ofxGgmlMusicAceStepExample` as the canonical model-backed example and
+  `ofxGgmlMusicGenerationExample` as an explicitly model-free offline tool.
 - Keep `ofxGgmlCore` as the only required library dependency; examples may depend on `ofxImGui`.
 - Add local validation and headless tests.
 - Keep `ofxGgmlMusic` separate from `ofxGgmlAudio`; allow an optional future

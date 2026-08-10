@@ -1,3 +1,0 @@
-ofxGgmlCore
-ofxGgmlMusic
-ofxImGui
