@@ -455,6 +455,9 @@ function ConvertTo-ProjectLibraryReference {
 			}
 		}
 	}
+	if (!$directory -and $name -in @("cublas.lib", "cudart.lib", "cuda.lib")) {
+		$directory = '$(CUDA_PATH)\lib\x64'
+	}
 
 	return [pscustomobject]@{
 		Dependency = $name
@@ -682,7 +685,11 @@ function Get-ExampleAddonRoots {
 
 	$roots = New-Object System.Collections.Generic.List[string]
 	foreach ($name in $addonNames) {
-		$root = Join-Path $AddonsRoot $name
+		$root = if ($name -eq "ofxGgmlMusic") {
+			$AddonRoot
+		} else {
+			Join-Path $AddonsRoot $name
+		}
 		if (Test-Path -LiteralPath $root -PathType Container) {
 			$roots.Add($root)
 		} else {

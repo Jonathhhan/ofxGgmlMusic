@@ -139,6 +139,25 @@ function Assert-CompilerOptionOncePerNode {
 	}
 }
 
+function Get-VsAddonLibraries {
+	param([string]$AddonConfig)
+	$section = ""
+	$libraries = New-Object System.Collections.Generic.List[string]
+	foreach ($rawLine in Get-Content -LiteralPath $AddonConfig) {
+		$line = ([string]$rawLine -replace "\s+#.*$", "").Trim()
+		if ($line -match '^([A-Za-z0-9_/]+):\s*$') {
+			$section = $matches[1]
+			continue
+		}
+		if ($section -eq "vs" -and $line -match '^ADDON_LIBS\s*(?:\+)?=\s*(.+)$') {
+			foreach ($library in @($matches[1] -split '\s+' | Where-Object { $_ })) {
+				$libraries.Add([string]$library)
+			}
+		}
+	}
+	return @($libraries)
+}
+
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $addonRoot = Resolve-Path (Join-Path $scriptRoot "..")
 $examples = @(
@@ -165,12 +184,23 @@ foreach ($example in $examples) {
 }
 
 $aceProject = Join-Path $addonRoot "ofxGgmlMusicAceStepExample\ofxGgmlMusicAceStepExample.vcxproj"
+$coreRoot = Resolve-Path (Join-Path $addonRoot "..\ofxGgmlCore")
+$coreLibraries = @(Get-VsAddonLibraries -AddonConfig (Join-Path $coreRoot "addon_config.mk"))
 Assert-CompileItem -Project $aceProject -CompileItem "..\src\ofxGgmlMusic\ofxGgmlMusicAceStepBridge.cpp"
 Assert-IncludeDirectory -Project $aceProject -IncludeDirectory "..\..\ofxGgmlCore\libs\ggml\include"
-Assert-SemicolonNodeContains -Project $aceProject -NodeName "AdditionalLibraryDirectories" -Value "..\..\ofxGgmlCore\libs\ggml\lib"
-Assert-SemicolonNodeContains -Project $aceProject -NodeName "AdditionalLibraryDirectories" -Value '$(CUDA_PATH)\lib\x64'
-foreach ($library in @("ggml.lib", "ggml-base.lib", "ggml-cpu.lib", "ggml-cuda.lib", "cublas.lib", "cudart.lib", "cuda.lib")) {
-	Assert-SemicolonNodeContains -Project $aceProject -NodeName "AdditionalDependencies" -Value $library
+foreach ($library in $coreLibraries) {
+	$libraryName = [System.IO.Path]::GetFileName(($library -replace '/', '\'))
+	Assert-SemicolonNodeContains -Project $aceProject -NodeName "AdditionalDependencies" -Value $libraryName
+	$libraryParent = Split-Path -Parent ($library -replace '/', '\')
+	if ($libraryParent) {
+		Assert-SemicolonNodeContains `
+			-Project $aceProject `
+			-NodeName "AdditionalLibraryDirectories" `
+			-Value ("..\..\ofxGgmlCore\" + $libraryParent)
+	}
+}
+if ($coreLibraries | Where-Object { [System.IO.Path]::GetFileName(($_ -replace '/', '\')) -in @("cublas.lib", "cudart.lib", "cuda.lib") }) {
+	Assert-SemicolonNodeContains -Project $aceProject -NodeName "AdditionalLibraryDirectories" -Value '$(CUDA_PATH)\lib\x64'
 }
 Assert-SemicolonNodePreservesMacro -Project $aceProject -NodeName "AdditionalDependencies" -Macro "%(AdditionalDependencies)"
 Assert-CompilerOptionAbsent -Project $aceProject -Option "-DOFXIMGUI_GLFW_EVENTS_REPLACE_OF_CALLBACKS=1"
