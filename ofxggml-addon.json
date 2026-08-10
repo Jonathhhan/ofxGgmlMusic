@@ -3,7 +3,7 @@
   "lane": "music",
   "coreBaseline": "v1.0.1",
   "runtimeSmokeReport": ".music-runtime-smoke.json",
-  "inferenceSmokeReport": ".musicgen-inference-smoke.json",
+  "inferenceSmokeReport": ".acestep-inference-smoke.json",
   "generationWorkflowReport": ".generation-workflow-report.json",
   "generationWorkflowScripts": {
     "plan": "scripts/plan-generation-workflow.bat",
@@ -26,7 +26,7 @@
     "key/chord workflow boundaries",
     "stem and generation lane planning",
     "runtime smoke validation entrypoint",
-    "MusicGen HF model-backed inference smoke gate",
+    "ACE-Step model-backed inference smoke gate",
     "MusicGen and ACE-Step workflow planning",
     "MusicGen and ACE-Step readiness reporting"
   ],

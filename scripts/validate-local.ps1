@@ -101,6 +101,9 @@ Assert-Path (Join-Path $scriptRoot "test-musicgen-hf-smoke.sh") "Hugging Face Mu
 Assert-Path (Join-Path $scriptRoot "run-musicgen-hf-inference-smoke.ps1") "Hugging Face MusicGen inference smoke"
 Assert-Path (Join-Path $scriptRoot "run-musicgen-hf-inference-smoke.bat") "Hugging Face MusicGen inference smoke Windows wrapper"
 Assert-Path (Join-Path $scriptRoot "test-musicgen-hf-inference-smoke.ps1") "Hugging Face MusicGen inference smoke test"
+Assert-Path (Join-Path $scriptRoot "run-acestep-inference-smoke.ps1") "ACE-Step inference smoke"
+Assert-Path (Join-Path $scriptRoot "run-acestep-inference-smoke.bat") "ACE-Step inference smoke Windows wrapper"
+Assert-Path (Join-Path $scriptRoot "test-acestep-inference-smoke.ps1") "ACE-Step inference smoke test"
 Assert-Path (Join-Path $scriptRoot "start-acestep-server.ps1") "AceStep server launch script"
 Assert-Path (Join-Path $scriptRoot "start-acestep-server.bat") "AceStep server launch batch script"
 Assert-Path (Join-Path $scriptRoot "start-acestep-server.sh") "AceStep server launch shell script"
@@ -145,7 +148,8 @@ if ($addonManifest.generationWorkflowScripts.plan -ne "scripts/plan-generation-w
 	throw "Addon manifest did not advertise the expected generation workflow scripts."
 }
 if (!(@($addonManifest.features) -contains "MusicGen and ACE-Step workflow planning") -or
-	!(@($addonManifest.features) -contains "MusicGen and ACE-Step readiness reporting")) {
+	!(@($addonManifest.features) -contains "MusicGen and ACE-Step readiness reporting") -or
+	!(@($addonManifest.features) -contains "ACE-Step model-backed inference smoke gate")) {
 	throw "Addon manifest did not advertise the generation workflow features."
 }
 
@@ -297,6 +301,10 @@ if ($LASTEXITCODE -ne 0) {
 & (Join-Path $scriptRoot "test-musicgen-hf-inference-smoke.ps1")
 if ($LASTEXITCODE -ne 0) {
 	throw "MusicGen HF inference smoke contract failed with exit code $LASTEXITCODE"
+}
+& (Join-Path $scriptRoot "test-acestep-inference-smoke.ps1")
+if ($LASTEXITCODE -ne 0) {
+	throw "ACE-Step inference smoke contract failed with exit code $LASTEXITCODE"
 }
 $acestepDryRun = & (Join-Path $scriptRoot "start-acestep-server.ps1") `
 	-ServerExecutable "mock-acestep-server.exe" `
