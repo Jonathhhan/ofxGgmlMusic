@@ -1149,6 +1149,17 @@ void ofApp::draw() {
 	ImGui::InputText("Server", serverUrlBuffer.data(), serverUrlBuffer.size());
 	ImGui::InputText("Server exe", serverExecutableBuffer.data(), serverExecutableBuffer.size());
 	ImGui::InputText("Model path", modelPathBuffer.data(), modelPathBuffer.size());
+	ImGui::SameLine();
+	if (ImGui::Button("Browse...##acestep-model-folder")) {
+		auto selected = ofSystemLoadDialog(
+			"Choose ACE-Step model folder",
+			true,
+			modelPathBuffer.data());
+		if (selected.bSuccess) {
+			copyToBuffer(modelPathBuffer, selected.getPath());
+			status = "Selected ACE-Step model folder";
+		}
+	}
 	if (!promptPresetNames.empty()) {
 		if (promptPresetIndex < 0 || promptPresetIndex >= static_cast<int>(promptPresetNames.size())) {
 			promptPresetIndex = 0;
