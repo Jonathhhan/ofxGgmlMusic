@@ -4,6 +4,7 @@
 #include "ofxGgmlMusic.h"
 #include "ofxImGui.h"
 
+#include <atomic>
 #include <array>
 #include <memory>
 #include <string>
@@ -14,9 +15,39 @@ public:
 	void setup() override;
 	void update() override;
 	void draw() override;
+	void exit() override;
 	void keyPressed(int key) override;
 
 private:
+	struct GenerationJob {
+		ofxGgmlMusicGenerationRequest request;
+	};
+
+	struct GenerationCompleted {
+		ofxGgmlMusicGenerationResult result;
+		std::string backendName = "procedural-sketch";
+		std::string status;
+		double elapsedMs = 0.0;
+		bool loop = false;
+	};
+
+	class GenerationWorker : public ofThread {
+	public:
+		void start();
+		void stop();
+		bool submit(GenerationJob job);
+		bool tryReceive(GenerationCompleted & completed);
+		bool isBusy() const;
+
+	private:
+		void threadedFunction() override;
+
+		ofThreadChannel<GenerationJob> jobs;
+		ofThreadChannel<GenerationCompleted> completedJobs;
+		std::unique_ptr<ofxGgmlMusicGenerationBackend> backend;
+		std::atomic<bool> busy{ false };
+	};
+
 	void rebuildRequest();
 	void runGeneration();
 	void applyPreset(int index);
@@ -39,7 +70,7 @@ private:
 	void assignRandomSeed();
 
 	ofxImGui::Gui gui;
-	std::unique_ptr<ofxGgmlMusicGenerationBackend> backend;
+	GenerationWorker generationWorker;
 	ofxGgmlMusicGenerationRequest request;
 	ofxGgmlMusicGenerationResult lastResult;
 	ofxGgmlMusicAudioBuffer waveform;
@@ -54,6 +85,7 @@ private:
 	std::vector<std::string> keyModes;
 	std::vector<std::string> historyManifestPaths;
 	std::string currentOutputPath;
+	std::string backendName = "procedural-sketch";
 	std::string status;
 	std::string detail;
 	float tempo = 92.0f;

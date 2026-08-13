@@ -1,8 +1,10 @@
 #include "ofApp.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <exception>
 #include <iterator>
 #include <sstream>
 
@@ -78,6 +80,90 @@ namespace {
 	}
 }
 
+void ofApp::GenerationWorker::start() {
+	if (!isThreadRunning()) {
+		startThread();
+	}
+}
+
+void ofApp::GenerationWorker::stop() {
+	jobs.close();
+	waitForThread(true);
+	completedJobs.close();
+}
+
+bool ofApp::GenerationWorker::submit(GenerationJob job) {
+	if (busy.exchange(true)) {
+		return false;
+	}
+	const bool sent = jobs.send(std::move(job));
+	if (!sent) {
+		busy.store(false);
+	}
+	return sent;
+}
+
+bool ofApp::GenerationWorker::tryReceive(GenerationCompleted & completed) {
+	return completedJobs.tryReceive(completed);
+}
+
+bool ofApp::GenerationWorker::isBusy() const {
+	return busy.load();
+}
+
+void ofApp::GenerationWorker::threadedFunction() {
+	GenerationJob job;
+	while (jobs.receive(job)) {
+		GenerationCompleted completed;
+		completed.loop = job.request.settings.loop;
+		const auto startedAt = std::chrono::steady_clock::now();
+		try {
+			if (!backend) {
+				backend = ofxGgmlMakeProceduralMusicGenerationBackend();
+			}
+			if (!backend) {
+				completed.status = "backend missing";
+				completed.result.error = "Could not create the procedural music backend.";
+			} else {
+				completed.backendName = backend->getBackendName();
+				ofLogNotice("ofxGgmlMusicGenerationExample")
+					<< "generation executing on ofThread worker with " << completed.backendName;
+				const auto setupResult = backend->setup(job.request);
+				if (!setupResult) {
+					completed.status = "setup failed";
+					completed.result = setupResult;
+				} else {
+					completed.result = backend->generate(job.request);
+					completed.status = completed.result ? "complete" : "generation failed";
+				}
+			}
+		} catch (const std::exception & error) {
+			completed.status = "generation worker failed";
+			completed.result.error = error.what();
+		} catch (...) {
+			completed.status = "generation worker failed";
+			completed.result.error = "Unknown generation error.";
+		}
+		completed.elapsedMs = std::chrono::duration<double, std::milli>(
+			std::chrono::steady_clock::now() - startedAt).count();
+		if (completed.result) {
+			ofLogNotice("ofxGgmlMusicGenerationExample")
+				<< "generation completed on ofThread worker in "
+				<< ofToString(completed.elapsedMs, 1) << " ms";
+		} else {
+			ofLogWarning("ofxGgmlMusicGenerationExample")
+				<< completed.status << ": " << completed.result.error;
+		}
+		completedJobs.send(std::move(completed));
+		busy.store(false);
+	}
+	if (backend) {
+		backend->close();
+		backend.reset();
+	}
+	busy.store(false);
+}
+
 void ofApp::setup() {
 	ofSetWindowTitle("ofxGgmlMusic generation example");
 	gui.setup(nullptr, false);
@@ -85,17 +171,43 @@ void ofApp::setup() {
 	stemNames = ofxGgmlMusicUtils::getGenerationStemNames();
 	keyTonics = ofxGgmlMusicUtils::getGenerationKeyTonics();
 	keyModes = ofxGgmlMusicUtils::getGenerationKeyModes();
-	backend = ofxGgmlMakeProceduralMusicGenerationBackend();
+	generationWorker.start();
 	ofxGgmlMusicUtils::applyGenerationPreset("ambient", request);
 	syncControlsFromRequest();
 	rebuildRequest();
 	status = "ready";
-	detail = backend->getBackendName();
+	detail = backendName + " ready on ofThread worker";
 	loadExistingRender();
 	ofLogNotice("ofxGgmlMusicGenerationExample") << ofxGgmlMusicUtils::describe(request);
 }
 
 void ofApp::update() {
+	GenerationCompleted completed;
+	while (generationWorker.tryReceive(completed)) {
+		backendName = completed.backendName;
+		lastResult = std::move(completed.result);
+		status = completed.status;
+		if (!lastResult) {
+			detail = lastResult.error;
+			continue;
+		}
+
+		detail = "Wrote " + lastResult.outputPath + " in " +
+			ofToString(completed.elapsedMs, 1) + " ms";
+		refreshGenerationHistory();
+		player.stop();
+		player.load(lastResult.outputPath);
+		player.setLoop(completed.loop);
+		loadWaveform();
+		if (autoPlay) {
+			player.play();
+		}
+		ofLogNotice("ofxGgmlMusicGenerationExample") << detail;
+	}
+}
+
+void ofApp::exit() {
+	generationWorker.stop();
 }
 
 void ofApp::keyPressed(int key) {
@@ -212,44 +324,21 @@ void ofApp::rebuildRequest() {
 }
 
 void ofApp::runGeneration() {
+	if (generationWorker.isBusy()) {
+		status = "generation already running";
+		detail = "Wait for the current ofThread worker job to finish.";
+		return;
+	}
 	currentOutputPath = getNextOutputPath();
 	rebuildRequest();
-	if (!backend) {
-		status = "backend missing";
-		detail = "";
-		return;
+	GenerationJob job;
+	job.request = request;
+	status = "generation running";
+	detail = "Procedural render executing on ofThread worker...";
+	if (!generationWorker.submit(std::move(job))) {
+		status = "generation unavailable";
+		detail = "Could not submit work to the ofThread worker.";
 	}
-
-	const auto setupResult = backend->setup(request);
-	if (!setupResult) {
-		lastResult = setupResult;
-		status = "setup failed";
-		detail = setupResult.error;
-		ofLogWarning("ofxGgmlMusicGenerationExample") << detail;
-		return;
-	}
-
-	const auto result = backend->generate(request);
-	if (!result) {
-		lastResult = result;
-		status = "generation failed";
-		detail = result.error;
-		ofLogWarning("ofxGgmlMusicGenerationExample") << detail;
-		return;
-	}
-
-	lastResult = result;
-	status = "complete";
-	detail = "Wrote " + result.outputPath;
-	refreshGenerationHistory();
-	player.stop();
-	player.load(result.outputPath);
-	player.setLoop(loop);
-	loadWaveform();
-	if (autoPlay) {
-		player.play();
-	}
-	ofLogNotice("ofxGgmlMusicGenerationExample") << detail;
 }
 
 std::string ofApp::getOutputDirectory() const {
@@ -542,8 +631,15 @@ void ofApp::draw() {
 		}
 	}
 
-	if (ImGui::Button("Generate")) {
+	const bool generationRunning = generationWorker.isBusy();
+	if (generationRunning) {
+		ImGui::BeginDisabled();
+	}
+	if (ImGui::Button(generationRunning ? "Generating..." : "Generate")) {
 		runGeneration();
+	}
+	if (generationRunning) {
+		ImGui::EndDisabled();
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Reload")) {
@@ -563,7 +659,8 @@ void ofApp::draw() {
 	}
 
 	ImGui::Separator();
-	ImGui::Text("Backend: %s", backend ? backend->getBackendName().c_str() : "(none)");
+	ImGui::Text("Backend: %s", backendName.c_str());
+	ImGui::Text("Execution: %s", generationRunning ? "ofThread worker (busy)" : "ofThread worker (idle)");
 	ImGui::Text("Status: %s", status.c_str());
 	ImGui::TextWrapped("%s", detail.c_str());
 	if (ImGui::TreeNode("Shortcuts")) {

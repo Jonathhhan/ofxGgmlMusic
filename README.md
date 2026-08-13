@@ -105,7 +105,9 @@ and `Reload` or `L` to pull the latest history entry back into the preview.
 Each Generate press writes a
 timestamped WAV so the history index can track multiple renders. The generation
 example reloads recent renders from that index on startup when available,
-falling back to the standard render manifest. Generate
+falling back to the standard render manifest. Its persistent `ofThread` worker
+owns the procedural backend and keeps DSP plus artifact writes off the UI thread;
+the player, waveform, and ImGui state are updated after a completed result. Generate
 the examples with the openFrameworks projectGenerator using addons
 `ofxGgmlMusic`, `ofxGgmlCore`, and `ofxImGui`.
 
