@@ -148,7 +148,7 @@ $evidence = [ordered] @{
 		"scripts/run-music-runtime-smoke.ps1"
 	)
 	quality_report_path = $QualityReportPath
-	example_name = "ofxGgmlMusicGenerationExample"
+	example_name = "procedural-cli"
 	smoke_kind = $summary.SmokeKind
 	inference_checked = $inferenceChecked
 	duration_ms = $(if ($null -ne $summary.ElapsedMs) { [double] $summary.ElapsedMs } else { 0.0 })

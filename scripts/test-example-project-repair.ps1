@@ -161,7 +161,6 @@ function Get-VsAddonLibraries {
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $addonRoot = Resolve-Path (Join-Path $scriptRoot "..")
 $examples = @(
-	"ofxGgmlMusicGenerationExample",
 	"ofxGgmlMusicAceStepExample"
 )
 

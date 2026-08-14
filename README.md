@@ -24,7 +24,7 @@ Current addon API version: `1.0.2`.
 ## First Milestone
 
 - define small music-specific request/result types
-- keep one canonical model-backed example plus an explicitly model-free offline example
+- keep one canonical model-backed generation example
 - keep generated models, media, builds, and IDE files out of git
 - validate the addon with local headless tests
 
@@ -90,33 +90,17 @@ plan/readiness/report scripts for ecosystem tooling in `ofxggml-addon.json`.
 
 ## Example
 
-`ofxGgmlMusicGenerationExample` is a root-level prompt-to-music sketch that
-writes a WAV file with the built-in `procedural-sketch` backend and draws a
-waveform preview after generation. It includes prompt and negative-prompt fields
-so procedural layers can be encouraged or damped before rendering. It also writes
-a `.wav.json` manifest next to the audio file, writes editable melody, chord, and
-combined arrangement `.mid` files, can export shared melody, bass, pulse, and mix stems,
-overlays sections plus beat/chord timing on the waveform, and shows playback
-position while audio is playing or while dragging the waveform. The arrangement MIDI includes melody,
-chords, bass, and pulse tracks for quick remixing. Use `Current request` to inspect the render shape, `Last result` to
-inspect rendered timing and artifact metadata, `P` to cycle presets, `D` to log
-the request summary, `New seed` to audition deterministic variations quickly,
-and `Reload` or `L` to pull the latest history entry back into the preview.
-Each Generate press writes a
-timestamped WAV so the history index can track multiple renders. The generation
-example reloads recent renders from that index on startup when available,
-falling back to the standard render manifest. Its persistent `ofThread` worker
-owns the procedural backend and keeps DSP plus artifact writes off the UI thread;
-the player, waveform, and ImGui state are updated after a completed result. Generate
-the examples with the openFrameworks projectGenerator using addons
-`ofxGgmlMusic`, `ofxGgmlCore`, and `ofxImGui`.
+`ofxGgmlMusicAceStepExample` is the single root-level generation example. It
+demonstrates the real local model workflow instead of presenting deterministic
+DSP as a ggml capability. Generate it with the openFrameworks projectGenerator
+using addons `ofxGgmlMusic`, `ofxGgmlCore`, and `ofxImGui`.
 
-`ofxGgmlMusicGenerationExample` is deliberately an offline deterministic tool,
-not an ACE-Step fallback and not evidence of model inference. Its stems, editable
-MIDI, render history, and arrangement metadata remain useful without a model.
-Analysis request/result types remain covered by the public API and headless tests;
-the former mock-only analysis preview was removed because it did not execute a
-trained analysis backend.
+The model-free `procedural-sketch` backend remains available through
+`scripts\generate-procedural-music.*`, `scripts\run-music-runtime-smoke.*`, and
+headless tests. Those paths verify WAV, manifest, history, MIDI, and shared
+melody, bass, pulse, and mix stems without occupying a user-facing example slot
+or claiming model inference. Analysis request/result types likewise remain
+covered by the public API and headless tests.
 
 On Windows, if an existing generated Visual Studio project reports missing
 addon headers such as `ofxGgmlMusic.h` or `ofxImGui.h`, repair the generated

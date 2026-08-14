@@ -56,7 +56,7 @@ function Normalize-Backend {
 
 function New-MusicGenPlan {
 	$musicGenOutput = if ([string]::IsNullOrWhiteSpace($Output)) {
-		Join-Path $addonRoot "ofxGgmlMusicGenerationExample\bin\data\outputs\musicgen-hf.wav"
+		Join-Path ([System.IO.Path]::GetTempPath()) "ofxGgmlMusic\outputs\musicgen-hf.wav"
 	} else {
 		$Output
 	}

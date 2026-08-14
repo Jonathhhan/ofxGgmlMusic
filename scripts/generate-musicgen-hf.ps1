@@ -29,7 +29,7 @@ function Test-WindowsHost {
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $addonRoot = Resolve-Path (Join-Path $scriptRoot "..")
 if ([string]::IsNullOrWhiteSpace($Output)) {
-	$Output = Join-Path $addonRoot "ofxGgmlMusicGenerationExample\bin\data\outputs\musicgen-hf.wav"
+	$Output = Join-Path ([System.IO.Path]::GetTempPath()) "ofxGgmlMusic\outputs\musicgen-hf.wav"
 }
 if ([string]::IsNullOrWhiteSpace($BuildDir)) {
 	$BuildDir = Join-Path ([System.IO.Path]::GetTempPath()) "ofxGgmlMusicExternalGenerate"

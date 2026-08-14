@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Removed the model-free `ofxGgmlMusicGenerationExample`; ACE-Step is now the
+  only root-level generation example. The procedural backend, CLI, and
+  deterministic runtime tests remain available without implying model inference.
 - Made the ACE-Step ggml fork exclusively Music-owned. The setup script now
   always uses the `acestep.cpp` ggml submodule and removes the redundant
   `-UseCoreGgml`, `-BundledGgml`, and `-OfxGgmlCorePath` variants.

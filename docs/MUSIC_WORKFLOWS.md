@@ -23,7 +23,7 @@ This addon may define:
   diffusion, transformer, SampleRNN, or custom GGML tools
 - Hugging Face MusicGen runner profiles as opt-in local tooling
 - music generation manifests, history indexes, MIDI sidecars, and stem exports
-- focused music analysis and generation examples
+- one focused model-backed music generation example
 
 ## Not owned here
 

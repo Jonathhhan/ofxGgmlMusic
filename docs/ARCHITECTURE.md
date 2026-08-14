@@ -34,7 +34,7 @@ No dependency should point from `ofxGgmlCore` or `ofxGgmlAudio` back to
   executable through the same bridge model-backed tools will use
 - a user-facing external generation CLI and optional Hugging Face MusicGen
   Python runner profile
-- shared generation presets used by both the CLI and openFrameworks example
+- shared generation presets used by the procedural CLI and tests
 - model-specific preprocessing and postprocessing
 - beat, downbeat, tempo, key, chord, chroma, stem, and arrangement workflows
 - prompt-to-music, loop, stem-targeted, and reference-audio generation workflows
@@ -48,7 +48,7 @@ No dependency should point from `ofxGgmlCore` or `ofxGgmlAudio` back to
 - the built-in `procedural-sketch` backend for deterministic model-free WAV
   generation smoke tests
 - typed result fields for beats, chords, keys, embeddings, and stems
-- focused root-level examples
+- one focused model-backed root-level example
 - local media/model workflow documentation
 
 ## External Runners

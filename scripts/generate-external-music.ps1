@@ -93,7 +93,7 @@ if ([string]::IsNullOrWhiteSpace($BuildDir)) {
 	$BuildDir = Join-Path ([System.IO.Path]::GetTempPath()) "ofxGgmlMusicExternalGenerate"
 }
 if ([string]::IsNullOrWhiteSpace($Output)) {
-	$Output = Join-Path $addonRoot "ofxGgmlMusicGenerationExample\bin\data\outputs\ofxGgmlMusicExternal.wav"
+	$Output = Join-Path ([System.IO.Path]::GetTempPath()) "ofxGgmlMusic\outputs\ofxGgmlMusicExternal.wav"
 }
 $toolExe = if (Test-WindowsHost) {
 	Join-Path $BuildDir "ofxGgmlMusicExternalGenerate.exe"

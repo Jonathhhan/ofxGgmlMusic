@@ -3,8 +3,8 @@
 ## Current Milestone
 
 - Seed the companion addon skeleton.
-- Keep `ofxGgmlMusicAceStepExample` as the canonical model-backed example and
-  `ofxGgmlMusicGenerationExample` as an explicitly model-free offline tool.
+- Keep `ofxGgmlMusicAceStepExample` as the single canonical generation example;
+  retain the model-free procedural backend only for CLI use and deterministic tests.
 - Keep `ofxGgmlCore` as the only required library dependency; examples may depend on `ofxImGui`.
 - Add local validation and headless tests.
 - Keep `ofxGgmlMusic` separate from `ofxGgmlAudio`; allow an optional future
@@ -16,14 +16,13 @@
   SampleRNN, and external bridge lanes.
 - Add the `ofxGgmlMusicGenerationBackend` interface and unavailable fallback
   backend.
-- Add a deterministic `procedural-sketch` backend and root-level generation
-  example so prompt-to-music writes an actual WAV before model bridges land.
-- Add shared PCM16 WAV utilities and a waveform preview for the generation
-  example.
+- Keep the deterministic `procedural-sketch` backend as a CLI and test fixture
+  for writing real WAV artifacts without presenting it as model inference.
+- Add shared PCM16 WAV utilities for CLI, tests, and model-backed example playback.
 - Add generation manifests so rendered WAVs keep prompt/backend/seed/audio
   provenance beside the file.
 - Add generated beat/downbeat and chord metadata to music generation results,
-  manifests, tests, and the waveform preview.
+  manifests, and tests.
 - Add optional procedural stem exports for melody, bass, and pulse components.
 - Add a native procedural generation CLI plus Windows/macOS/Linux wrapper
   scripts for no-IDE smoke runs.
@@ -31,7 +30,6 @@
   music generator executables.
 - Add shared generation presets for ambient, lofi, and pulse workflows.
 - Add generation manifest loading for metadata round trips.
-- Reload the previous standard generation manifest in the openFrameworks example.
 - Add independent addon version metadata and release-candidate docs.
 - Add an external generation contract test that drives the local procedural CLI
   through `ofxGgmlMusicExternalGenerationBackend`.
@@ -45,6 +43,7 @@
 - Add audio diffusion bridge research notes with a clear runtime/setup decision.
 - Keep image and video GAN work in `ofxGgmlDiffusion` and `ofxGgmlVideo`; this
   addon should focus on audio-producing music generators.
-- Add one useful openFrameworks example that runs with user-provided assets.
+- Keep one useful model-backed openFrameworks example that runs with
+  user-provided local assets.
 - Add focused tests around request/result helpers.
 - Document the `clone -> setup -> run` path from a new user's point of view.

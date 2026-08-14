@@ -12,6 +12,7 @@ build/
 .musicgen-inference-smoke.json
 .acestep-inference-smoke.json
 .generation-workflow-report.json
+.local/
 *.sln
 *.suo
 *.user

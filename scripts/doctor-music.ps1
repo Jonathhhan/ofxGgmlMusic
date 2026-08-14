@@ -273,11 +273,6 @@ $checks += Test-PathCheck `
 	-Directory
 
 $checks += Test-PathCheck `
-	-Path (Join-Path $addonRoot "ofxGgmlMusicGenerationExample\src\ofApp.cpp") `
-	-Name "generation example source" `
-	-MissingDetail "generation example source is missing"
-
-$checks += Test-PathCheck `
 	-Path (Join-Path $addonRoot "src\ofxGgmlMusic\ofxGgmlMusicTypes.h") `
 	-Name "music request types" `
 	-MissingDetail "music request types header is missing"
@@ -331,9 +326,6 @@ $artifactWarnings = @()
 foreach ($relative in @(
 	"build",
 	".vs",
-	"ofxGgmlMusicGenerationExample\bin",
-	"ofxGgmlMusicGenerationExample\obj",
-	"ofxGgmlMusicGenerationExample\.vs",
 	"models"
 )) {
 	$warning = Test-ForbiddenPath -RelativePath $relative

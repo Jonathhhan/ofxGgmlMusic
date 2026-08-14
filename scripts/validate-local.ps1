@@ -158,19 +158,6 @@ Assert-Path (Join-Path $addonsRoot "ofxGgmlCore") "sibling ofxGgmlCore addon" -D
 Assert-Path (Join-Path $addonsRoot "ofxImGui") "sibling ofxImGui addon for examples" -Directory
 
 Write-Step "Checking example layout"
-$generationExampleRoot = Join-Path $addonRoot "ofxGgmlMusicGenerationExample"
-Assert-Path $generationExampleRoot "root-level generation example" -Directory
-Assert-Path (Join-Path $generationExampleRoot "addons.make") "generation example addons.make"
-Assert-FileContains (Join-Path $generationExampleRoot "addons.make") "(?m)^ofxImGui\s*$" "generation example addons.make"
-Assert-Path (Join-Path $generationExampleRoot "README.md") "generation example README"
-Assert-Path (Join-Path $generationExampleRoot "src\main.cpp") "generation example main.cpp"
-Assert-Path (Join-Path $generationExampleRoot "src\ofApp.h") "generation example ofApp.h"
-Assert-Path (Join-Path $generationExampleRoot "src\ofApp.cpp") "generation example ofApp.cpp"
-Assert-FileContains (Join-Path $generationExampleRoot "src\ofApp.cpp") "getGenerationPresetNames" "generation example preset source"
-Assert-FileContains (Join-Path $generationExampleRoot "src\ofApp.cpp") "getGenerationStemNames" "generation example stem source"
-Assert-FileContains (Join-Path $generationExampleRoot "src\ofApp.cpp") "getGenerationKeyTonics" "generation example key tonic source"
-Assert-FileContains (Join-Path $generationExampleRoot "src\ofApp.cpp") "getGenerationKeyModes" "generation example key mode source"
-
 $aceStepExampleRoot = Join-Path $addonRoot "ofxGgmlMusicAceStepExample"
 Assert-Path $aceStepExampleRoot "root-level AceStep music example" -Directory
 Assert-Path (Join-Path $aceStepExampleRoot "addons.make") "AceStep example addons.make"
@@ -203,9 +190,6 @@ Write-Step "Checking generated artifact hygiene"
 $forbidden = @(
 	"build",
 	".vs",
-	"ofxGgmlMusicGenerationExample\bin",
-	"ofxGgmlMusicGenerationExample\obj",
-	"ofxGgmlMusicGenerationExample\.vs",
 	"ofxGgmlMusicAceStepExample\bin",
 	"ofxGgmlMusicAceStepExample\obj",
 	"ofxGgmlMusicAceStepExample\.vs",
