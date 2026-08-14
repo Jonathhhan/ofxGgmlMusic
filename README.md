@@ -152,10 +152,9 @@ By default the setup script clones the remote default branch of `acestep.cpp`.
 Pass `-Revision <branch-or-tag>` only when you intentionally want to pin an
 upstream branch or tag.
 
-AceStep follows the ecosystem rule: prefer `ofxGgmlCore` ggml when Core exposes
-the ACE-Step fork ops such as `ggml_col2im_1d`, then fall back to the bundled
-`acestep.cpp` ggml only when Core is missing or incompatible. Pass
-`-BundledGgml` only when you intentionally want the upstream bundled source.
+ACE-Step's patched ggml fork is owned by `ofxGgmlMusic` and comes from the
+`acestep.cpp` ggml submodule. `ofxGgmlCore` remains pinned to official ggml and
+is not replaced or patched for this model-specific runtime.
 Use `-Clean -Cuda` for NVIDIA GPU builds; explicit `-Cuda` is strict and fails
 if the final CMake cache or installed backend artifacts are CPU-only. Auto setup
 may fall back to CPU-only, but reports that result in the setup summary. Use

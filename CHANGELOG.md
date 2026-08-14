@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Made the ACE-Step ggml fork exclusively Music-owned. The setup script now
+  always uses the `acestep.cpp` ggml submodule and removes the redundant
+  `-UseCoreGgml`, `-BundledGgml`, and `-OfxGgmlCorePath` variants.
 - Added a MusicGen/ACE-Step workflow planner for no-side-effect readiness,
   launch, generation, artifact, and environment command discovery.
 - Added a soft generation readiness checker for optional MusicGen Python deps

@@ -21,8 +21,6 @@ function Assert-Contains {
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $script = Join-Path $scriptRoot "setup-acestep-server.ps1"
 $addonRoot = [System.IO.Path]::GetFullPath((Join-Path $scriptRoot ".."))
-$addonsRoot = [System.IO.Path]::GetFullPath((Join-Path $addonRoot ".."))
-$coreRoot = Join-Path $addonsRoot "ofxGgmlCore"
 
 Write-Step "acestep default dry-run"
 $defaultOutput = & $script -DryRun 2>&1 6>&1 | Out-String
@@ -32,13 +30,8 @@ Assert-Contains $defaultOutput "git clone --recurse-submodules --depth 1" "defau
 Assert-Contains $defaultOutput "mode: Auto" "default dry-run"
 Assert-Contains $defaultOutput "external BLAS: OFF" "default dry-run"
 Assert-Contains $defaultOutput "-DGGML_BLAS=OFF" "default dry-run"
-Assert-Contains $defaultOutput "ggml:" "default dry-run"
-if ($defaultOutput.Contains("ggml: bundled")) {
-	Assert-Contains $defaultOutput "ggml fallback:" "default dry-run bundled fallback"
-	Assert-Contains $defaultOutput "setup-ggml.ps1 -AceStepOps" "default dry-run bundled fallback"
-} else {
-	Assert-Contains $defaultOutput "ggml: ofxGgmlCore source" "default dry-run Core ggml"
-}
+Assert-Contains $defaultOutput "ggml: bundled ACE-Step fork" "default dry-run"
+Assert-Contains $defaultOutput "ggml owner: ofxGgmlMusic" "default dry-run"
 Assert-Contains $defaultOutput "cmake --build" "default dry-run"
 Assert-Contains $defaultOutput "output:" "default dry-run"
 Assert-Contains $defaultOutput "Dry run complete; no files were changed" "default dry-run"
@@ -77,34 +70,5 @@ $blasOutput = & $script -DryRun -CpuOnly -Blas 2>&1 6>&1 | Out-String
 Assert-Contains $blasOutput "external BLAS: ON" "BLAS opt-in dry-run"
 Assert-Contains $blasOutput "-DGGML_BLAS=ON" "BLAS opt-in dry-run"
 Assert-Contains $blasOutput "Dry run complete; no files were changed" "BLAS opt-in dry-run"
-
-Write-Step "acestep bundled ggml dry-run"
-$fakeCore = Join-Path ([System.IO.Path]::GetTempPath()) "ofxGgmlMusic-acestep-missing-core"
-if (Test-Path -LiteralPath $fakeCore) {
-	Remove-Item -LiteralPath $fakeCore -Recurse -Force
-}
-$bundleOutput = & $script -DryRun -BundledGgml -OfxGgmlCorePath $fakeCore 2>&1 6>&1 | Out-String
-Assert-Contains $bundleOutput "ggml: bundled" "bundled ggml dry-run"
-Assert-Contains $bundleOutput "-BundledGgml requested" "bundled ggml dry-run"
-Assert-Contains $bundleOutput "cmake --build" "bundled ggml dry-run"
-Assert-Contains $bundleOutput "Dry run complete; no files were changed" "bundled ggml dry-run"
-
-if (Test-Path -LiteralPath $coreRoot -PathType Container) {
-	Write-Step "acestep ofxGgmlCore ggml opt-in dry-run"
-	$coreOutput = ""
-	try {
-		$coreOutput = & $script -DryRun -UseCoreGgml 2>&1 6>&1 | Out-String
-	} catch {
-		$coreOutput = $_ | Out-String
-	}
-	if ($coreOutput.Contains("UseCoreGgml was requested but")) {
-		Assert-Contains $coreOutput "ggml_col2im_1d" "ofxGgmlCore ggml dry-run incompatible Core"
-		Assert-Contains $coreOutput "setup-ggml.ps1 -AceStepOps" "ofxGgmlCore ggml dry-run incompatible Core"
-	} else {
-		Assert-Contains $coreOutput "ggml: ofxGgmlCore source" "ofxGgmlCore ggml dry-run"
-		Assert-Contains $coreOutput "ofxGgmlCore:" "ofxGgmlCore ggml dry-run"
-		Assert-Contains $coreOutput "Dry run complete; no files were changed" "ofxGgmlCore ggml dry-run"
-	}
-}
 
 Write-Step "acestep setup dry-run coverage passed"

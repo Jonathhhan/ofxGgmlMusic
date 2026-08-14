@@ -7,15 +7,12 @@ param(
 	[string]$SourceDir = "",
 	[string]$BuildDir = "",
 	[string]$InstallDir = "",
-	[string]$OfxGgmlCorePath = "",
 	[switch]$Auto,
 	[switch]$CpuOnly,
 	[switch]$Cuda,
 	[switch]$Vulkan,
 	[switch]$Metal,
 	[switch]$Blas,
-	[switch]$UseCoreGgml,
-	[switch]$BundledGgml,
 	[switch]$Clean,
 	[switch]$DryRun
 )
@@ -167,21 +164,6 @@ function Clear-CmakeConfigureCache {
 	}
 }
 
-function Test-CoreGgmlSourceAvailable {
-	param([string]$CorePath)
-	$ggmlSource = Join-Path $CorePath "libs\ggml\.source"
-	if (!(Test-Path -LiteralPath $ggmlSource -PathType Container)) {
-		return $false
-	}
-	$includeDir = Join-Path $ggmlSource "include"
-	return Test-Path -LiteralPath (Join-Path $includeDir "ggml.h") -PathType Leaf
-}
-
-function Get-CoreGgmlSourcePath {
-	param([string]$CorePath)
-	return Join-Path $CorePath "libs\ggml\.source"
-}
-
 function Test-GgmlSourceHasAceStepOps {
 	param([string]$GgmlSource)
 	$ggmlHeader = Join-Path $GgmlSource "include\ggml.h"
@@ -192,21 +174,13 @@ function Test-GgmlSourceHasAceStepOps {
 	return $headerText -match "ggml_col2im_1d"
 }
 
-function Test-CoreGgmlSourceCompatible {
-	param([string]$CorePath)
-	if (!(Test-CoreGgmlSourceAvailable $CorePath)) {
-		return $false
-	}
-	return Test-GgmlSourceHasAceStepOps (Get-CoreGgmlSourcePath $CorePath)
-}
-
 function Assert-GgmlSourceHasAceStepOps {
 	param(
 		[string]$GgmlSource,
 		[string]$Label
 	)
 	if (!(Test-GgmlSourceHasAceStepOps $GgmlSource)) {
-		throw "$Label does not expose the ACE-Step patched ggml_col2im_1d op. Use bundled ACE-Step ggml, or patch that ggml source with the ACE-Step fork ops before passing -UseCoreGgml."
+		throw "$Label does not expose the ACE-Step patched ggml_col2im_1d op. Refresh the acestep.cpp source and its ggml submodule."
 	}
 }
 
@@ -386,53 +360,6 @@ function Clear-InstalledRuntimeArtifacts {
 	}
 }
 
-function Test-AcestepGgmlSubmodule {
-	param(
-		[string]$SourceDir,
-		[string]$TargetPath
-	)
-	$gitFile = Join-Path $TargetPath ".git"
-	$gitModules = Join-Path $SourceDir ".gitmodules"
-	if (!(Test-Path -LiteralPath $gitFile -PathType Leaf) -or
-		!(Test-Path -LiteralPath $gitModules -PathType Leaf)) {
-		return $false
-	}
-	$gitModulesText = Get-Content -LiteralPath $gitModules -Raw
-	return $gitModulesText -match "(?m)^\s*path\s*=\s*ggml\s*$"
-}
-
-function Remove-AcestepGgmlSubmodule {
-	param(
-		[string]$SourceDir,
-		[string]$TargetPath
-	)
-	if (!(Test-ChildPath -Parent $SourceDir -Child $TargetPath)) {
-		throw "Refusing to remove ggml path outside acestep.cpp source: $TargetPath"
-	}
-	Write-Step "Replacing cloned acestep.cpp ggml submodule with ofxGgmlCore ggml source"
-	try {
-		& "git" -C $SourceDir submodule deinit -f "ggml" | Out-Null
-	} catch {
-		Write-Warning "Could not deinit acestep.cpp ggml submodule cleanly: $($_.Exception.Message)"
-	}
-	Remove-Item -LiteralPath $TargetPath -Recurse -Force
-}
-
-function Test-ReparsePointTargetsPath {
-	param(
-		[object]$Item,
-		[string]$ExpectedTarget
-	)
-	$expected = Resolve-PathSafe $ExpectedTarget
-	foreach ($target in @($Item.Target)) {
-		if (![string]::IsNullOrWhiteSpace([string]$target) -and
-			(Resolve-PathSafe ([string]$target)) -eq $expected) {
-			return $true
-		}
-	}
-	return $false
-}
-
 function Remove-ReparsePointDirectory {
 	param([string]$Path)
 	if (!(Test-ChildPath -Parent (Split-Path -Parent $Path) -Child $Path)) {
@@ -467,44 +394,7 @@ function Ensure-AcestepSource {
 	}
 }
 
-function Ensure-GgmlSourceFromCore {
-	param(
-		[string]$SourceDir,
-		[string]$CorePath
-	)
-	$coreSource = Join-Path $CorePath "libs\ggml\.source"
-	$targetPath = Join-Path $SourceDir "ggml"
-
-	if (!(Test-Path -LiteralPath $coreSource -PathType Container)) {
-		throw "ofxGgmlCore ggml source was not found at: $coreSource"
-	}
-	Assert-GgmlSourceHasAceStepOps -GgmlSource $coreSource -Label "ofxGgmlCore ggml source"
-
-	if (Test-Path -LiteralPath $targetPath) {
-		$item = Get-Item -LiteralPath $targetPath -Force
-		if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
-			if (Test-ReparsePointTargetsPath -Item $item -ExpectedTarget $coreSource) {
-				Write-Step "acestep.cpp ggml already points at ofxGgmlCore source"
-				return
-			}
-			Remove-ReparsePointDirectory $targetPath
-		} elseif (Test-AcestepGgmlSubmodule -SourceDir $SourceDir -TargetPath $targetPath) {
-			Remove-AcestepGgmlSubmodule -SourceDir $SourceDir -TargetPath $targetPath
-		} elseif ($item.PSIsContainer -and ($item.GetFiles().Count -gt 0 -or $item.GetDirectories().Count -gt 0)) {
-			throw "acestep.cpp already has a non-empty ggml directory at $targetPath. Remove it before rebuilding with ofxGgmlCore source."
-		} else {
-			Remove-Item -LiteralPath $targetPath -Recurse -Force
-		}
-	}
-
-	if (Test-WindowsHost) {
-		New-Item -ItemType Junction -Path $targetPath -Target $coreSource | Out-Null
-	} else {
-		New-Item -ItemType SymbolicLink -Path $targetPath -Target $coreSource | Out-Null
-	}
-}
-
-function Ensure-BundledGgmlSource {
+function Ensure-AceStepGgmlSource {
 	param([string]$SourceDir)
 	$targetPath = Join-Path $SourceDir "ggml"
 	$ggmlHeader = Join-Path $targetPath "include\ggml.h"
@@ -543,11 +433,6 @@ if ([string]::IsNullOrWhiteSpace($InstallDir)) {
 $SourceDir = Resolve-PathSafe $SourceDir
 $BuildDir = Resolve-PathSafe $BuildDir
 $InstallDir = Resolve-PathSafe $InstallDir
-if ([string]::IsNullOrWhiteSpace($OfxGgmlCorePath)) {
-	$OfxGgmlCorePath = [System.IO.Path]::GetFullPath((Join-Path $addonRoot "..\ofxGgmlCore"))
-} else {
-	$OfxGgmlCorePath = Resolve-PathSafe $OfxGgmlCorePath
-}
 if ($Jobs -le 0) {
 	$Jobs = [Math]::Max(1, [Environment]::ProcessorCount)
 }
@@ -591,47 +476,6 @@ if (!$DryRun -and $Metal -and !$metalAvailable) {
 	throw "Metal was requested but this host is not macOS or xcrun is unavailable."
 }
 
-$coreGgmlSource = Get-CoreGgmlSourcePath $OfxGgmlCorePath
-$coreGgmlAvailable = Test-CoreGgmlSourceAvailable $OfxGgmlCorePath
-$coreGgmlCompatible = $coreGgmlAvailable -and (Test-GgmlSourceHasAceStepOps $coreGgmlSource)
-$ggmlFallbackReason = ""
-$coreGgmlAceStepSetupHint = "Run ofxGgmlCore\scripts\setup-ggml.ps1 -AceStepOps first to make Core the shared ACE-Step-compatible ggml provider."
-
-if ($UseCoreGgml -and $BundledGgml) {
-	throw "Choose either -UseCoreGgml or -BundledGgml, not both."
-}
-
-$ggmlMode = if ($BundledGgml) {
-	"bundled"
-} elseif ($UseCoreGgml) {
-	if (!$coreGgmlAvailable) {
-		throw "UseCoreGgml was requested but ofxGgmlCore ggml source was not found at $OfxGgmlCorePath"
-	}
-	if (!$coreGgmlCompatible) {
-		throw "UseCoreGgml was requested but ofxGgmlCore ggml source does not expose the ACE-Step patched ggml_col2im_1d op. $coreGgmlAceStepSetupHint"
-	}
-	"ofxGgmlCore"
-} elseif ($coreGgmlCompatible) {
-	"ofxGgmlCore"
-} else {
-	if (!$coreGgmlAvailable) {
-		$ggmlFallbackReason = "ofxGgmlCore ggml source was not found"
-	} else {
-		$ggmlFallbackReason = "ofxGgmlCore ggml source lacks the ACE-Step ggml_col2im_1d op. $coreGgmlAceStepSetupHint"
-	}
-	"bundled"
-}
-
-$ggmlModeDetail = if ($UseCoreGgml) {
-	"using ofxGgmlCore .source/ggml"
-} elseif ($BundledGgml) {
-	"using bundled ggml in acestep.cpp (-BundledGgml requested)"
-} elseif ($ggmlMode -eq "ofxGgmlCore") {
-	"using compatible ofxGgmlCore .source/ggml"
-} else {
-	"using bundled ggml in acestep.cpp because $ggmlFallbackReason"
-}
-
 $resolvedGenerator = Get-DefaultGenerator $Generator
 $cmakeArgs = New-CmakeArgs `
 	-SourceDir $SourceDir `
@@ -660,14 +504,8 @@ if ($DryRun) {
 	if ($Auto -and ($enableCuda -or $enableVulkan -or $enableMetal)) {
 		Write-Host "  auto fallback: retry CPU-only if optional GPU configure fails"
 	}
-	Write-Host "  ggml: $(if ($ggmlMode -eq "ofxGgmlCore") { "ofxGgmlCore source" } else { "bundled" })"
-	Write-Host "  ggml detail: $ggmlModeDetail"
-	if (![string]::IsNullOrWhiteSpace($ggmlFallbackReason)) {
-		Write-Host "  ggml fallback: $ggmlFallbackReason"
-	}
-	if ($ggmlMode -eq "ofxGgmlCore") {
-		Write-Host "  ofxGgmlCore: $OfxGgmlCorePath"
-	}
+	Write-Host "  ggml: bundled ACE-Step fork"
+	Write-Host "  ggml owner: ofxGgmlMusic"
 	Write-Host "  jobs: $Jobs"
 	Write-Host "git $($cloneArgs -join ' ')"
 	Write-Host "cmake $($cmakeArgs -join ' ')"
@@ -692,11 +530,7 @@ New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
 
 Ensure-AcestepSource $SourceDir
 
-if ($ggmlMode -eq "ofxGgmlCore") {
-	Ensure-GgmlSourceFromCore -SourceDir $SourceDir -CorePath $OfxGgmlCorePath
-} else {
-	Ensure-BundledGgmlSource -SourceDir $SourceDir
-}
+Ensure-AceStepGgmlSource -SourceDir $SourceDir
 
 Write-Step "Configuring acestep.cpp"
 $usedCpuOnlyFallback = $false
